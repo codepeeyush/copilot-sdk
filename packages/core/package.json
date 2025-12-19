@@ -1,0 +1,43 @@
+{
+  "name": "@yourgpt/core",
+  "version": "0.1.0",
+  "description": "Core types and utilities for YourGPT Copilot SDK",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint src/",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.2",
+    "typescript": "^5.4.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourgpt/copilot-sdk.git",
+    "directory": "packages/core"
+  },
+  "keywords": [
+    "yourgpt",
+    "copilot",
+    "ai",
+    "chatbot",
+    "sdk"
+  ],
+  "sideEffects": false
+}

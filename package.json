@@ -1,0 +1,53 @@
+{
+  "name": "yourgpt-copilot",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Open-source SDK for building AI assistants",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourgpt/copilot-sdk.git"
+  },
+  "license": "MIT",
+  "author": "YourGPT",
+  "scripts": {
+    "build": "turbo build",
+    "dev": "turbo dev",
+    "dev:sdk": "turbo dev --filter=@yourgpt/ui --filter=@yourgpt/react",
+    "dev:saas": "turbo dev --filter=your-gpt-app",
+    "dev:work": "turbo dev --filter=@yourgpt/ui --filter=@yourgpt/react --filter=your-gpt-app",
+    "build:sdk": "turbo build --filter=@yourgpt/ui --filter=@yourgpt/react",
+    "lint": "turbo lint",
+    "clean": "turbo clean && rm -rf node_modules",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\"",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "turbo build && changeset publish",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.27.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.2.5",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "^18.2.0",
+      "@types/react-dom": "^18.2.0"
+    }
+  },
+  "packageManager": "pnpm@9.0.0",
+  "engines": {
+    "node": ">=18"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  }
+}

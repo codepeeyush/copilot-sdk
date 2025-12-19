@@ -1,0 +1,156 @@
+import { Hono } from "hono";
+import { cors } from "hono/cors";
+import type { Runtime } from "./runtime";
+import type { RuntimeConfig } from "./types";
+import { createRuntime } from "./runtime";
+
+/**
+ * Create Hono app with chat endpoint
+ */
+export function createHonoApp(runtime: Runtime): Hono {
+  const app = new Hono();
+
+  // Enable CORS
+  app.use("*", cors());
+
+  // Health check
+  app.get("/", (c) => {
+    return c.json({ status: "ok", provider: "yourgpt-copilot" });
+  });
+
+  // Chat endpoint
+  app.post("/chat", async (c) => {
+    const request = c.req.raw;
+    return runtime.handleRequest(request);
+  });
+
+  // Get available actions
+  app.get("/actions", (c) => {
+    const actions = runtime.getActions().map((a) => ({
+      name: a.name,
+      description: a.description,
+      parameters: a.parameters,
+    }));
+    return c.json({ actions });
+  });
+
+  return app;
+}
+
+/**
+ * Next.js App Router handler
+ *
+ * @example
+ * ```ts
+ * // app/api/chat/route.ts
+ * import { createNextHandler } from '@yourgpt/runtime';
+ *
+ * const handler = createNextHandler({
+ *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
+ * });
+ *
+ * export const POST = handler;
+ * ```
+ */
+export function createNextHandler(config: RuntimeConfig) {
+  const runtime = createRuntime(config);
+
+  return async function handler(request: Request): Promise<Response> {
+    return runtime.handleRequest(request);
+  };
+}
+
+/**
+ * Express middleware
+ *
+ * @example
+ * ```ts
+ * import express from 'express';
+ * import { createExpressMiddleware } from '@yourgpt/runtime';
+ *
+ * const app = express();
+ *
+ * app.use('/api/chat', createExpressMiddleware({
+ *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
+ * }));
+ * ```
+ */
+export function createExpressMiddleware(config: RuntimeConfig) {
+  const runtime = createRuntime(config);
+  const app = createHonoApp(runtime);
+
+  // Return Hono's fetch handler wrapped for Express
+  return async (
+    req: {
+      method: string;
+      url: string;
+      headers: Record<string, string>;
+      body: unknown;
+    },
+    res: {
+      status: (code: number) => { json: (data: unknown) => void };
+      setHeader: (name: string, value: string) => void;
+      write: (data: string) => void;
+      end: () => void;
+    },
+  ) => {
+    try {
+      // Convert Express request to Fetch Request
+      const url = new URL(req.url, "http://localhost");
+      const request = new Request(url, {
+        method: req.method,
+        headers: req.headers,
+        body: req.method !== "GET" ? JSON.stringify(req.body) : undefined,
+      });
+
+      // Handle with runtime
+      const response = await runtime.handleRequest(request);
+
+      // Set response headers
+      response.headers.forEach((value, key) => {
+        res.setHeader(key, value);
+      });
+
+      // Stream response body
+      if (response.body) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(decoder.decode(value));
+        }
+      }
+
+      res.end();
+    } catch (error) {
+      res.status(500).json({
+        error: error instanceof Error ? error.message : "Unknown error",
+      });
+    }
+  };
+}
+
+/**
+ * Node.js HTTP handler
+ *
+ * @example
+ * ```ts
+ * import http from 'http';
+ * import { createNodeHandler } from '@yourgpt/runtime';
+ *
+ * const handler = createNodeHandler({
+ *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
+ * });
+ *
+ * const server = http.createServer(handler);
+ * server.listen(3001);
+ * ```
+ */
+export function createNodeHandler(config: RuntimeConfig) {
+  const runtime = createRuntime(config);
+  const app = createHonoApp(runtime);
+
+  return app.fetch;
+}
