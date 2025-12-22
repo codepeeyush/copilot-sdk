@@ -39,22 +39,141 @@ export class AnthropicAdapter implements LLMAdapter {
     return this.client;
   }
 
+  /**
+   * Convert OpenAI-style messages to Anthropic format
+   *
+   * OpenAI format:
+   * - { role: "assistant", content: "...", tool_calls: [...] }
+   * - { role: "tool", tool_call_id: "...", content: "..." }
+   *
+   * Anthropic format:
+   * - { role: "assistant", content: [{ type: "text", text: "..." }, { type: "tool_use", id: "...", name: "...", input: {...} }] }
+   * - { role: "user", content: [{ type: "tool_result", tool_use_id: "...", content: "..." }] }
+   */
+  private convertToAnthropicMessages(
+    rawMessages: Array<Record<string, unknown>>,
+  ): Array<Record<string, unknown>> {
+    const messages: Array<Record<string, unknown>> = [];
+    const pendingToolResults: Array<{ tool_use_id: string; content: string }> =
+      [];
+
+    for (const msg of rawMessages) {
+      // Skip system messages (handled separately)
+      if (msg.role === "system") continue;
+
+      if (msg.role === "assistant") {
+        // Convert assistant message with potential tool_calls
+        const content: Array<Record<string, unknown>> = [];
+
+        // Add text content if present
+        if (
+          msg.content &&
+          typeof msg.content === "string" &&
+          msg.content.trim()
+        ) {
+          content.push({ type: "text", text: msg.content });
+        }
+
+        // Convert tool_calls to tool_use blocks
+        const toolCalls = msg.tool_calls as
+          | Array<{
+              id: string;
+              type: string;
+              function: { name: string; arguments: string };
+            }>
+          | undefined;
+
+        if (toolCalls && toolCalls.length > 0) {
+          for (const tc of toolCalls) {
+            let input = {};
+            try {
+              input = JSON.parse(tc.function.arguments);
+            } catch {
+              // Keep empty object if parse fails
+            }
+            content.push({
+              type: "tool_use",
+              id: tc.id,
+              name: tc.function.name,
+              input,
+            });
+          }
+        }
+
+        // Only add if there's content
+        if (content.length > 0) {
+          messages.push({ role: "assistant", content });
+        }
+      } else if (msg.role === "tool") {
+        // Collect tool results to be bundled into a user message
+        pendingToolResults.push({
+          tool_use_id: msg.tool_call_id as string,
+          content:
+            typeof msg.content === "string"
+              ? msg.content
+              : JSON.stringify(msg.content),
+        });
+      } else if (msg.role === "user") {
+        // First, flush any pending tool results as a user message
+        if (pendingToolResults.length > 0) {
+          messages.push({
+            role: "user",
+            content: pendingToolResults.map((tr) => ({
+              type: "tool_result",
+              tool_use_id: tr.tool_use_id,
+              content: tr.content,
+            })),
+          });
+          pendingToolResults.length = 0;
+        }
+
+        // Add user message
+        messages.push({
+          role: "user",
+          content:
+            typeof msg.content === "string"
+              ? msg.content
+              : JSON.stringify(msg.content),
+        });
+      }
+    }
+
+    // Flush any remaining tool results
+    if (pendingToolResults.length > 0) {
+      messages.push({
+        role: "user",
+        content: pendingToolResults.map((tr) => ({
+          type: "tool_result",
+          tool_use_id: tr.tool_use_id,
+          content: tr.content,
+        })),
+      });
+    }
+
+    return messages;
+  }
+
   async *stream(request: ChatCompletionRequest): AsyncGenerator<StreamEvent> {
     const client = await this.getClient();
-
-    // Anthropic uses a different message format
-    const allMessages = formatMessages(request.messages, undefined);
 
     // Extract system message
     const systemMessage = request.systemPrompt || "";
 
-    // Filter out system messages and format for Anthropic
-    const messages = allMessages
-      .filter((m) => m.role !== "system")
-      .map((m) => ({
-        role: m.role === "assistant" ? "assistant" : "user",
-        content: m.content,
-      }));
+    // Use raw messages if provided (for agent loop with tool calls)
+    let messages: Array<Record<string, unknown>>;
+    if (request.rawMessages && request.rawMessages.length > 0) {
+      // Convert OpenAI-style messages to Anthropic format
+      messages = this.convertToAnthropicMessages(request.rawMessages);
+    } else {
+      // Format from Message[]
+      const allMessages = formatMessages(request.messages, undefined);
+      messages = allMessages
+        .filter((m) => m.role !== "system")
+        .map((m) => ({
+          role: m.role === "assistant" ? "assistant" : "user",
+          content: m.content,
+        }));
+    }
 
     // Convert actions to Anthropic tool format
     const tools = request.actions?.map((action) => ({

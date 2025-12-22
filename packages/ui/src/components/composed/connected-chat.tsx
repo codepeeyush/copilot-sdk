@@ -1,50 +1,118 @@
 "use client";
 
 import React from "react";
-import { Chat, ChatProps } from "./chat";
+import { useYourGPTContext } from "@yourgpt/react";
+import { Chat, type ChatProps } from "./chat";
+import type { ToolExecutionData } from "./tools/tool-execution-list";
 
-// Type for the useAIChat hook return value
-type UseAIChatReturn = {
-  messages: Array<{
-    id: string;
-    role: "user" | "assistant" | "system";
-    content: string;
-  }>;
-  sendMessage: (message: string) => void;
-  isLoading: boolean;
-  stop?: () => void;
-};
-
-export type ConnectedChatProps = Omit<
+/**
+ * Props for CopilotChat - auto-connects to YourGPTProvider context
+ * No need to pass messages, sendMessage, etc. - handled internally
+ */
+export type CopilotChatProps = Omit<
   ChatProps,
-  "messages" | "onSendMessage" | "onStop" | "isLoading"
+  | "messages"
+  | "onSendMessage"
+  | "onStop"
+  | "isLoading"
+  | "toolExecutions"
+  | "loopIteration"
+  | "loopMaxIterations"
+  | "loopRunning"
 > & {
-  /** useAIChat hook instance */
-  chat: UseAIChatReturn;
+  /**
+   * Show tool executions in the chat (default: true when tools are being executed)
+   */
+  showToolExecutions?: boolean;
 };
 
 /**
- * Chat component pre-connected to useAIChat hook.
+ * CopilotChat - Auto-connected chat component
+ *
+ * Automatically connects to YourGPTProvider context.
+ * No need to use hooks or pass messages - everything is handled internally.
  *
  * @example
  * ```tsx
- * import { ConnectedChat } from '@yourgpt/ui';
- * import { useAIChat } from '@yourgpt/react';
+ * import { YourGPTProvider } from '@yourgpt/react';
+ * import { CopilotChat } from '@yourgpt/ui';
  *
- * function MyChat() {
- *   const chat = useAIChat();
- *   return <ConnectedChat chat={chat} />;
+ * function App() {
+ *   return (
+ *     <YourGPTProvider runtimeUrl="/api/chat">
+ *       <CopilotChat
+ *         title="AI Assistant"
+ *         placeholder="Ask anything..."
+ *       />
+ *     </YourGPTProvider>
+ *   );
  * }
  * ```
  */
-export function ConnectedChat({ chat, ...props }: ConnectedChatProps) {
+export function CopilotChat(props: CopilotChatProps) {
+  // Auto-connect to context internally
+  const { chat, actions, agentLoop, isPremium } = useYourGPTContext();
+
+  // Auto-hide powered by for premium users (unless explicitly set)
+  const showPoweredBy = props.showPoweredBy ?? !isPremium;
+
+  // Filter messages to only show user/assistant/system (not tool messages)
+  const visibleMessages = chat.messages
+    .filter(
+      (m) => m.role === "user" || m.role === "assistant" || m.role === "system",
+    )
+    .map((m) => ({
+      id: m.id,
+      role: m.role as "user" | "assistant" | "system",
+      content: m.content,
+    }));
+
+  // Show suggestions only when no messages
+  const suggestions =
+    visibleMessages.length === 0 && props.suggestions?.length
+      ? props.suggestions
+      : [];
+
+  // Convert tool executions to the expected format
+  const toolExecutions: ToolExecutionData[] = agentLoop.toolExecutions.map(
+    (exec) => ({
+      id: exec.id,
+      name: exec.name,
+      args: exec.args,
+      status: exec.status,
+      result: exec.result,
+      error: exec.error,
+      timestamp: exec.timestamp,
+      duration: exec.duration,
+    }),
+  );
+
+  // Show tool executions when there are any (they get cleared on new message)
+  const showToolExecutions =
+    props.showToolExecutions ?? toolExecutions.length > 0;
+
+  // Determine if agent loop is running
+  const loopRunning = chat.isLoading && agentLoop.iteration > 0;
+
   return (
     <Chat
-      messages={chat.messages}
-      onSendMessage={chat.sendMessage}
-      onStop={chat.stop}
-      isLoading={chat.isLoading}
       {...props}
+      messages={visibleMessages}
+      onSendMessage={actions.sendMessage}
+      onStop={actions.stopGeneration}
+      isLoading={chat.isLoading}
+      showPoweredBy={showPoweredBy}
+      suggestions={suggestions}
+      // Tool execution props
+      toolExecutions={toolExecutions}
+      showToolExecutions={showToolExecutions}
+      loopIteration={agentLoop.iteration}
+      loopMaxIterations={agentLoop.maxIterations}
+      loopRunning={loopRunning}
     />
   );
 }
+
+// Alias for backwards compatibility
+export const ConnectedChat = CopilotChat;
+export type ConnectedChatProps = CopilotChatProps;

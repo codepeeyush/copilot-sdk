@@ -1,5 +1,18 @@
-// AI Hooks
+// AI Hooks (Tiered API)
+// Free tier - limited API for component users
 export { useAIChat, useIsPremium, type UseAIChatReturn } from "./useAIChat";
+
+// Premium tier - full headless access (requires YourGPT API key)
+export {
+  useAIChatHeadless,
+  useAIChatHeadless_c,
+  YourGPTError,
+  YourGPTErrorCode,
+  type UseAIChatHeadlessReturn,
+} from "./useAIChatHeadless";
+
+// Note: useAIChatInternal is NOT exported (internal implementation only)
+
 export { useAIAction, useAIActions } from "./useAIAction";
 export {
   useAIContext,
@@ -13,6 +26,15 @@ export {
   type UseAIToolsReturn,
 } from "./useAITools";
 export { useThreads } from "./useThreads";
+
+// Tool Hooks (Agentic Loop)
+export { useTool, useTools, type UseToolConfig } from "./useTool";
+export {
+  useToolWithSchema,
+  useToolsWithSchema,
+  type UseToolWithSchemaConfig,
+} from "./useToolWithSchema";
+export { useToolExecutor, type UseToolExecutorReturn } from "./useToolExecutor";
 
 // Other hooks
 export {

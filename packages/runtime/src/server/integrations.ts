@@ -3,6 +3,7 @@ import { cors } from "hono/cors";
 import type { Runtime } from "./runtime";
 import type { RuntimeConfig } from "./types";
 import { createRuntime } from "./runtime";
+import { createSSEResponse } from "./streaming";
 
 /**
  * Create Hono app with chat endpoint
@@ -18,13 +19,32 @@ export function createHonoApp(runtime: Runtime): Hono {
     return c.json({ status: "ok", provider: "yourgpt-copilot" });
   });
 
-  // Chat endpoint
+  // Chat endpoint (standard - single turn)
   app.post("/chat", async (c) => {
     const request = c.req.raw;
     return runtime.handleRequest(request);
   });
 
-  // Get available actions
+  // Chat endpoint with agent loop (multi-turn with tools)
+  // Note: With Vercel AI SDK pattern, this is the same as /chat
+  // Client sends tool results in messages, server doesn't wait
+  app.post("/chat/loop", async (c) => {
+    try {
+      const body = await c.req.json();
+      const signal = c.req.raw.signal;
+
+      // Process with tool support
+      const generator = runtime.processChatWithLoop(body, signal);
+      return createSSEResponse(generator);
+    } catch (error) {
+      return c.json(
+        { error: error instanceof Error ? error.message : "Unknown error" },
+        500,
+      );
+    }
+  });
+
+  // Get available actions (legacy)
   app.get("/actions", (c) => {
     const actions = runtime.getActions().map((a) => ({
       name: a.name,
@@ -32,6 +52,17 @@ export function createHonoApp(runtime: Runtime): Hono {
       parameters: a.parameters,
     }));
     return c.json({ actions });
+  });
+
+  // Get available tools (new)
+  app.get("/tools", (c) => {
+    const tools = runtime.getTools().map((t) => ({
+      name: t.name,
+      description: t.description,
+      location: t.location,
+      inputSchema: t.inputSchema,
+    }));
+    return c.json({ tools });
   });
 
   return app;

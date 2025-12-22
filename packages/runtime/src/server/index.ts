@@ -17,3 +17,10 @@ export {
   createExpressMiddleware,
   createNodeHandler,
 } from "./integrations";
+
+// Agent loop
+export {
+  runAgentLoop,
+  DEFAULT_MAX_ITERATIONS,
+  type AgentLoopOptions,
+} from "./agent-loop";

@@ -55,11 +55,13 @@ export { Source, SourceContent, SourceTrigger } from "./components/ui/source";
 // ============================================
 export {
   Chat,
-  ConnectedChat,
+  CopilotChat,
+  ConnectedChat, // Alias for CopilotChat (backwards compatibility)
   PoweredBy,
   type ChatProps,
   type ChatMessage,
-  type ConnectedChatProps,
+  type CopilotChatProps,
+  type ConnectedChatProps, // Alias for CopilotChatProps
   type PoweredByProps,
 } from "./components/composed";
 

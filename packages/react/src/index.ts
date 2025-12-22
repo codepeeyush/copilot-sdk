@@ -19,6 +19,7 @@ export {
   type ChatActions,
   type ToolsState,
   type ToolsActions,
+  type AgentLoopState,
 } from "./context/YourGPTContext";
 
 export {
@@ -40,6 +41,12 @@ export {
   useAgent,
   useThreads,
   generateSuggestionReason,
+  // Tool hooks (Agentic Loop)
+  useTool,
+  useTools,
+  useToolWithSchema,
+  useToolsWithSchema,
+  useToolExecutor,
   type UseAIChatReturn,
   type AIContextItem,
   type UseAIToolsOptions,
@@ -49,6 +56,9 @@ export {
   type Suggestion,
   type UseAgentOptions,
   type UseAgentReturn,
+  type UseToolConfig,
+  type UseToolWithSchemaConfig,
+  type UseToolExecutorReturn,
 } from "./hooks";
 
 // Re-export core types for convenience
@@ -60,7 +70,7 @@ export type {
   YourGPTConfig,
   LLMConfig,
   CloudConfig,
-  // Tools types
+  // Tools types (smart context)
   ToolsConfig,
   ToolType,
   ToolConsentRequest,
@@ -72,4 +82,12 @@ export type {
   ThreadData,
   PersistenceConfig,
   ThreadStorageAdapter,
+  // Agentic Loop types
+  ToolDefinition,
+  ToolResponse,
+  ToolContext,
+  ToolExecution,
+  ToolExecutionStatus,
+  UnifiedToolCall,
+  AgentLoopConfig,
 } from "@yourgpt/core";

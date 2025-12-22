@@ -1,9 +1,12 @@
 import React from "react";
+import type { ToolExecutionData } from "../tools";
 
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant" | "system";
   content: string;
+  /** Tool executions associated with this message */
+  toolExecutions?: ToolExecutionData[];
 };
 
 export type ChatProps = {
@@ -57,6 +60,18 @@ export type ChatProps = {
   /** Called when a suggestion is clicked */
   onSuggestionClick?: (suggestion: string) => void;
 
+  // === Tool Executions ===
+  /** Global tool executions to display (not per-message) */
+  toolExecutions?: ToolExecutionData[];
+  /** Show tool executions inline with messages */
+  showToolExecutions?: boolean;
+  /** Current loop iteration */
+  loopIteration?: number;
+  /** Maximum loop iterations */
+  loopMaxIterations?: number;
+  /** Whether the loop is running */
+  loopRunning?: boolean;
+
   // === Custom Rendering ===
   /** Custom message renderer */
   renderMessage?: (message: ChatMessage, index: number) => React.ReactNode;
@@ -79,5 +94,7 @@ export type ChatProps = {
     input?: string;
     suggestions?: string;
     footer?: string;
+    toolExecutions?: string;
+    loopProgress?: string;
   };
 };

@@ -30,6 +30,13 @@ export {
   createSSEResponse,
 } from "./server";
 
+// Agent loop
+export {
+  runAgentLoop,
+  DEFAULT_MAX_ITERATIONS,
+  type AgentLoopOptions,
+} from "./server";
+
 // Adapters
 export type {
   LLMAdapter,
@@ -56,6 +63,29 @@ export {
   type OllamaAdapterConfig,
 } from "./adapters";
 
+// Provider formatters (for agentic loop)
+export {
+  getFormatter,
+  isProviderSupported,
+  getSupportedProviders,
+  anthropicFormatter,
+  openaiFormatter,
+  geminiFormatter,
+} from "./providers";
+
+export type {
+  ProviderFormatter,
+  AnthropicTool,
+  AnthropicToolUse,
+  AnthropicToolResult,
+  OpenAITool,
+  OpenAIToolCall,
+  OpenAIToolResult,
+  GeminiFunctionDeclaration,
+  GeminiFunctionCall,
+  GeminiFunctionResponse,
+} from "./providers";
+
 // Re-export core types
 export type {
   Message,
@@ -63,4 +93,13 @@ export type {
   StreamEvent,
   LLMConfig,
   LLMProvider,
+  // Tool types
+  AIProvider,
+  ToolDefinition,
+  ToolLocation,
+  ToolResponse,
+  UnifiedToolCall,
+  UnifiedToolResult,
+  ToolExecution,
+  AgentLoopConfig,
 } from "@yourgpt/core";

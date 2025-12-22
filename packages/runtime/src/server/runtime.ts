@@ -3,6 +3,10 @@ import type {
   ActionDefinition,
   StreamEvent,
   KnowledgeBaseConfig,
+  ToolDefinition,
+  AIProvider,
+  ToolCallInfo,
+  AssistantToolMessage,
 } from "@yourgpt/core";
 import { createMessage } from "@yourgpt/core";
 import type { LLMAdapter, ChatCompletionRequest } from "../adapters";
@@ -24,6 +28,7 @@ export class Runtime {
   private adapter: LLMAdapter;
   private config: RuntimeConfig;
   private actions: Map<string, ActionDefinition> = new Map();
+  private tools: Map<string, ToolDefinition> = new Map();
   private knowledgeBase: KnowledgeBaseConfig | null = null;
 
   constructor(config: RuntimeConfig) {
@@ -36,10 +41,17 @@ export class Runtime {
       this.adapter = this.createAdapter(config);
     }
 
-    // Register actions
+    // Register actions (legacy)
     if (config.actions) {
       for (const action of config.actions) {
         this.actions.set(action.name, action);
+      }
+    }
+
+    // Register tools (new)
+    if (config.tools) {
+      for (const tool of config.tools) {
+        this.tools.set(tool.name, tool);
       }
     }
 
@@ -267,8 +279,15 @@ export class Runtime {
       // Create abort controller from request signal
       const signal = request.signal;
 
+      // Use agent loop if tools are present or explicitly enabled
+      const hasTools =
+        (body.tools && body.tools.length > 0) || this.tools.size > 0;
+      const useAgentLoop = hasTools || this.config.agentLoop?.enabled;
+
       // Process chat and return SSE response
-      const generator = this.processChat(body, signal);
+      const generator = useAgentLoop
+        ? this.processChatWithLoop(body, signal)
+        : this.processChat(body, signal);
       return createSSEResponse(generator);
     } catch (error) {
       console.error("[YourGPT Runtime] Error:", error);
@@ -304,6 +323,269 @@ export class Runtime {
    */
   unregisterAction(name: string): void {
     this.actions.delete(name);
+  }
+
+  /**
+   * Register a new tool
+   */
+  registerTool(tool: ToolDefinition): void {
+    this.tools.set(tool.name, tool);
+  }
+
+  /**
+   * Unregister a tool
+   */
+  unregisterTool(name: string): void {
+    this.tools.delete(name);
+  }
+
+  /**
+   * Get registered tools
+   */
+  getTools(): ToolDefinition[] {
+    return [...this.tools.values()];
+  }
+
+  /**
+   * Get the AI provider from config
+   */
+  private getProvider(): AIProvider {
+    if ("llm" in this.config && this.config.llm) {
+      return this.config.llm.provider as AIProvider;
+    }
+    // Default to openai if using custom adapter
+    return "openai";
+  }
+
+  /**
+   * Process a chat request with tool support (Vercel AI SDK pattern)
+   *
+   * This method:
+   * 1. Streams response from adapter
+   * 2. Detects tool calls from streaming events
+   * 3. If tool calls detected, yields tool_calls event and returns
+   * 4. Client executes tools and sends new request with results
+   * 5. NO server-side looping - client controls the loop
+   */
+  async *processChatWithLoop(
+    request: ChatRequest,
+    signal?: AbortSignal,
+  ): AsyncGenerator<StreamEvent> {
+    const debug = this.config.debug || this.config.agentLoop?.debug;
+
+    // Collect all tools (server + client from request)
+    const allTools: ToolDefinition[] = [...this.tools.values()];
+
+    // Add client tools from request
+    if (request.tools) {
+      for (const tool of request.tools) {
+        allTools.push({
+          name: tool.name,
+          description: tool.description,
+          location: "client",
+          inputSchema: tool.inputSchema as ToolDefinition["inputSchema"],
+        });
+      }
+    }
+
+    if (debug) {
+      console.log(
+        `[YourGPT Runtime] Processing chat with ${allTools.length} tools`,
+      );
+    }
+
+    // Accumulate data from stream
+    let accumulatedText = "";
+    const toolCalls: ToolCallInfo[] = [];
+    let currentToolCall: { id: string; name: string; args: string } | null =
+      null;
+
+    // Create completion request
+    // Use rawMessages if provided (when client sends tool results in messages)
+    const completionRequest: ChatCompletionRequest = {
+      messages: [], // Not used when rawMessages is provided
+      rawMessages: request.messages as Array<Record<string, unknown>>,
+      actions: this.convertToolsToActions(allTools),
+      systemPrompt: request.systemPrompt || this.config.systemPrompt,
+      config: request.config,
+      signal,
+    };
+
+    // Stream from adapter
+    const stream = this.adapter.stream(completionRequest);
+
+    // Process stream events
+    for await (const event of stream) {
+      switch (event.type) {
+        case "message:start":
+        case "message:end":
+          yield event; // Forward to client
+          break;
+
+        case "message:delta":
+          accumulatedText += event.content;
+          yield event; // Forward text to client
+          break;
+
+        case "action:start":
+          currentToolCall = { id: event.id, name: event.name, args: "" };
+          if (debug) {
+            console.log(`[YourGPT Runtime] Tool call started: ${event.name}`);
+          }
+          yield event; // Forward to client
+          break;
+
+        case "action:args":
+          if (currentToolCall) {
+            try {
+              const parsedArgs = JSON.parse(event.args || "{}");
+              if (debug) {
+                console.log(
+                  `[YourGPT Runtime] Tool args for ${currentToolCall.name}:`,
+                  parsedArgs,
+                );
+              }
+              toolCalls.push({
+                id: currentToolCall.id,
+                name: currentToolCall.name,
+                args: parsedArgs,
+              });
+            } catch (e) {
+              console.error(
+                "[YourGPT Runtime] Failed to parse tool args:",
+                event.args,
+                e,
+              );
+              toolCalls.push({
+                id: currentToolCall.id,
+                name: currentToolCall.name,
+                args: {},
+              });
+            }
+            currentToolCall = null;
+          }
+          yield event; // Forward to client
+          break;
+
+        case "error":
+          yield event;
+          return; // Exit on error
+
+        case "done":
+          // Don't yield done yet - we need to check for tool calls first
+          break;
+
+        default:
+          yield event;
+      }
+    }
+
+    // Check if we got tool calls
+    if (toolCalls.length > 0) {
+      if (debug) {
+        console.log(
+          `[YourGPT Runtime] Detected ${toolCalls.length} tool calls:`,
+          toolCalls.map((t) => t.name),
+        );
+      }
+
+      // Build assistant message with tool_calls for client to include in next request
+      const assistantMessage: AssistantToolMessage = {
+        role: "assistant",
+        content: accumulatedText || null,
+        tool_calls: toolCalls.map((tc) => ({
+          id: tc.id,
+          type: "function" as const,
+          function: {
+            name: tc.name,
+            arguments: JSON.stringify(tc.args),
+          },
+        })),
+      };
+
+      // Yield tool_calls event (Vercel AI SDK pattern)
+      yield {
+        type: "tool_calls",
+        toolCalls,
+        assistantMessage,
+      } as StreamEvent;
+
+      // Signal that client needs to execute tools and send results
+      yield { type: "done", requiresAction: true } as StreamEvent;
+      return;
+    }
+
+    // No tool calls - we're done
+    if (debug) {
+      console.log(`[YourGPT Runtime] No tool calls, stream complete`);
+    }
+    yield { type: "done" } as StreamEvent;
+  }
+
+  /**
+   * Convert tools to legacy action format (for adapter compatibility)
+   */
+  private convertToolsToActions(tools: ToolDefinition[]): ActionDefinition[] {
+    return tools.map((tool) => ({
+      name: tool.name,
+      description: tool.description,
+      parameters: this.convertInputSchemaToParameters(tool.inputSchema),
+      handler: tool.handler || (async () => ({ handled: false })),
+    }));
+  }
+
+  /**
+   * Convert JSON Schema to legacy parameters format
+   */
+  private convertInputSchemaToParameters(
+    schema: ToolDefinition["inputSchema"],
+  ): Record<
+    string,
+    {
+      type: "string" | "number" | "boolean" | "object" | "array";
+      description?: string;
+      required?: boolean;
+      enum?: string[];
+    }
+  > {
+    const parameters: Record<
+      string,
+      {
+        type: "string" | "number" | "boolean" | "object" | "array";
+        description?: string;
+        required?: boolean;
+        enum?: string[];
+      }
+    > = {};
+
+    for (const [name, prop] of Object.entries(schema.properties)) {
+      // Use type assertion to handle JSONSchemaProperty
+      const p = prop as unknown as {
+        type?: string;
+        description?: string;
+        enum?: string[];
+      };
+
+      // Map JSON Schema type to ParameterType
+      type ParamType = "string" | "number" | "boolean" | "object" | "array";
+      const typeMap: Record<string, ParamType> = {
+        string: "string",
+        number: "number",
+        integer: "number",
+        boolean: "boolean",
+        object: "object",
+        array: "array",
+      };
+
+      parameters[name] = {
+        type: typeMap[p.type || "string"] || "string",
+        description: p.description,
+        required: schema.required?.includes(name),
+        enum: p.enum,
+      };
+    }
+
+    return parameters;
   }
 }
 

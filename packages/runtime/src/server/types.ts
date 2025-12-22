@@ -2,6 +2,8 @@ import type {
   LLMConfig,
   ActionDefinition,
   KnowledgeBaseConfig,
+  ToolDefinition,
+  AgentLoopConfig,
 } from "@yourgpt/core";
 import type { LLMAdapter } from "../adapters";
 
@@ -15,8 +17,12 @@ export interface RuntimeConfigWithLLM {
   adapter?: LLMAdapter;
   /** System prompt */
   systemPrompt?: string;
-  /** Available actions */
+  /** Available actions (legacy) */
   actions?: ActionDefinition[];
+  /** Available tools (new - supports location: server/client) */
+  tools?: ToolDefinition[];
+  /** Agent loop configuration */
+  agentLoop?: AgentLoopConfig;
   /** Knowledge base configuration (enables search_knowledge tool) */
   knowledgeBase?: KnowledgeBaseConfig;
   /** Enable debug logging */
@@ -33,8 +39,12 @@ export interface RuntimeConfigWithAdapter {
   llm?: LLMConfig & { apiKey: string };
   /** System prompt */
   systemPrompt?: string;
-  /** Available actions */
+  /** Available actions (legacy) */
   actions?: ActionDefinition[];
+  /** Available tools (new - supports location: server/client) */
+  tools?: ToolDefinition[];
+  /** Agent loop configuration */
+  agentLoop?: AgentLoopConfig;
   /** Knowledge base configuration (enables search_knowledge tool) */
   knowledgeBase?: KnowledgeBaseConfig;
   /** Enable debug logging */
@@ -63,12 +73,24 @@ export interface ChatRequest {
   config?: Partial<LLMConfig>;
   /** System prompt override */
   systemPrompt?: string;
-  /** Actions from client */
+  /** Actions from client (legacy) */
   actions?: Array<{
     name: string;
     description: string;
     parameters?: Record<string, unknown>;
   }>;
+  /** Tools from client (location is always "client" for tools from request) */
+  tools?: Array<{
+    name: string;
+    description: string;
+    inputSchema: {
+      type: "object";
+      properties: Record<string, unknown>;
+      required?: string[];
+    };
+  }>;
+  /** Enable agentic loop mode */
+  useAgentLoop?: boolean;
 }
 
 /**

@@ -44,7 +44,27 @@ export class OpenAIAdapter implements LLMAdapter {
   async *stream(request: ChatCompletionRequest): AsyncGenerator<StreamEvent> {
     const client = await this.getClient();
 
-    const messages = formatMessages(request.messages, request.systemPrompt);
+    // Use raw messages if provided (for agent loop with tool calls), otherwise format from Message[]
+    let messages: Array<Record<string, unknown>>;
+    if (request.rawMessages && request.rawMessages.length > 0) {
+      // Add system prompt at the start if provided and not already present
+      if (request.systemPrompt) {
+        const hasSystem = request.rawMessages.some((m) => m.role === "system");
+        if (!hasSystem) {
+          messages = [
+            { role: "system", content: request.systemPrompt },
+            ...request.rawMessages,
+          ];
+        } else {
+          messages = request.rawMessages;
+        }
+      } else {
+        messages = request.rawMessages;
+      }
+    } else {
+      messages = formatMessages(request.messages, request.systemPrompt);
+    }
+
     const tools = request.actions?.length
       ? formatTools(request.actions)
       : undefined;

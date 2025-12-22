@@ -96,6 +96,13 @@ export type {
   ActionStartEvent,
   ActionArgsEvent,
   ActionEndEvent,
+  ToolCallsEvent,
+  ToolCallInfo,
+  AssistantToolMessage,
+  ToolStatusEvent,
+  ToolResultEvent,
+  LoopIterationEvent,
+  LoopCompleteEvent,
   ErrorEvent,
   DoneEvent,
   // Knowledge Base types
@@ -109,6 +116,21 @@ export type {
   ThreadData,
   PersistenceConfig,
   ThreadStorageAdapter,
+  // Tool types (Agentic Loop)
+  AIProvider,
+  ToolLocation,
+  JSONSchemaProperty,
+  ToolInputSchema,
+  ToolContext,
+  ToolResponse,
+  ToolRenderProps,
+  ToolDefinition,
+  UnifiedToolCall,
+  UnifiedToolResult,
+  ToolExecutionStatus,
+  ToolExecution,
+  AgentLoopConfig,
+  AgentLoopState,
 } from "./types";
 
 // Thread title generation
@@ -123,6 +145,12 @@ export {
   formatSSE,
   getDefaultModel,
   DEFAULT_MODELS,
+  // Tool functions
+  toolToOpenAIFormat,
+  toolToAnthropicFormat,
+  createToolResult,
+  success,
+  failure,
 } from "./types";
 
 // Utils
@@ -134,6 +162,12 @@ export {
   generateMessageId,
   generateThreadId,
   generateToolCallId,
+  // Zod utilities
+  zodToJsonSchema,
+  zodObjectToInputSchema,
+  defineTool,
+  defineClientTool,
+  defineServerTool,
 } from "./utils";
 
 // System Prompt

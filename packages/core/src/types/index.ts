@@ -4,3 +4,4 @@ export * from "./actions";
 export * from "./events";
 export * from "./knowledge";
 export * from "./thread";
+export * from "./tools";

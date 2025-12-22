@@ -21,6 +21,11 @@ import type {
   Thread,
   ThreadData,
   PersistenceConfig,
+  ToolDefinition,
+  ToolExecution,
+  ToolResponse,
+  ToolCallInfo,
+  AssistantToolMessage,
 } from "@yourgpt/core";
 import { generateThreadTitle } from "@yourgpt/core";
 import {
@@ -41,11 +46,19 @@ import {
   formatRequestsForAI,
 } from "@yourgpt/core";
 import {
+  addNode,
+  removeNode,
+  printTree,
+  type ContextTreeNode,
+} from "../utils/context-tree";
+import {
   YourGPTContext,
   initialChatState,
   initialToolsState,
+  initialAgentLoopState,
   type ChatState,
   type ToolsState,
+  type AgentLoopState,
   type YourGPTContextValue,
 } from "../context/YourGPTContext";
 import {
@@ -181,6 +194,67 @@ function toolsReducer(state: ToolsState, action: ToolsAction): ToolsState {
       return { ...state, lastContext: action.payload };
     case "SET_CAPTURING":
       return { ...state, isCapturing: action.payload };
+    default:
+      return state;
+  }
+}
+
+/**
+ * Agent loop state reducer actions
+ */
+type AgentLoopAction =
+  | { type: "ADD_EXECUTION"; payload: ToolExecution }
+  | {
+      type: "UPDATE_EXECUTION";
+      payload: { id: string; update: Partial<ToolExecution> };
+    }
+  | {
+      type: "SET_ITERATION";
+      payload: { iteration: number; maxIterations: number };
+    }
+  | { type: "SET_MAX_ITERATIONS_REACHED"; payload: boolean }
+  | { type: "CLEAR_EXECUTIONS" };
+
+/**
+ * Agent loop state reducer
+ */
+function agentLoopReducer(
+  state: AgentLoopState,
+  action: AgentLoopAction,
+): AgentLoopState {
+  switch (action.type) {
+    case "ADD_EXECUTION":
+      return {
+        ...state,
+        toolExecutions: [...state.toolExecutions, action.payload],
+      };
+    case "UPDATE_EXECUTION":
+      return {
+        ...state,
+        toolExecutions: state.toolExecutions.map((exec) =>
+          exec.id === action.payload.id
+            ? { ...exec, ...action.payload.update }
+            : exec,
+        ),
+      };
+    case "SET_ITERATION":
+      return {
+        ...state,
+        iteration: action.payload.iteration,
+        maxIterations: action.payload.maxIterations,
+      };
+    case "SET_MAX_ITERATIONS_REACHED":
+      return {
+        ...state,
+        maxIterationsReached: action.payload,
+      };
+    case "CLEAR_EXECUTIONS":
+      return {
+        ...state,
+        toolExecutions: [],
+        iteration: 0,
+        maxIterationsReached: false,
+      };
     default:
       return state;
   }
@@ -425,6 +499,10 @@ export function YourGPTProvider({
   children,
 }: YourGPTProviderProps) {
   // Check if user has premium features
+  // TODO: [Cloud Integration] Validate API key against YourGPT cloud
+  // to get enabled features, plan details, and usage limits.
+  // Current: Simple prefix check (client-side only)
+  // Future: Server validation with feature flags response
   const isPremium = Boolean(yourgptApiKey?.startsWith("ygpt_"));
 
   // Generate initial thread ID
@@ -522,12 +600,35 @@ export function YourGPTProvider({
     ),
   });
 
+  // Agent loop state (for agentic tool executions)
+  const [agentLoopState, agentLoopDispatch] = useReducer(
+    agentLoopReducer,
+    initialAgentLoopState,
+  );
+
+  // Registered tools (agentic loop)
+  const registeredToolsRef = useRef<Map<string, ToolDefinition>>(new Map());
+  const [registeredToolsVersion, setRegisteredToolsVersion] = React.useState(0);
+
   // Registered actions
   const actionsRef = useRef<Map<string, ActionDefinition>>(new Map());
   const [actionsVersion, setActionsVersion] = React.useState(0);
 
   // Abort controller for stopping generation
   const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Client-side tool loop state (Vercel AI SDK pattern)
+  const pendingToolCallsRef = useRef<ToolCallInfo[]>([]);
+  const pendingAssistantMessageRef = useRef<AssistantToolMessage | null>(null);
+  const currentAssistantMessageIdRef = useRef<string | null>(null);
+
+  // Ref to store handleStreamEvent for use in executeToolsAndContinue
+  const handleStreamEventRef = useRef<
+    ((event: StreamEvent, messageId: string) => Promise<void>) | null
+  >(null);
+
+  // Ref to track added execution IDs (to prevent duplicates during async state updates)
+  const addedExecutionIdsRef = useRef<Set<string>>(new Set());
 
   // Consent resolver for async flow
   const consentResolverRef = useRef<((approved: ToolType[]) => void) | null>(
@@ -537,23 +638,42 @@ export function YourGPTProvider({
   // Remembered consent for session
   const rememberedConsentRef = useRef<Set<ToolType>>(new Set());
 
-  // Context management for useAIContext
-  const contextsRef = useRef<Map<string, string>>(new Map());
-  const [contextsVersion, setContextsVersion] = React.useState(0);
+  // Context management for useAIContext (tree-based for hierarchical contexts)
+  const [contextTree, setContextTree] = React.useState<ContextTreeNode[]>([]);
 
-  // Add context (returns context ID)
-  const addContext = useCallback((context: string): string => {
-    const id = `ctx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    contextsRef.current.set(id, context);
-    setContextsVersion((v) => v + 1);
-    return id;
-  }, []);
+  // Add context (returns context ID) - supports optional parentId for nesting
+  const addContext = useCallback(
+    (context: string, parentId?: string): string => {
+      const id = `ctx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      setContextTree((prev) =>
+        addNode(prev, { id, value: context, children: [] }, parentId),
+      );
+      return id;
+    },
+    [],
+  );
 
   // Remove context by ID
   const removeContext = useCallback((id: string): void => {
-    contextsRef.current.delete(id);
-    setContextsVersion((v) => v + 1);
+    setContextTree((prev) => removeNode(prev, id));
   }, []);
+
+  // Default system prompt when none is provided
+  const DEFAULT_SYSTEM_PROMPT =
+    "You are a helpful AI copilot. Use the available tools to assist users. Be concise and helpful.";
+
+  // Build system prompt with contexts
+  const buildSystemPromptWithContexts = useCallback((): string => {
+    const basePrompt = systemPrompt || DEFAULT_SYSTEM_PROMPT;
+    const contextString = printTree(contextTree);
+
+    if (!contextString) {
+      return basePrompt;
+    }
+
+    // Wrap context in code block for better AI understanding
+    return `${basePrompt}\n\nThe user has provided you with the following context:\n\`\`\`\n${contextString}\n\`\`\``;
+  }, [systemPrompt, contextTree]);
 
   // Start console/network capture on mount if enabled
   useEffect(() => {
@@ -594,6 +714,62 @@ export function YourGPTProvider({
     }
     return runtimeUrl || "/api/chat";
   }, [cloud, runtimeUrl]);
+
+  // Build request headers (consolidates duplicate header building)
+  const buildRequestHeaders = useCallback((): Record<string, string> => {
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    if (cloud?.apiKey) {
+      headers["Authorization"] = `Bearer ${cloud.apiKey}`;
+    } else if (config?.apiKey) {
+      headers["X-API-Key"] = config.apiKey;
+    }
+    return headers;
+  }, [cloud?.apiKey, config?.apiKey]);
+
+  // Build request body (consolidates duplicate body building)
+  const buildRequestBody = useCallback(
+    (
+      messages: Message[],
+      options?: { includeAttachments?: boolean },
+    ): Record<string, unknown> => {
+      return {
+        messages: messages.map((m) => {
+          const msg: Record<string, unknown> = {
+            role: m.role,
+            content: m.content,
+          };
+          if (options?.includeAttachments && m.attachments) {
+            msg.attachments = m.attachments;
+          }
+          // Preserve tool_calls and tool_call_id for tool results
+          const extendedMsg = m as unknown as Record<string, unknown>;
+          if (extendedMsg.tool_calls) msg.tool_calls = extendedMsg.tool_calls;
+          if (extendedMsg.tool_call_id)
+            msg.tool_call_id = extendedMsg.tool_call_id;
+          return msg;
+        }),
+        threadId: chatState.threadId,
+        botId: cloud?.botId,
+        config: config,
+        systemPrompt: buildSystemPromptWithContexts(),
+        actions: Array.from(actionsRef.current.values()).map((a) => ({
+          name: a.name,
+          description: a.description,
+          parameters: a.parameters,
+        })),
+        tools: Array.from(registeredToolsRef.current.values())
+          .filter((t) => t.available !== false)
+          .map((t) => ({
+            name: t.name,
+            description: t.description,
+            inputSchema: t.inputSchema,
+          })),
+      };
+    },
+    [chatState.threadId, cloud?.botId, config, buildSystemPromptWithContexts],
+  );
 
   // Capture context based on approved tools
   const captureContext = useCallback(
@@ -805,36 +981,14 @@ export function YourGPTProvider({
       abortControllerRef.current = new AbortController();
 
       try {
-        const endpoint = getEndpoint();
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-
-        if (cloud?.apiKey) {
-          headers["Authorization"] = `Bearer ${cloud.apiKey}`;
-        } else if (config?.apiKey) {
-          headers["X-API-Key"] = config.apiKey;
-        }
-
-        const response = await fetch(endpoint, {
+        const response = await fetch(getEndpoint(), {
           method: "POST",
-          headers,
-          body: JSON.stringify({
-            messages: [...chatState.messages, userMessage].map((m) => ({
-              role: m.role,
-              content: m.content,
-              attachments: m.attachments,
-            })),
-            threadId: chatState.threadId,
-            botId: cloud?.botId,
-            config: config,
-            systemPrompt,
-            actions: Array.from(actionsRef.current.values()).map((a) => ({
-              name: a.name,
-              description: a.description,
-              parameters: a.parameters,
-            })),
-          }),
+          headers: buildRequestHeaders(),
+          body: JSON.stringify(
+            buildRequestBody([...chatState.messages, userMessage], {
+              includeAttachments: true,
+            }),
+          ),
           signal: abortControllerRef.current.signal,
         });
 
@@ -866,13 +1020,220 @@ export function YourGPTProvider({
       getEndpoint,
       systemPrompt,
       formatContextForAI,
+      buildRequestBody,
+      buildRequestHeaders,
     ],
   );
 
   // Send message (with automatic intent detection)
+  /**
+   * Execute pending tool calls and continue the conversation (Vercel AI SDK pattern)
+   * This creates a client-side loop that executes tools and sends follow-up requests
+   */
+  const executeToolsAndContinue = useCallback(
+    async (previousMessages: Message[], assistantMessageId: string) => {
+      const toolCalls = pendingToolCallsRef.current;
+      const assistantMessage = pendingAssistantMessageRef.current;
+
+      if (toolCalls.length === 0) return;
+
+      // Execute all pending tool calls
+      const toolResults: Array<{ id: string; result: ToolResponse }> = [];
+
+      for (const tc of toolCalls) {
+        // Update status to executing
+        agentLoopDispatch({
+          type: "UPDATE_EXECUTION",
+          payload: {
+            id: tc.id,
+            update: { status: "executing" },
+          },
+        });
+
+        const tool = registeredToolsRef.current.get(tc.name);
+        let result: ToolResponse;
+
+        if (tool?.handler) {
+          try {
+            result = await tool.handler(tc.args);
+            agentLoopDispatch({
+              type: "UPDATE_EXECUTION",
+              payload: {
+                id: tc.id,
+                update: { status: "completed", result },
+              },
+            });
+          } catch (error) {
+            result = {
+              success: false,
+              error:
+                error instanceof Error
+                  ? error.message
+                  : "Tool execution failed",
+            };
+            agentLoopDispatch({
+              type: "UPDATE_EXECUTION",
+              payload: {
+                id: tc.id,
+                update: { status: "error", error: result.error },
+              },
+            });
+          }
+        } else {
+          result = {
+            success: false,
+            error: `Tool "${tc.name}" not found on client`,
+          };
+          agentLoopDispatch({
+            type: "UPDATE_EXECUTION",
+            payload: {
+              id: tc.id,
+              update: { status: "error", error: result.error },
+            },
+          });
+        }
+
+        toolResults.push({ id: tc.id, result });
+      }
+
+      // Clear pending tool calls (will be repopulated if server sends more)
+      pendingToolCallsRef.current = [];
+      pendingAssistantMessageRef.current = null;
+
+      // Build messages with tool results for next request
+      // Include: previous messages (excluding the streaming assistant message) + assistant message with tool_calls + tool result messages
+      // We exclude the last assistant message from previousMessages because it was added during streaming
+      // and doesn't have tool_calls. The proper assistant message (with tool_calls) comes from the server.
+      const messagesWithResults: Array<Record<string, unknown>> = [
+        ...previousMessages
+          .filter((m, i) => {
+            // Exclude the last message if it's an assistant message (it will be replaced by assistantMessage with tool_calls)
+            if (i === previousMessages.length - 1 && m.role === "assistant") {
+              return false;
+            }
+            return true;
+          })
+          .map((m) => {
+            // Preserve the full message structure including tool_calls and tool_call_id
+            const msg: Record<string, unknown> = {
+              role: m.role,
+              content: m.content,
+            };
+            // Preserve tool_calls if present (for assistant messages)
+            const extendedMsg = m as unknown as Record<string, unknown>;
+            if (extendedMsg.tool_calls) {
+              msg.tool_calls = extendedMsg.tool_calls;
+            }
+            // Preserve tool_call_id if present (for tool messages)
+            if (extendedMsg.tool_call_id) {
+              msg.tool_call_id = extendedMsg.tool_call_id;
+            }
+            return msg;
+          }),
+      ];
+
+      // Add assistant message with tool_calls (from server)
+      if (assistantMessage) {
+        messagesWithResults.push(
+          assistantMessage as unknown as Record<string, unknown>,
+        );
+      }
+
+      // Add tool result messages (OpenAI format)
+      for (const { id, result } of toolResults) {
+        messagesWithResults.push({
+          role: "tool",
+          tool_call_id: id,
+          content: JSON.stringify(result),
+        });
+      }
+
+      // Send follow-up request to server
+      try {
+        const response = await fetch(getEndpoint(), {
+          method: "POST",
+          headers: buildRequestHeaders(),
+          body: JSON.stringify({
+            messages: messagesWithResults,
+            threadId: chatState.threadId,
+            botId: cloud?.botId,
+            config: config,
+            systemPrompt: buildSystemPromptWithContexts(),
+            actions: Array.from(actionsRef.current.values()).map((a) => ({
+              name: a.name,
+              description: a.description,
+              parameters: a.parameters,
+            })),
+            tools: Array.from(registeredToolsRef.current.values())
+              .filter((t) => t.available !== false)
+              .map((t) => ({
+                name: t.name,
+                description: t.description,
+                inputSchema: t.inputSchema,
+              })),
+          }),
+          signal: abortControllerRef.current?.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Process the response stream using the ref
+        const streamHandler = handleStreamEventRef.current;
+        if (streamHandler) {
+          for await (const event of streamSSE(response)) {
+            await streamHandler(event, assistantMessageId);
+          }
+        }
+
+        // If more tool calls were detected, continue the loop
+        // We need to preserve the full message structure including tool_calls
+        if (pendingToolCallsRef.current.length > 0) {
+          // Build updated messages preserving the full structure
+          // messagesWithResults already has the proper format with tool_calls
+          const updatedMessages: Message[] = messagesWithResults.map((m) => {
+            const msg: Message = {
+              id: generateMessageId(),
+              role: m.role as Message["role"],
+              content:
+                typeof m.content === "string"
+                  ? m.content
+                  : m.content === null
+                    ? ""
+                    : JSON.stringify(m.content),
+              createdAt: new Date(),
+            };
+            // Preserve tool_calls if present
+            if (m.tool_calls) {
+              (msg as unknown as Record<string, unknown>).tool_calls =
+                m.tool_calls;
+            }
+            // Preserve tool_call_id if present (for tool messages)
+            if (m.tool_call_id) {
+              (msg as unknown as Record<string, unknown>).tool_call_id =
+                m.tool_call_id;
+            }
+            return msg;
+          });
+          await executeToolsAndContinue(updatedMessages, assistantMessageId);
+        }
+      } catch (error) {
+        if ((error as Error).name !== "AbortError") {
+          throw error;
+        }
+      }
+    },
+    [chatState.threadId, cloud, config, getEndpoint, systemPrompt],
+  );
+
   const sendMessage = useCallback(
     async (content: string) => {
       if (!content.trim()) return;
+
+      // Clear previous tool executions and tracking ref
+      agentLoopDispatch({ type: "CLEAR_EXECUTIONS" });
+      addedExecutionIdsRef.current.clear();
 
       // Check if tools are enabled and detect intent
       if (toolsState.isEnabled && toolsConfig) {
@@ -934,35 +1295,12 @@ export function YourGPTProvider({
       abortControllerRef.current = new AbortController();
 
       try {
-        const endpoint = getEndpoint();
-        const headers: Record<string, string> = {
-          "Content-Type": "application/json",
-        };
-
-        if (cloud?.apiKey) {
-          headers["Authorization"] = `Bearer ${cloud.apiKey}`;
-        } else if (config?.apiKey) {
-          headers["X-API-Key"] = config.apiKey;
-        }
-
-        const response = await fetch(endpoint, {
+        const response = await fetch(getEndpoint(), {
           method: "POST",
-          headers,
-          body: JSON.stringify({
-            messages: [...chatState.messages, userMessage].map((m) => ({
-              role: m.role,
-              content: m.content,
-            })),
-            threadId: chatState.threadId,
-            botId: cloud?.botId,
-            config: config,
-            systemPrompt,
-            actions: Array.from(actionsRef.current.values()).map((a) => ({
-              name: a.name,
-              description: a.description,
-              parameters: a.parameters,
-            })),
-          }),
+          headers: buildRequestHeaders(),
+          body: JSON.stringify(
+            buildRequestBody([...chatState.messages, userMessage]),
+          ),
           signal: abortControllerRef.current.signal,
         });
 
@@ -970,8 +1308,19 @@ export function YourGPTProvider({
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
+        // Store current assistant message ID for tool execution
+        currentAssistantMessageIdRef.current = assistantMessage.id;
+
         for await (const event of streamSSE(response)) {
           handleStreamEvent(event, assistantMessage.id);
+        }
+
+        // After stream ends, check if we need to execute tools (Vercel AI SDK pattern)
+        if (pendingToolCallsRef.current.length > 0) {
+          await executeToolsAndContinue(
+            [...chatState.messages, userMessage],
+            assistantMessage.id,
+          );
         }
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
@@ -984,6 +1333,10 @@ export function YourGPTProvider({
       } finally {
         chatDispatch({ type: "SET_LOADING", payload: false });
         abortControllerRef.current = null;
+        // Clear pending state
+        pendingToolCallsRef.current = [];
+        pendingAssistantMessageRef.current = null;
+        currentAssistantMessageIdRef.current = null;
       }
     },
     [
@@ -998,12 +1351,14 @@ export function YourGPTProvider({
       config,
       getEndpoint,
       systemPrompt,
+      buildRequestBody,
+      buildRequestHeaders,
     ],
   );
 
   // Handle stream events
   const handleStreamEvent = useCallback(
-    (event: StreamEvent, messageId: string) => {
+    async (event: StreamEvent, messageId: string) => {
       switch (event.type) {
         case "message:delta":
           chatDispatch({
@@ -1036,14 +1391,110 @@ export function YourGPTProvider({
           break;
 
         case "action:start":
+          // Track tool execution start (only if not already added)
+          if (!addedExecutionIdsRef.current.has(event.id)) {
+            addedExecutionIdsRef.current.add(event.id);
+            agentLoopDispatch({
+              type: "ADD_EXECUTION",
+              payload: {
+                id: event.id,
+                name: event.name,
+                args: {},
+                status: "pending",
+                timestamp: Date.now(),
+              },
+            });
+          }
+          break;
+
+        case "action:args":
+          // Update tool execution with args
+          try {
+            const args = JSON.parse(event.args);
+            agentLoopDispatch({
+              type: "UPDATE_EXECUTION",
+              payload: {
+                id: event.id,
+                update: { args, status: "executing" },
+              },
+            });
+          } catch {
+            // Ignore parse errors
+          }
           break;
 
         case "action:end":
-          if (event.name) {
-            const action = actionsRef.current.get(event.name);
-            if (action?.handler && event.result) {
-              // Action was handled by runtime
+          // Tool execution completed
+          agentLoopDispatch({
+            type: "UPDATE_EXECUTION",
+            payload: {
+              id: event.id,
+              update: {
+                status: event.error ? "error" : "completed",
+                result: event.result as ToolResponse | undefined,
+                error: event.error,
+                duration:
+                  Date.now() -
+                  (agentLoopState.toolExecutions.find((e) => e.id === event.id)
+                    ?.timestamp || Date.now()),
+              },
+            },
+          });
+          break;
+
+        case "tool_calls":
+          // New: Vercel AI SDK pattern - server sends tool calls for client to execute
+          // Store the tool calls and assistant message for processing on "done" event
+          pendingToolCallsRef.current = event.toolCalls;
+          pendingAssistantMessageRef.current = event.assistantMessage;
+
+          // Update existing executions with parsed args or add if not present
+          // Use ref to check since React state might not have updated yet
+          for (const tc of event.toolCalls) {
+            if (addedExecutionIdsRef.current.has(tc.id)) {
+              // Already added by action:start, just update with parsed args
+              agentLoopDispatch({
+                type: "UPDATE_EXECUTION",
+                payload: {
+                  id: tc.id,
+                  update: { args: tc.args },
+                },
+              });
+            } else {
+              // Not yet added (edge case), add it now
+              addedExecutionIdsRef.current.add(tc.id);
+              agentLoopDispatch({
+                type: "ADD_EXECUTION",
+                payload: {
+                  id: tc.id,
+                  name: tc.name,
+                  args: tc.args,
+                  status: "pending",
+                  timestamp: Date.now(),
+                },
+              });
             }
+          }
+          break;
+
+        case "loop:iteration":
+          // Update loop iteration state
+          agentLoopDispatch({
+            type: "SET_ITERATION",
+            payload: {
+              iteration: event.iteration,
+              maxIterations: event.maxIterations,
+            },
+          });
+          break;
+
+        case "loop:complete":
+          // Loop completed
+          if (event.maxIterationsReached) {
+            agentLoopDispatch({
+              type: "SET_MAX_ITERATIONS_REACHED",
+              payload: true,
+            });
           }
           break;
 
@@ -1055,8 +1506,18 @@ export function YourGPTProvider({
           break;
       }
     },
-    [threadsState.activeThreadId],
+    [
+      threadsState.activeThreadId,
+      chatState.threadId,
+      getEndpoint,
+      agentLoopState.toolExecutions,
+    ],
   );
+
+  // Store handleStreamEvent in ref for use in executeToolsAndContinue
+  useEffect(() => {
+    handleStreamEventRef.current = handleStreamEvent;
+  }, [handleStreamEvent]);
 
   // Stop generation
   const stopGeneration = useCallback(() => {
@@ -1113,6 +1574,41 @@ export function YourGPTProvider({
   const unregisterAction = useCallback((name: string) => {
     actionsRef.current.delete(name);
     setActionsVersion((v) => v + 1);
+  }, []);
+
+  // ============================================
+  // Tool Registration Functions (Agentic Loop)
+  // ============================================
+
+  // Register a tool
+  const registerTool = useCallback((tool: ToolDefinition) => {
+    registeredToolsRef.current.set(tool.name, tool);
+    setRegisteredToolsVersion((v) => v + 1);
+  }, []);
+
+  // Unregister a tool
+  const unregisterTool = useCallback((name: string) => {
+    registeredToolsRef.current.delete(name);
+    setRegisteredToolsVersion((v) => v + 1);
+  }, []);
+
+  // Add a tool execution record
+  const addToolExecution = useCallback((execution: ToolExecution) => {
+    agentLoopDispatch({ type: "ADD_EXECUTION", payload: execution });
+  }, []);
+
+  // Update a tool execution record
+  const updateToolExecution = useCallback(
+    (id: string, update: Partial<ToolExecution>) => {
+      agentLoopDispatch({ type: "UPDATE_EXECUTION", payload: { id, update } });
+    },
+    [],
+  );
+
+  // Clear all tool executions
+  const clearToolExecutions = useCallback(() => {
+    agentLoopDispatch({ type: "CLEAR_EXECUTIONS" });
+    addedExecutionIdsRef.current.clear();
   }, []);
 
   // ============================================
@@ -1225,6 +1721,7 @@ export function YourGPTProvider({
       toolsConfig: toolsConfig || null,
       chat: chatState,
       tools: toolsState,
+      agentLoop: agentLoopState,
       actions: {
         sendMessage,
         sendMessageWithContext,
@@ -1244,9 +1741,16 @@ export function YourGPTProvider({
       registeredActions: Array.from(actionsRef.current.values()),
       registerAction,
       unregisterAction,
+      // Agentic loop tool registration
+      registeredTools: Array.from(registeredToolsRef.current.values()),
+      registerTool,
+      unregisterTool,
+      addToolExecution,
+      updateToolExecution,
+      clearToolExecutions,
       addContext,
       removeContext,
-      contexts: contextsRef.current,
+      contextTree,
       isPremium,
     }),
     [
@@ -1254,6 +1758,7 @@ export function YourGPTProvider({
       toolsConfig,
       chatState,
       toolsState,
+      agentLoopState,
       sendMessage,
       sendMessageWithContext,
       stopGeneration,
@@ -1267,9 +1772,15 @@ export function YourGPTProvider({
       registerAction,
       unregisterAction,
       actionsVersion,
+      registerTool,
+      unregisterTool,
+      registeredToolsVersion,
+      addToolExecution,
+      updateToolExecution,
+      clearToolExecutions,
       addContext,
       removeContext,
-      contextsVersion,
+      contextTree,
       isPremium,
     ],
   );

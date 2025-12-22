@@ -10,7 +10,11 @@ import type {
   ToolType,
   ToolConsentRequest,
   CapturedContext,
+  ToolDefinition,
+  ToolExecution,
+  ToolResponse,
 } from "@yourgpt/core";
+import type { ContextTreeNode } from "../utils/context-tree";
 
 /**
  * Chat state interface
@@ -29,7 +33,7 @@ export interface ChatState {
 }
 
 /**
- * Tools state interface
+ * Tools state interface (Smart Context tools)
  */
 export interface ToolsState {
   /** Whether tools are enabled */
@@ -40,6 +44,20 @@ export interface ToolsState {
   lastContext: CapturedContext | null;
   /** Currently capturing */
   isCapturing: boolean;
+}
+
+/**
+ * Agent loop state interface (Agentic tools)
+ */
+export interface AgentLoopState {
+  /** Current tool executions */
+  toolExecutions: ToolExecution[];
+  /** Current loop iteration */
+  iteration: number;
+  /** Maximum iterations */
+  maxIterations: number;
+  /** Whether max iterations was reached */
+  maxIterationsReached: boolean;
 }
 
 /**
@@ -87,24 +105,38 @@ export interface YourGPTContextValue {
   toolsConfig: ToolsConfig | null;
   /** Chat state */
   chat: ChatState;
-  /** Tools state */
+  /** Tools state (Smart Context) */
   tools: ToolsState;
+  /** Agent loop state (Agentic tools) */
+  agentLoop: AgentLoopState;
   /** Chat actions */
   actions: ChatActions;
   /** Tools actions */
   toolsActions: ToolsActions;
-  /** Registered actions/tools */
+  /** Registered actions/tools (legacy) */
   registeredActions: ActionDefinition[];
-  /** Register an action */
+  /** Register an action (legacy) */
   registerAction: (action: ActionDefinition) => void;
-  /** Unregister an action */
+  /** Unregister an action (legacy) */
   unregisterAction: (name: string) => void;
+  /** Registered tools (Agentic) */
+  registeredTools: ToolDefinition[];
+  /** Register a tool */
+  registerTool: (tool: ToolDefinition) => void;
+  /** Unregister a tool */
+  unregisterTool: (name: string) => void;
+  /** Add a tool execution record */
+  addToolExecution?: (execution: ToolExecution) => void;
+  /** Update a tool execution record */
+  updateToolExecution?: (id: string, update: Partial<ToolExecution>) => void;
+  /** Clear all tool executions */
+  clearToolExecutions?: () => void;
   /** Add context for AI (returns context ID) */
-  addContext: (context: string) => string;
+  addContext: (context: string, parentId?: string) => string;
   /** Remove context by ID */
   removeContext: (id: string) => void;
-  /** Get all contexts */
-  contexts: Map<string, string>;
+  /** Get all contexts as tree */
+  contextTree: ContextTreeNode[];
   /** Whether user has YourGPT API key (premium) */
   isPremium: boolean;
 }
@@ -128,6 +160,16 @@ export const initialToolsState: ToolsState = {
   pendingConsent: null,
   lastContext: null,
   isCapturing: false,
+};
+
+/**
+ * Initial agent loop state
+ */
+export const initialAgentLoopState: AgentLoopState = {
+  toolExecutions: [],
+  iteration: 0,
+  maxIterations: 20,
+  maxIterationsReached: false,
 };
 
 /**

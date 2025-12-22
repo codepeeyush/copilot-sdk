@@ -6,5 +6,22 @@ export {
   type ChatProps,
   type ChatMessage,
 } from "./chat";
-export { ConnectedChat, type ConnectedChatProps } from "./connected-chat";
+export {
+  CopilotChat,
+  ConnectedChat,
+  type CopilotChatProps,
+  type ConnectedChatProps,
+} from "./connected-chat";
 export { PoweredBy, type PoweredByProps } from "./powered-by";
+
+// Tool execution components
+export {
+  ToolExecutionList,
+  LoopProgress,
+  LoopProgressBadge,
+  type ToolExecutionListProps,
+  type ToolExecutionData,
+  type ToolExecutionStatus,
+  type LoopProgressProps,
+  type LoopProgressBadgeProps,
+} from "./tools";

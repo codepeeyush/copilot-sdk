@@ -1,4 +1,5 @@
 import type { Source } from "./message";
+import type { ToolResponse, ToolExecutionStatus } from "./tools";
 
 /**
  * Stream event types
@@ -11,6 +12,11 @@ export type StreamEventType =
   | "action:start"
   | "action:args"
   | "action:end"
+  | "tool_calls"
+  | "tool:status"
+  | "tool:result"
+  | "loop:iteration"
+  | "loop:complete"
   | "error"
   | "done";
 
@@ -108,6 +114,106 @@ export interface ErrorEvent extends BaseEvent {
  */
 export interface DoneEvent extends BaseEvent {
   type: "done";
+  /**
+   * True when client needs to execute tools and send results in next request
+   * (Vercel AI SDK pattern)
+   */
+  requiresAction?: boolean;
+}
+
+// ============================================
+// Tool/Loop Events (Agentic Loop)
+// ============================================
+
+/**
+ * Tool call information for client execution
+ */
+export interface ToolCallInfo {
+  /** Unique tool call ID */
+  id: string;
+  /** Tool name */
+  name: string;
+  /** Tool arguments (parsed JSON) */
+  args: Record<string, unknown>;
+}
+
+/**
+ * Assistant message with tool calls (for including in next request)
+ */
+export interface AssistantToolMessage {
+  role: "assistant";
+  content: string | null;
+  tool_calls: Array<{
+    id: string;
+    type: "function";
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+}
+
+/**
+ * Server detected tool calls - client should execute and send results in next request
+ * (Vercel AI SDK pattern - replaces tool:execute)
+ */
+export interface ToolCallsEvent extends BaseEvent {
+  type: "tool_calls";
+  /** Tool calls to execute */
+  toolCalls: ToolCallInfo[];
+  /**
+   * Assistant message to include in next request's messages
+   * This preserves the tool_calls structure for the LLM
+   */
+  assistantMessage: AssistantToolMessage;
+}
+
+/**
+ * Tool execution status update
+ */
+export interface ToolStatusEvent extends BaseEvent {
+  type: "tool:status";
+  /** Tool call ID */
+  id: string;
+  /** Execution status */
+  status: ToolExecutionStatus;
+}
+
+/**
+ * Tool result received (from client or server)
+ */
+export interface ToolResultEvent extends BaseEvent {
+  type: "tool:result";
+  /** Tool call ID */
+  id: string;
+  /** Tool name */
+  name: string;
+  /** Tool result */
+  result: ToolResponse;
+}
+
+/**
+ * Loop iteration progress
+ */
+export interface LoopIterationEvent extends BaseEvent {
+  type: "loop:iteration";
+  /** Current iteration number (1-based) */
+  iteration: number;
+  /** Maximum iterations allowed */
+  maxIterations: number;
+}
+
+/**
+ * Loop completed
+ */
+export interface LoopCompleteEvent extends BaseEvent {
+  type: "loop:complete";
+  /** Total iterations executed */
+  iterations: number;
+  /** Whether loop was aborted by user */
+  aborted?: boolean;
+  /** Whether max iterations was reached */
+  maxIterationsReached?: boolean;
 }
 
 /**
@@ -121,6 +227,11 @@ export type StreamEvent =
   | ActionStartEvent
   | ActionArgsEvent
   | ActionEndEvent
+  | ToolCallsEvent
+  | ToolStatusEvent
+  | ToolResultEvent
+  | LoopIterationEvent
+  | LoopCompleteEvent
   | ErrorEvent
   | DoneEvent;
 

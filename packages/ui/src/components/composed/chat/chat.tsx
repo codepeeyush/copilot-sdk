@@ -21,6 +21,8 @@ import { StopIcon, PlusIcon, ArrowUpIcon } from "../../icons";
 import { ChatHeader } from "./chat-header";
 import { Suggestions } from "./suggestions";
 import { DefaultMessage } from "./default-message";
+import { ToolExecutionList } from "../tools/tool-execution-list";
+import { LoopProgressBadge } from "../tools/loop-progress";
 import type { ChatProps } from "./types";
 
 export function Chat({
@@ -46,6 +48,12 @@ export function Chat({
   // Suggestions
   suggestions = [],
   onSuggestionClick,
+  // Tool Executions
+  toolExecutions = [],
+  showToolExecutions = false,
+  loopIteration,
+  loopMaxIterations,
+  loopRunning = false,
   // Custom rendering
   renderMessage,
   renderInput,
@@ -148,6 +156,30 @@ export function Chat({
             );
           })}
 
+          {/* Tool Executions */}
+          {showToolExecutions && toolExecutions.length > 0 && (
+            <div className={cn("mt-2", classNames.toolExecutions)}>
+              {/* Loop progress badge */}
+              {loopIteration !== undefined &&
+                loopMaxIterations !== undefined && (
+                  <div className={cn("mb-2", classNames.loopProgress)}>
+                    <LoopProgressBadge
+                      iteration={loopIteration}
+                      maxIterations={loopMaxIterations}
+                      isRunning={loopRunning}
+                      maxReached={loopIteration >= loopMaxIterations}
+                    />
+                  </div>
+                )}
+
+              <ToolExecutionList
+                executions={toolExecutions}
+                title=""
+                emptyMessage=""
+              />
+            </div>
+          )}
+
           <ChatContainerScrollAnchor />
         </ChatContainerContent>
 
@@ -198,7 +230,7 @@ export function Chat({
                 </PromptInputAction>
               </div>
               <PromptInputAction tooltip={isLoading ? "Stop" : "Send"}>
-                {true ? (
+                {isLoading ? (
                   <Button
                     size="sm"
                     variant="destructive"

@@ -11,6 +11,12 @@ import type {
 export interface ChatCompletionRequest {
   /** Conversation messages */
   messages: Message[];
+  /**
+   * Raw provider-formatted messages (for agent loop with tool calls)
+   * When provided, these are used instead of converting from Message[]
+   * This allows passing messages with tool_calls and tool role
+   */
+  rawMessages?: Array<Record<string, unknown>>;
   /** Available actions/tools */
   actions?: ActionDefinition[];
   /** System prompt */
