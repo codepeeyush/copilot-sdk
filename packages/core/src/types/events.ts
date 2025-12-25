@@ -140,6 +140,23 @@ export interface ErrorEvent extends BaseEvent {
 }
 
 /**
+ * Message format for done event (API format with snake_case)
+ */
+export interface DoneEventMessage {
+  role: "assistant" | "tool";
+  content: string | null;
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
+  tool_call_id?: string;
+}
+
+/**
  * Stream completed
  */
 export interface DoneEvent extends BaseEvent {
@@ -149,6 +166,11 @@ export interface DoneEvent extends BaseEvent {
    * (Vercel AI SDK pattern)
    */
   requiresAction?: boolean;
+  /**
+   * All new messages created during this request (for client to append to state)
+   * This includes: assistant messages with tool_calls, tool result messages, final response
+   */
+  messages?: DoneEventMessage[];
 }
 
 // ============================================

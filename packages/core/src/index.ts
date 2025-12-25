@@ -106,6 +106,7 @@ export type {
   LoopCompleteEvent,
   ErrorEvent,
   DoneEvent,
+  DoneEventMessage,
   // Knowledge Base types (generic)
   KnowledgeBaseProvider,
   KnowledgeBaseConfig,

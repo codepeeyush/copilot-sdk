@@ -309,6 +309,22 @@ type ThreadsAction =
   | {
       type: "SET_MESSAGES_IN_THREAD";
       payload: { threadId: string; messages: Message[] };
+    }
+  | {
+      type: "REPLACE_STREAMING_WITH_MESSAGES";
+      payload: {
+        threadId: string;
+        streamingMessageId: string;
+        messages: Message[];
+      };
+    }
+  | {
+      type: "SET_TOOL_EXECUTIONS_IN_THREAD";
+      payload: {
+        threadId: string;
+        messageId: string;
+        toolExecutions: ToolExecution[];
+      };
     };
 
 /**
@@ -551,6 +567,55 @@ function threadsReducer(
         threads.set(action.payload.threadId, {
           ...thread,
           messages: action.payload.messages,
+          updatedAt: new Date(),
+        });
+      }
+      return { ...state, threads };
+    }
+
+    case "REPLACE_STREAMING_WITH_MESSAGES": {
+      // Replace the streaming assistant message with server-returned messages
+      // This handles server-side tool execution where we need to add:
+      // - Assistant messages with tool_calls
+      // - Tool result messages
+      // - Final assistant response
+      const threads = new Map(state.threads);
+      const thread = threads.get(action.payload.threadId);
+      if (thread) {
+        // Remove the streaming message and append server-returned messages
+        const filteredMessages = thread.messages.filter(
+          (msg) => msg.id !== action.payload.streamingMessageId,
+        );
+        threads.set(action.payload.threadId, {
+          ...thread,
+          messages: [...filteredMessages, ...action.payload.messages],
+          updatedAt: new Date(),
+        });
+      }
+      return { ...state, threads };
+    }
+
+    case "SET_TOOL_EXECUTIONS_IN_THREAD": {
+      // Store tool executions directly on a message so they persist
+      // after new messages are sent (toolExecutions stored in agentLoopState
+      // get cleared on each new sendMessage, so we need to save them here)
+      const threads = new Map(state.threads);
+      const thread = threads.get(action.payload.threadId);
+      if (thread) {
+        threads.set(action.payload.threadId, {
+          ...thread,
+          messages: thread.messages.map((msg) =>
+            msg.id === action.payload.messageId
+              ? {
+                  ...msg,
+                  // Store as metadata since Message type doesn't have toolExecutions
+                  metadata: {
+                    ...msg.metadata,
+                    toolExecutions: action.payload.toolExecutions,
+                  },
+                }
+              : msg,
+          ),
           updatedAt: new Date(),
         });
       }
@@ -1778,31 +1843,9 @@ export function YourGPTProvider({
 
       // Create user message with screenshots (for both UI and server)
       let screenshotUserMessage: Message | null = null;
-      let responseMessageId = assistantMessageId; // Default to original assistant message
 
+      // Add screenshot user message if we have screenshot attachments
       if (screenshotAttachments.length > 0) {
-        // Check if the original assistant message has empty content (only had tool_calls)
-        // If so, remove it to avoid showing an empty bubble in the UI
-        const originalAssistantMsg = currentMessages.find(
-          (m) => m.id === assistantMessageId,
-        );
-        if (originalAssistantMsg && !originalAssistantMsg.content?.trim()) {
-          if (currentThreadId) {
-            threadsDispatch({
-              type: "REMOVE_MESSAGE_FROM_THREAD",
-              payload: {
-                threadId: currentThreadId,
-                messageId: assistantMessageId,
-              },
-            });
-          }
-          console.log(
-            "[YourGPT] Removed empty assistant message:",
-            assistantMessageId,
-          );
-        }
-
-        // 1. Add screenshot user message
         screenshotUserMessage = createMessage({
           role: "user",
           content: "Here's my screen:",
@@ -1821,32 +1864,38 @@ export function YourGPTProvider({
           "[YourGPT] Added screenshot as user message:",
           screenshotUserMessage.id,
         );
-
-        // 2. Create NEW assistant message for the response (appears AFTER screenshot)
-        responseMessageId = generateMessageId();
-        const newAssistantMessage: Message = {
-          id: responseMessageId,
-          role: "assistant",
-          content: "",
-          createdAt: new Date(),
-        };
-        if (currentThreadId) {
-          threadsDispatch({
-            type: "ADD_MESSAGE_TO_THREAD",
-            payload: {
-              threadId: currentThreadId,
-              message: newAssistantMessage,
-            },
-          });
-        }
-        console.log(
-          "[YourGPT] Created new assistant message for response:",
-          responseMessageId,
-        );
-
-        // Wait for React to commit the state before streaming response
-        await new Promise((resolve) => setTimeout(resolve, 0));
       }
+
+      // CRITICAL FIX: ALWAYS create a NEW assistant message for EACH follow-up response.
+      // This prevents tool_calls from different responses being merged into the same message.
+      // Previously, we only created a new message for screenshot flows, causing:
+      // - Multiple tool_calls to overwrite each other on the same message
+      // - Message history corruption when sequential tools are called
+      // NOTE: The original assistant message (with tool_calls) stays in the thread
+      // for API history. OpenAI requires it to be followed by tool result messages.
+      const responseMessageId = generateMessageId();
+      const newAssistantMessage: Message = {
+        id: responseMessageId,
+        role: "assistant",
+        content: "",
+        createdAt: new Date(),
+      };
+      if (currentThreadId) {
+        threadsDispatch({
+          type: "ADD_MESSAGE_TO_THREAD",
+          payload: {
+            threadId: currentThreadId,
+            message: newAssistantMessage,
+          },
+        });
+      }
+      console.log(
+        "[YourGPT] Created new assistant message for follow-up response:",
+        responseMessageId,
+      );
+
+      // Wait for React to commit the state before streaming response
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       // Build messages with tool results for next request
       // Include: previous messages (excluding the streaming assistant message) + assistant message with tool_calls + tool result messages
@@ -1867,9 +1916,29 @@ export function YourGPTProvider({
               role: m.role,
               content: m.content,
             };
-            // Preserve tool_calls if present (for assistant messages)
+            // Preserve toolCalls (camelCase from Message type) - convert to snake_case for API
+            if (m.toolCalls && m.toolCalls.length > 0) {
+              msg.tool_calls = m.toolCalls.map((tc) => {
+                const tcArgs =
+                  tc.arguments ||
+                  (tc as unknown as { args: Record<string, unknown> }).args ||
+                  {};
+                return {
+                  id: tc.id,
+                  type: "function",
+                  function: {
+                    name: tc.name,
+                    arguments:
+                      typeof tcArgs === "string"
+                        ? tcArgs
+                        : JSON.stringify(tcArgs),
+                  },
+                };
+              });
+            }
+            // Also check for snake_case tool_calls (from raw messages)
             const extendedMsg = m as unknown as Record<string, unknown>;
-            if (extendedMsg.tool_calls) {
+            if (extendedMsg.tool_calls && !msg.tool_calls) {
               msg.tool_calls = extendedMsg.tool_calls;
             }
             // Preserve tool_call_id if present (for tool messages)
@@ -2020,6 +2089,48 @@ export function YourGPTProvider({
   const sendMessage = useCallback(
     async (content: string) => {
       if (!content.trim()) return;
+
+      // IMPORTANT: Save current tool executions to their respective messages BEFORE clearing
+      // This ensures tool execution UI persists on historical messages
+      // We map each execution to the assistant message that contains its toolCall ID
+      const currentExecutions = agentLoopStateRef.current.toolExecutions;
+      if (currentExecutions.length > 0 && threadsState.activeThreadId) {
+        const thread = threadsState.threads.get(threadsState.activeThreadId);
+        if (thread && thread.messages.length > 0) {
+          // Group executions by which assistant message they belong to
+          // (match execution.id with toolCalls[].id in each message)
+          const executionsByMessageId = new Map<string, ToolExecution[]>();
+
+          for (const execution of currentExecutions) {
+            // Find the assistant message that has this tool call
+            for (const msg of thread.messages) {
+              if (msg.role === "assistant" && msg.toolCalls) {
+                const hasToolCall = msg.toolCalls.some(
+                  (tc) => tc.id === execution.id,
+                );
+                if (hasToolCall) {
+                  const existing = executionsByMessageId.get(msg.id) || [];
+                  existing.push(execution);
+                  executionsByMessageId.set(msg.id, existing);
+                  break;
+                }
+              }
+            }
+          }
+
+          // Save executions to each respective message
+          for (const [messageId, executions] of executionsByMessageId) {
+            threadsDispatch({
+              type: "SET_TOOL_EXECUTIONS_IN_THREAD",
+              payload: {
+                threadId: threadsState.activeThreadId,
+                messageId,
+                toolExecutions: executions,
+              },
+            });
+          }
+        }
+      }
 
       // Clear previous tool executions and tracking ref
       agentLoopDispatch({ type: "CLEAR_EXECUTIONS" });
@@ -2330,6 +2441,46 @@ export function YourGPTProvider({
             type: "SET_ERROR",
             payload: new Error(event.message),
           });
+          break;
+
+        case "done":
+          // If server returned messages (from server-side tool execution),
+          // replace the streaming assistant message with the proper message chain
+          if (event.messages && event.messages.length > 0) {
+            // Convert server messages (snake_case) to client Message format (camelCase)
+            const clientMessages: Message[] = event.messages.map((m) => {
+              const msg: Message = {
+                id: generateMessageId(),
+                role: m.role as Message["role"],
+                content: m.content || "",
+                createdAt: new Date(),
+              };
+              // Convert tool_calls to toolCalls
+              if (m.tool_calls && m.tool_calls.length > 0) {
+                msg.toolCalls = m.tool_calls.map((tc) => ({
+                  id: tc.id,
+                  name: tc.function.name,
+                  arguments: JSON.parse(tc.function.arguments || "{}"),
+                }));
+              }
+              // Preserve tool_call_id for tool messages
+              if (m.tool_call_id) {
+                (msg as unknown as Record<string, unknown>).tool_call_id =
+                  m.tool_call_id;
+              }
+              return msg;
+            });
+
+            // Replace the streaming message with server-returned messages
+            threadsDispatch({
+              type: "REPLACE_STREAMING_WITH_MESSAGES",
+              payload: {
+                threadId: threadsState.activeThreadId,
+                streamingMessageId: messageId,
+                messages: clientMessages,
+              },
+            });
+          }
           break;
       }
     },

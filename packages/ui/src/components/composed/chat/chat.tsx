@@ -155,13 +155,22 @@ export function Chat({
               }
             }
 
-            // Attach toolExecutions to the last assistant message for approval/display UI
-            const messageWithExecutions =
+            // Get tool executions for this message:
+            // 1. For the last message, use the global toolExecutions (real-time during execution)
+            // 2. For historical messages, use saved executions from message (metadata.toolExecutions)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const savedExecutions = (message as any).metadata
+              ?.toolExecutions as typeof toolExecutions | undefined;
+            const messageToolExecutions =
               message.role === "assistant" &&
               isLastMessage &&
               toolExecutions.length > 0
-                ? { ...message, toolExecutions }
-                : message;
+                ? toolExecutions // Real-time executions for current message
+                : savedExecutions || message.toolExecutions; // Saved or inline executions for historical
+
+            const messageWithExecutions = messageToolExecutions
+              ? { ...message, toolExecutions: messageToolExecutions }
+              : message;
 
             return renderMessage ? (
               <React.Fragment key={message.id}>

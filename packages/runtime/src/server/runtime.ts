@@ -8,6 +8,7 @@ import type {
   AIProvider,
   ToolCallInfo,
   AssistantToolMessage,
+  DoneEventMessage,
 } from "@yourgpt/core";
 import { createMessage } from "@yourgpt/core";
 import type { LLMAdapter, ChatCompletionRequest } from "../adapters";
@@ -373,11 +374,17 @@ export class Runtime {
    * 3. Server-side tools are executed immediately
    * 4. Client-side tool calls are yielded for client to execute
    * 5. Loop continues until no more tool calls or max iterations reached
+   * 6. Returns all new messages in the done event for client to append
    */
   async *processChatWithLoop(
     request: ChatRequest,
     signal?: AbortSignal,
+    // Internal: accumulated messages from recursive calls (for returning in done event)
+    _accumulatedMessages?: DoneEventMessage[],
+    _isRecursive?: boolean,
   ): AsyncGenerator<StreamEvent> {
+    // Track new messages created during this request
+    const newMessages: DoneEventMessage[] = _accumulatedMessages || [];
     const debug = this.config.debug || this.config.agentLoop?.debug;
     const maxIterations = this.config.agentLoop?.maxIterations || 20;
 
@@ -642,28 +649,38 @@ export class Runtime {
           );
         }
 
-        // Build messages with tool results for next LLM call
+        // Create assistant message with tool_calls
+        const assistantWithToolCalls: DoneEventMessage = {
+          role: "assistant",
+          content: accumulatedText || null,
+          tool_calls: serverToolCalls.map((tc) => ({
+            id: tc.id,
+            type: "function" as const,
+            function: {
+              name: tc.name,
+              arguments: JSON.stringify(tc.args),
+            },
+          })),
+        };
+
+        // Create tool result messages
+        const toolResultMessages: DoneEventMessage[] = serverToolResults.map(
+          (tr) => ({
+            role: "tool" as const,
+            content: JSON.stringify(tr.result),
+            tool_call_id: tr.id,
+          }),
+        );
+
+        // Add to accumulated messages for client
+        newMessages.push(assistantWithToolCalls);
+        newMessages.push(...toolResultMessages);
+
+        // Build messages for next LLM call (cast DoneEventMessage to Record for request)
         const messagesWithResults: Array<Record<string, unknown>> = [
           ...(request.messages as Array<Record<string, unknown>>),
-          // Add assistant message with tool_calls
-          {
-            role: "assistant",
-            content: accumulatedText || null,
-            tool_calls: serverToolCalls.map((tc) => ({
-              id: tc.id,
-              type: "function",
-              function: {
-                name: tc.name,
-                arguments: JSON.stringify(tc.args),
-              },
-            })),
-          },
-          // Add tool results
-          ...serverToolResults.map((tr) => ({
-            role: "tool",
-            tool_call_id: tr.id,
-            content: JSON.stringify(tr.result),
-          })),
+          assistantWithToolCalls as unknown as Record<string, unknown>,
+          ...(toolResultMessages as unknown as Array<Record<string, unknown>>),
         ];
 
         // Make recursive call with updated messages
@@ -672,10 +689,12 @@ export class Runtime {
           messages: messagesWithResults as ChatRequest["messages"],
         };
 
-        // Continue the agent loop
+        // Continue the agent loop - pass accumulated messages
         for await (const event of this.processChatWithLoop(
           nextRequest,
           signal,
+          newMessages,
+          true, // Mark as recursive
         )) {
           yield event;
         }
@@ -698,6 +717,9 @@ export class Runtime {
           })),
         };
 
+        // Add to accumulated messages (cast to DoneEventMessage since structure matches)
+        newMessages.push(assistantMessage as DoneEventMessage);
+
         // Yield tool_calls event (Vercel AI SDK pattern)
         yield {
           type: "tool_calls",
@@ -706,16 +728,35 @@ export class Runtime {
         } as StreamEvent;
 
         // Signal that client needs to execute tools and send results
-        yield { type: "done", requiresAction: true } as StreamEvent;
+        // Include accumulated messages so client can update state
+        yield {
+          type: "done",
+          requiresAction: true,
+          messages: newMessages,
+        } as StreamEvent;
         return;
       }
     }
 
-    // No tool calls - we're done
-    if (debug) {
-      console.log(`[YourGPT Runtime] No tool calls, stream complete`);
+    // No tool calls - add final assistant message and we're done
+    if (accumulatedText) {
+      newMessages.push({
+        role: "assistant" as const,
+        content: accumulatedText,
+      });
     }
-    yield { type: "done" } as StreamEvent;
+
+    if (debug) {
+      console.log(
+        `[YourGPT Runtime] Stream complete, returning ${newMessages.length} new messages`,
+      );
+    }
+
+    // Return all accumulated messages for client to append
+    yield {
+      type: "done",
+      messages: newMessages.length > 0 ? newMessages : undefined,
+    } as StreamEvent;
   }
 
   /**
