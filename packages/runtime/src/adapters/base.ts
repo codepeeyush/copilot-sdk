@@ -29,6 +29,20 @@ export interface ChatCompletionRequest {
 }
 
 /**
+ * Non-streaming completion result
+ */
+export interface CompletionResult {
+  /** Text content */
+  content: string;
+  /** Tool calls */
+  toolCalls: Array<{ id: string; name: string; args: Record<string, unknown> }>;
+  /** Thinking content (if extended thinking enabled) */
+  thinking?: string;
+  /** Raw provider response for debugging */
+  rawResponse: Record<string, unknown>;
+}
+
+/**
  * Base LLM adapter interface
  */
 export interface LLMAdapter {
@@ -44,9 +58,9 @@ export interface LLMAdapter {
   stream(request: ChatCompletionRequest): AsyncGenerator<StreamEvent>;
 
   /**
-   * Non-streaming chat completion
+   * Non-streaming chat completion (for debugging/comparison)
    */
-  complete?(request: ChatCompletionRequest): Promise<Message>;
+  complete?(request: ChatCompletionRequest): Promise<CompletionResult>;
 }
 
 /**
@@ -55,7 +69,7 @@ export interface LLMAdapter {
 export type AdapterFactory = (config: LLMConfig) => LLMAdapter;
 
 /**
- * Convert messages to provider format
+ * Convert messages to provider format (simple text only)
  */
 export function formatMessages(
   messages: Message[],
@@ -72,7 +86,7 @@ export function formatMessages(
   for (const msg of messages) {
     formatted.push({
       role: msg.role,
-      content: msg.content,
+      content: msg.content ?? "",
     });
   }
 
@@ -201,9 +215,11 @@ export type OpenAIContentBlock =
 
 /**
  * Check if a message has image attachments
+ * Supports both new format (metadata.attachments) and legacy (attachments)
  */
 export function hasImageAttachments(message: Message): boolean {
-  return message.attachments?.some((a) => a.type === "image") ?? false;
+  const attachments = message.metadata?.attachments;
+  return attachments?.some((a) => a.type === "image") ?? false;
 }
 
 /**
@@ -281,17 +297,20 @@ export function attachmentToOpenAIImage(
 export function messageToAnthropicContent(
   message: Message,
 ): string | AnthropicContentBlock[] {
+  const attachments = message.metadata?.attachments;
+  const content = message.content ?? "";
+
   // If no image attachments, return simple string
   if (!hasImageAttachments(message)) {
-    return message.content;
+    return content;
   }
 
   // Build content blocks array
   const blocks: AnthropicContentBlock[] = [];
 
   // Add image attachments first (Claude recommends images before text)
-  if (message.attachments) {
-    for (const attachment of message.attachments) {
+  if (attachments) {
+    for (const attachment of attachments) {
       const imageBlock = attachmentToAnthropicImage(attachment);
       if (imageBlock) {
         blocks.push(imageBlock);
@@ -300,8 +319,8 @@ export function messageToAnthropicContent(
   }
 
   // Add text content
-  if (message.content) {
-    blocks.push({ type: "text", text: message.content });
+  if (content) {
+    blocks.push({ type: "text", text: content });
   }
 
   return blocks;
@@ -313,22 +332,25 @@ export function messageToAnthropicContent(
 export function messageToOpenAIContent(
   message: Message,
 ): string | OpenAIContentBlock[] {
+  const attachments = message.metadata?.attachments;
+  const content = message.content ?? "";
+
   // If no image attachments, return simple string
   if (!hasImageAttachments(message)) {
-    return message.content;
+    return content;
   }
 
   // Build content blocks array
   const blocks: OpenAIContentBlock[] = [];
 
   // Add text content first
-  if (message.content) {
-    blocks.push({ type: "text", text: message.content });
+  if (content) {
+    blocks.push({ type: "text", text: content });
   }
 
   // Add image attachments
-  if (message.attachments) {
-    for (const attachment of message.attachments) {
+  if (attachments) {
+    for (const attachment of attachments) {
       const imageBlock = attachmentToOpenAIImage(attachment);
       if (imageBlock) {
         blocks.push(imageBlock);
@@ -340,27 +362,117 @@ export function messageToOpenAIContent(
 }
 
 /**
- * Format messages for Anthropic with multimodal support
+ * Anthropic content block types (extended for tools)
+ */
+export type AnthropicToolUseBlock = {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+};
+
+export type AnthropicToolResultBlock = {
+  type: "tool_result";
+  tool_use_id: string;
+  content: string;
+};
+
+export type AnthropicMessageContent =
+  | string
+  | Array<
+      AnthropicContentBlock | AnthropicToolUseBlock | AnthropicToolResultBlock
+    >;
+
+/**
+ * Format messages for Anthropic with full tool support
+ * Handles: text, images, tool_use, and tool_result
+ *
+ * Key differences from OpenAI:
+ * - tool_calls become tool_use blocks in assistant content
+ * - tool results become tool_result blocks in user content
  */
 export function formatMessagesForAnthropic(
   messages: Message[],
   systemPrompt?: string,
 ): {
   system: string;
-  messages: Array<{ role: string; content: string | AnthropicContentBlock[] }>;
+  messages: Array<{
+    role: "user" | "assistant";
+    content: AnthropicMessageContent;
+  }>;
 } {
   const formatted: Array<{
-    role: string;
-    content: string | AnthropicContentBlock[];
+    role: "user" | "assistant";
+    content: AnthropicMessageContent;
   }> = [];
 
-  for (const msg of messages) {
+  for (let i = 0; i < messages.length; i++) {
+    const msg = messages[i];
+
     if (msg.role === "system") continue; // System handled separately
 
-    formatted.push({
-      role: msg.role === "assistant" ? "assistant" : "user",
-      content: messageToAnthropicContent(msg),
-    });
+    if (msg.role === "assistant") {
+      // Build content array for assistant
+      const content: Array<AnthropicContentBlock | AnthropicToolUseBlock> = [];
+
+      // Add text content if present
+      if (msg.content) {
+        content.push({ type: "text", text: msg.content });
+      }
+
+      // Convert tool_calls to tool_use blocks
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        for (const tc of msg.tool_calls) {
+          content.push({
+            type: "tool_use",
+            id: tc.id,
+            name: tc.function.name,
+            input: JSON.parse(tc.function.arguments),
+          });
+        }
+      }
+
+      formatted.push({
+        role: "assistant",
+        content:
+          content.length === 1 && content[0].type === "text"
+            ? (content[0] as { type: "text"; text: string }).text
+            : content,
+      });
+    } else if (msg.role === "tool" && msg.tool_call_id) {
+      // Tool results go in user message as tool_result blocks
+      // Group consecutive tool messages together
+      const toolResults: AnthropicToolResultBlock[] = [
+        {
+          type: "tool_result",
+          tool_use_id: msg.tool_call_id,
+          content: msg.content ?? "",
+        },
+      ];
+
+      // Look ahead for more consecutive tool messages
+      while (i + 1 < messages.length && messages[i + 1].role === "tool") {
+        i++;
+        const nextTool = messages[i];
+        if (nextTool.tool_call_id) {
+          toolResults.push({
+            type: "tool_result",
+            tool_use_id: nextTool.tool_call_id,
+            content: nextTool.content ?? "",
+          });
+        }
+      }
+
+      formatted.push({
+        role: "user",
+        content: toolResults,
+      });
+    } else if (msg.role === "user") {
+      formatted.push({
+        role: "user",
+        content: messageToAnthropicContent(msg),
+      });
+    }
   }
 
   return {
@@ -370,16 +482,31 @@ export function formatMessagesForAnthropic(
 }
 
 /**
- * Format messages for OpenAI with multimodal support
+ * OpenAI message format with tool support
+ */
+export type OpenAIMessage =
+  | { role: "system"; content: string }
+  | { role: "user"; content: string | OpenAIContentBlock[] }
+  | {
+      role: "assistant";
+      content: string | null;
+      tool_calls?: Array<{
+        id: string;
+        type: "function";
+        function: { name: string; arguments: string };
+      }>;
+    }
+  | { role: "tool"; content: string; tool_call_id: string };
+
+/**
+ * Format messages for OpenAI with full tool support
+ * Handles: text, images, tool_calls, and tool results
  */
 export function formatMessagesForOpenAI(
   messages: Message[],
   systemPrompt?: string,
-): Array<{ role: string; content: string | OpenAIContentBlock[] }> {
-  const formatted: Array<{
-    role: string;
-    content: string | OpenAIContentBlock[];
-  }> = [];
+): OpenAIMessage[] {
+  const formatted: OpenAIMessage[] = [];
 
   // Add system prompt if provided
   if (systemPrompt) {
@@ -387,10 +514,30 @@ export function formatMessagesForOpenAI(
   }
 
   for (const msg of messages) {
-    formatted.push({
-      role: msg.role,
-      content: messageToOpenAIContent(msg),
-    });
+    if (msg.role === "system") {
+      formatted.push({ role: "system", content: msg.content ?? "" });
+    } else if (msg.role === "user") {
+      formatted.push({
+        role: "user",
+        content: messageToOpenAIContent(msg),
+      });
+    } else if (msg.role === "assistant") {
+      const assistantMsg: OpenAIMessage = {
+        role: "assistant",
+        content: msg.content,
+      };
+      if (msg.tool_calls && msg.tool_calls.length > 0) {
+        (assistantMsg as { tool_calls: typeof msg.tool_calls }).tool_calls =
+          msg.tool_calls;
+      }
+      formatted.push(assistantMsg);
+    } else if (msg.role === "tool" && msg.tool_call_id) {
+      formatted.push({
+        role: "tool",
+        content: msg.content ?? "",
+        tool_call_id: msg.tool_call_id,
+      });
+    }
   }
 
   return formatted;

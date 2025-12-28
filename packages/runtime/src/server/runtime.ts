@@ -277,6 +277,14 @@ export class Runtime {
     try {
       const body = (await request.json()) as ChatRequest;
 
+      // Always log streaming flag for debugging
+      console.log(
+        "[YourGPT Runtime] Streaming flag:",
+        body.streaming,
+        "Type:",
+        typeof body.streaming,
+      );
+
       if (this.config.debug) {
         console.log(
           "[YourGPT Runtime] Request:",
@@ -292,7 +300,17 @@ export class Runtime {
         (body.tools && body.tools.length > 0) || this.tools.size > 0;
       const useAgentLoop = hasTools || this.config.agentLoop?.enabled;
 
-      // Process chat and return SSE response
+      // NON-STREAMING: Return JSON response instead of SSE
+      if (body.streaming === false) {
+        console.log("[YourGPT Runtime] Using non-streaming JSON response");
+        return this.handleNonStreamingRequest(
+          body,
+          signal,
+          useAgentLoop || false,
+        );
+      }
+
+      // STREAMING: Process chat and return SSE response
       const generator = useAgentLoop
         ? this.processChatWithLoop(body, signal)
         : this.processChat(body, signal);
@@ -303,6 +321,113 @@ export class Runtime {
       return new Response(
         JSON.stringify({
           error: error instanceof Error ? error.message : "Unknown error",
+        }),
+        {
+          status: 500,
+          headers: { "Content-Type": "application/json" },
+        },
+      );
+    }
+  }
+
+  /**
+   * Handle non-streaming request - returns JSON instead of SSE
+   */
+  private async handleNonStreamingRequest(
+    body: ChatRequest,
+    signal: AbortSignal | undefined,
+    useAgentLoop: boolean,
+  ): Promise<Response> {
+    try {
+      const generator = useAgentLoop
+        ? this.processChatWithLoop(body, signal)
+        : this.processChat(body, signal);
+
+      // Collect all events
+      const events: StreamEvent[] = [];
+      let content = "";
+      const toolCalls: ToolCallInfo[] = [];
+      const toolResults: Array<{ id: string; result: unknown }> = [];
+      let messages: DoneEventMessage[] | undefined;
+      let requiresAction = false;
+      let error: { message: string; code?: string } | undefined;
+
+      for await (const event of generator) {
+        events.push(event);
+
+        switch (event.type) {
+          case "message:delta":
+            content += event.content;
+            break;
+          case "action:start":
+            toolCalls.push({ id: event.id, name: event.name, args: {} });
+            break;
+          case "action:args":
+            const tc = toolCalls.find((t) => t.id === event.id);
+            if (tc) {
+              try {
+                tc.args = JSON.parse(event.args || "{}");
+              } catch {
+                tc.args = {};
+              }
+            }
+            break;
+          case "action:end":
+            toolResults.push({
+              id: event.id,
+              result: event.result || event.error,
+            });
+            break;
+          case "tool_calls":
+            // Client-side tool calls
+            break;
+          case "done":
+            messages = event.messages;
+            requiresAction = event.requiresAction || false;
+            break;
+          case "error":
+            error = { message: event.message, code: event.code };
+            break;
+        }
+      }
+
+      // Build JSON response
+      const response = {
+        success: !error,
+        content,
+        toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
+        toolResults: toolResults.length > 0 ? toolResults : undefined,
+        messages,
+        requiresAction,
+        error,
+        // Include raw events for debugging
+        _events: this.config.debug ? events : undefined,
+      };
+
+      console.log("[YourGPT Runtime] Non-streaming response:", {
+        contentLength: content.length,
+        toolCalls: toolCalls.length,
+        toolResults: toolResults.length,
+        messagesCount: messages?.length,
+        requiresAction,
+        hasError: !!error,
+      });
+
+      return new Response(JSON.stringify(response), {
+        status: error ? 500 : 200,
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        },
+      });
+    } catch (err) {
+      console.error("[YourGPT Runtime] Non-streaming error:", err);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: {
+            message: err instanceof Error ? err.message : "Unknown error",
+          },
         }),
         {
           status: 500,
@@ -383,9 +508,28 @@ export class Runtime {
     _accumulatedMessages?: DoneEventMessage[],
     _isRecursive?: boolean,
   ): AsyncGenerator<StreamEvent> {
+    const debug = this.config.debug || this.config.agentLoop?.debug;
+
+    // Check if non-streaming mode is requested
+    // Use non-streaming for better comparison with original studio-ai behavior
+    if (request.streaming === false) {
+      if (debug) {
+        console.log("[YourGPT Runtime] Using non-streaming mode");
+      }
+      // Delegate to non-streaming implementation
+      for await (const event of this.processChatWithLoopNonStreaming(
+        request,
+        signal,
+        _accumulatedMessages,
+        _isRecursive,
+      )) {
+        yield event;
+      }
+      return;
+    }
+
     // Track new messages created during this request
     const newMessages: DoneEventMessage[] = _accumulatedMessages || [];
-    const debug = this.config.debug || this.config.agentLoop?.debug;
     const maxIterations = this.config.agentLoop?.maxIterations || 20;
 
     // Collect all tools (server + client from request)
@@ -753,6 +897,362 @@ export class Runtime {
     }
 
     // Return all accumulated messages for client to append
+    yield {
+      type: "done",
+      messages: newMessages.length > 0 ? newMessages : undefined,
+    } as StreamEvent;
+  }
+
+  /**
+   * Non-streaming agent loop implementation
+   *
+   * Uses adapter.complete() instead of stream() for:
+   * - Better comparison with original studio-ai behavior
+   * - Easier debugging (full response at once)
+   * - More predictable retry behavior
+   */
+  private async *processChatWithLoopNonStreaming(
+    request: ChatRequest,
+    signal?: AbortSignal,
+    _accumulatedMessages?: DoneEventMessage[],
+    _isRecursive?: boolean,
+  ): AsyncGenerator<StreamEvent> {
+    const newMessages: DoneEventMessage[] = _accumulatedMessages || [];
+    const debug = this.config.debug || this.config.agentLoop?.debug;
+    const maxIterations = this.config.agentLoop?.maxIterations || 20;
+
+    // Collect all tools (server + client from request)
+    const allTools: ToolDefinition[] = [...this.tools.values()];
+
+    // Add YourGPT Knowledge Base tool if config provided
+    if (request.knowledgeBase) {
+      const kbConfig: YourGPTKBConfig = request.knowledgeBase;
+      allTools.push({
+        name: "search_knowledge",
+        description:
+          "Search the knowledge base for relevant information about the product, documentation, or company.",
+        location: "server",
+        inputSchema: {
+          type: "object",
+          properties: {
+            query: {
+              type: "string",
+              description: "The search query",
+            },
+          },
+          required: ["query"],
+        },
+        handler: async (params: Record<string, unknown>) => {
+          const query = params.query as string;
+          if (!query) {
+            return { success: false, error: "Query is required" };
+          }
+          const result = await searchKnowledgeBase(query, kbConfig);
+          if (!result.success) {
+            return { success: false, error: result.error };
+          }
+          return {
+            success: true,
+            message: formatKnowledgeResultsForAI(result.results),
+            data: { resultCount: result.results.length, total: result.total },
+          };
+        },
+      });
+    }
+
+    // Add client tools from request
+    if (request.tools) {
+      for (const tool of request.tools) {
+        allTools.push({
+          name: tool.name,
+          description: tool.description,
+          location: "client",
+          inputSchema: tool.inputSchema as ToolDefinition["inputSchema"],
+        });
+      }
+    }
+
+    // Build system prompt
+    let systemPrompt = request.systemPrompt || this.config.systemPrompt || "";
+    if (request.knowledgeBase) {
+      systemPrompt = `${systemPrompt}\n\n${KNOWLEDGE_BASE_SYSTEM_INSTRUCTION}`;
+    }
+
+    // Main agent loop
+    let iteration = 0;
+    let conversationMessages = request.messages as Array<
+      Record<string, unknown>
+    >;
+
+    while (iteration < maxIterations) {
+      iteration++;
+
+      if (debug) {
+        console.log(
+          `[YourGPT Runtime Non-Streaming] Iteration ${iteration}/${maxIterations}`,
+        );
+      }
+
+      // Check for abort
+      if (signal?.aborted) {
+        yield {
+          type: "error",
+          message: "Aborted",
+          code: "ABORTED",
+        } as StreamEvent;
+        return;
+      }
+
+      // Check if adapter supports non-streaming
+      if (!this.adapter.complete) {
+        if (debug) {
+          console.log(
+            "[YourGPT Runtime] Adapter does not support non-streaming, falling back to streaming",
+          );
+        }
+        // Fall back to streaming by delegating to the streaming implementation
+        // But set streaming to true to avoid infinite loop
+        const streamingRequest = { ...request, streaming: true };
+        for await (const event of this.processChatWithLoop(
+          streamingRequest,
+          signal,
+          _accumulatedMessages,
+          _isRecursive,
+        )) {
+          yield event;
+        }
+        return;
+      }
+
+      // Create completion request
+      const completionRequest: ChatCompletionRequest = {
+        messages: [],
+        rawMessages: conversationMessages,
+        actions: this.convertToolsToActions(allTools),
+        systemPrompt: systemPrompt,
+        config: request.config,
+        signal,
+      };
+
+      try {
+        // Call the non-streaming complete method
+        const result = await this.adapter.complete(completionRequest);
+
+        if (debug) {
+          console.log(
+            `[YourGPT Runtime Non-Streaming] Got response: ${result.content.length} chars, ${result.toolCalls.length} tool calls`,
+          );
+        }
+
+        // Emit message events (for SSE compatibility)
+        yield { type: "message:start", id: `msg_${Date.now()}` } as StreamEvent;
+        if (result.content) {
+          yield {
+            type: "message:delta",
+            content: result.content,
+          } as StreamEvent;
+        }
+        yield { type: "message:end" } as StreamEvent;
+
+        // Check for tool calls
+        if (result.toolCalls.length > 0) {
+          // Separate server and client tools
+          const serverToolCalls: Array<{
+            id: string;
+            name: string;
+            args: Record<string, unknown>;
+          }> = [];
+          const clientToolCalls: ToolCallInfo[] = [];
+
+          for (const tc of result.toolCalls) {
+            const tool = allTools.find((t) => t.name === tc.name);
+            if (tool?.location === "server" && tool.handler) {
+              serverToolCalls.push(tc);
+            } else {
+              clientToolCalls.push({
+                id: tc.id,
+                name: tc.name,
+                args: tc.args,
+              });
+            }
+          }
+
+          // Emit tool call events
+          for (const tc of result.toolCalls) {
+            yield {
+              type: "action:start",
+              id: tc.id,
+              name: tc.name,
+            } as StreamEvent;
+            yield {
+              type: "action:args",
+              id: tc.id,
+              args: JSON.stringify(tc.args),
+            } as StreamEvent;
+          }
+
+          // Execute server-side tools
+          const serverToolResults: Array<{
+            id: string;
+            name: string;
+            result: unknown;
+          }> = [];
+
+          for (const tc of serverToolCalls) {
+            const tool = allTools.find((t) => t.name === tc.name);
+            if (tool?.handler) {
+              if (debug) {
+                console.log(
+                  `[YourGPT Runtime Non-Streaming] Executing tool: ${tc.name}`,
+                );
+              }
+
+              try {
+                const toolResult = await tool.handler(tc.args);
+                serverToolResults.push({
+                  id: tc.id,
+                  name: tc.name,
+                  result: toolResult,
+                });
+                yield {
+                  type: "action:end",
+                  id: tc.id,
+                  result: toolResult,
+                } as StreamEvent;
+              } catch (error) {
+                const errorResult = {
+                  success: false,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : "Tool execution failed",
+                };
+                serverToolResults.push({
+                  id: tc.id,
+                  name: tc.name,
+                  result: errorResult,
+                });
+                yield {
+                  type: "action:end",
+                  id: tc.id,
+                  error:
+                    error instanceof Error
+                      ? error.message
+                      : "Tool execution failed",
+                } as StreamEvent;
+              }
+            }
+          }
+
+          // If server tools were executed, continue the loop
+          if (serverToolResults.length > 0) {
+            // Build assistant message with tool_calls
+            const assistantWithToolCalls: DoneEventMessage = {
+              role: "assistant",
+              content: result.content || null,
+              tool_calls: result.toolCalls.map((tc) => ({
+                id: tc.id,
+                type: "function" as const,
+                function: {
+                  name: tc.name,
+                  arguments: JSON.stringify(tc.args),
+                },
+              })),
+            };
+
+            // Build tool result messages
+            const toolResultMessages: DoneEventMessage[] =
+              serverToolResults.map((tr) => ({
+                role: "tool" as const,
+                content: JSON.stringify(tr.result),
+                tool_call_id: tr.id,
+              }));
+
+            // Add to accumulated messages
+            newMessages.push(assistantWithToolCalls);
+            newMessages.push(...toolResultMessages);
+
+            // Update conversation for next iteration
+            conversationMessages = [
+              ...conversationMessages,
+              assistantWithToolCalls as unknown as Record<string, unknown>,
+              ...(toolResultMessages as unknown as Array<
+                Record<string, unknown>
+              >),
+            ];
+
+            // Continue loop
+            continue;
+          }
+
+          // Client tools - yield for client to execute and return
+          if (clientToolCalls.length > 0) {
+            const assistantMessage: AssistantToolMessage = {
+              role: "assistant",
+              content: result.content || null,
+              tool_calls: clientToolCalls.map((tc) => ({
+                id: tc.id,
+                type: "function" as const,
+                function: {
+                  name: tc.name,
+                  arguments: JSON.stringify(tc.args),
+                },
+              })),
+            };
+
+            newMessages.push(assistantMessage as DoneEventMessage);
+
+            yield {
+              type: "tool_calls",
+              toolCalls: clientToolCalls,
+              assistantMessage,
+            } as StreamEvent;
+
+            yield {
+              type: "done",
+              requiresAction: true,
+              messages: newMessages,
+            } as StreamEvent;
+            return;
+          }
+        }
+
+        // No tool calls - we're done
+        if (result.content) {
+          newMessages.push({
+            role: "assistant" as const,
+            content: result.content,
+          });
+        }
+
+        if (debug) {
+          console.log(
+            `[YourGPT Runtime Non-Streaming] Complete after ${iteration} iterations`,
+          );
+        }
+
+        yield {
+          type: "done",
+          messages: newMessages.length > 0 ? newMessages : undefined,
+        } as StreamEvent;
+        return;
+      } catch (error) {
+        yield {
+          type: "error",
+          message: error instanceof Error ? error.message : "Unknown error",
+          code: "COMPLETION_ERROR",
+        } as StreamEvent;
+        return;
+      }
+    }
+
+    // Max iterations reached
+    if (debug) {
+      console.log(
+        `[YourGPT Runtime Non-Streaming] Max iterations (${maxIterations}) reached`,
+      );
+    }
+
     yield {
       type: "done",
       messages: newMessages.length > 0 ? newMessages : undefined,

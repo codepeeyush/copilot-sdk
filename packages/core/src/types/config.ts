@@ -31,6 +31,8 @@ export interface LLMConfig {
   frequencyPenalty?: number;
   /** Presence penalty */
   presencePenalty?: number;
+  /** Enable streaming responses (default: true) */
+  streaming?: boolean;
 }
 
 /**

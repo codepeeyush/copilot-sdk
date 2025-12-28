@@ -1,0 +1,312 @@
+---
+title: UI Components
+description: Drop-in chat UI or build your own
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+# UI Components
+
+Two options: use our ready-made components or build with primitives.
+
+---
+
+## CopilotChat
+
+The all-in-one chat component. Just drop it in.
+
+```tsx
+import { CopilotChat } from '@yourgpt/ui';
+
+<CopilotChat
+  title="AI Assistant"
+  placeholder="Ask me anything..."
+  welcomeMessage="Hey! How can I help you today?"
+  suggestions={[
+    "What can you do?",
+    "Help me with something",
+  ]}
+  className="h-[600px] rounded-xl border"
+/>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | `"Chat"` | Header title |
+| `placeholder` | `string` | `"Type a message..."` | Input placeholder |
+| `welcomeMessage` | `string` | - | Initial greeting |
+| `suggestions` | `string[]` | `[]` | Quick reply chips |
+| `showHeader` | `boolean` | `true` | Show/hide header |
+| `showFollowUps` | `boolean` | `true` | Show AI-generated follow-ups |
+| `className` | `string` | - | Container classes |
+
+---
+
+## DevLogger
+
+Debug panel for development. See the AI's thought process.
+
+```tsx
+import { DevLogger } from '@yourgpt/ui';
+import { useDevLogger } from '@yourgpt/react';
+
+function DebugMode() {
+  const state = useDevLogger();
+
+  if (process.env.NODE_ENV !== 'development') return null;
+
+  return <DevLogger state={state} position="bottom-left" />;
+}
+```
+
+Shows:
+- Message flow
+- Tool calls with inputs/outputs
+- Context being sent
+- Timing info
+
+---
+
+## Primitives
+
+Build your own UI with these building blocks.
+
+### Markdown
+
+Renders AI responses with syntax highlighting.
+
+```tsx
+import { Markdown } from '@yourgpt/ui';
+
+<Markdown content={message.content} />
+```
+
+### MessagePrimitive
+
+Styled message container.
+
+```tsx
+import { MessagePrimitive, MessageAvatar, MessageContent } from '@yourgpt/ui';
+
+<MessagePrimitive variant={msg.role}>
+  <MessageAvatar role={msg.role} />
+  <MessageContent>
+    <Markdown content={msg.content} />
+  </MessageContent>
+</MessagePrimitive>
+```
+
+### PromptInput
+
+The input area with actions.
+
+```tsx
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+  PromptInputAction,
+} from '@yourgpt/ui';
+import { SendIcon, StopIcon } from '@yourgpt/ui';
+
+<PromptInput onSubmit={sendMessage}>
+  <PromptInputTextarea placeholder="Type here..." />
+  <PromptInputActions>
+    {isLoading ? (
+      <PromptInputAction onClick={stopGeneration}>
+        <StopIcon />
+      </PromptInputAction>
+    ) : (
+      <PromptInputAction type="submit">
+        <SendIcon />
+      </PromptInputAction>
+    )}
+  </PromptInputActions>
+</PromptInput>
+```
+
+### ToolSteps
+
+Show tool execution progress.
+
+```tsx
+import { ToolSteps, ToolStep } from '@yourgpt/ui';
+
+<ToolSteps>
+  <ToolStep
+    name="search_products"
+    status="completed"
+    result={{ found: 5, query: "headphones" }}
+  />
+  <ToolStep
+    name="get_pricing"
+    status="running"
+  />
+</ToolSteps>
+```
+
+### SimpleReasoning
+
+Show AI's thinking process (for models that support it).
+
+```tsx
+import { SimpleReasoning } from '@yourgpt/ui';
+
+<SimpleReasoning
+  thinking="Let me analyze this step by step..."
+  isExpanded={false}
+/>
+```
+
+### Source
+
+Display knowledge base citations.
+
+```tsx
+import { Source, SourceTrigger, SourceContent } from '@yourgpt/ui';
+
+<Source>
+  <SourceTrigger>View sources (3)</SourceTrigger>
+  <SourceContent>
+    {sources.map(s => (
+      <a key={s.id} href={s.url}>{s.title}</a>
+    ))}
+  </SourceContent>
+</Source>
+```
+
+### FollowUpQuestions
+
+AI-generated follow-up suggestions.
+
+```tsx
+import { FollowUpQuestions, parseFollowUps } from '@yourgpt/ui';
+
+const { cleanContent, followUps } = parseFollowUps(message.content);
+
+{followUps.length > 0 && (
+  <FollowUpQuestions
+    questions={followUps}
+    onSelect={(q) => sendMessage(q)}
+  />
+)}
+```
+
+### Confirmation
+
+Tool approval UI with persistent permissions.
+
+```tsx
+import { SimpleConfirmation } from '@yourgpt/ui';
+
+<SimpleConfirmation
+  toolName="capture_screenshot"
+  message="Allow screenshot capture?"
+  state="pending"
+  onApprove={() => handleApprove()}
+  onReject={() => handleReject()}
+/>
+```
+
+---
+
+## Icons
+
+```tsx
+import {
+  SendIcon,
+  StopIcon,
+  CloseIcon,
+  CopyIcon,
+  CheckIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  RefreshIcon,
+  UserIcon,
+  BotIcon,
+} from '@yourgpt/ui';
+```
+
+---
+
+## Styling
+
+Components use CSS variables. Override them in your global CSS:
+
+```css
+:root {
+  --yourgpt-primary: #6366f1;
+  --yourgpt-background: #ffffff;
+  --yourgpt-foreground: #171717;
+  --yourgpt-muted: #f5f5f5;
+  --yourgpt-border: #e5e5e5;
+  --yourgpt-radius: 0.5rem;
+}
+
+/* Dark mode */
+.dark {
+  --yourgpt-background: #0a0a0a;
+  --yourgpt-foreground: #fafafa;
+  --yourgpt-muted: #262626;
+  --yourgpt-border: #262626;
+}
+```
+
+Or use Tailwind classes directly:
+
+```tsx
+<CopilotChat
+  className="bg-slate-50 dark:bg-slate-900 rounded-2xl shadow-xl"
+/>
+```
+
+---
+
+## Custom Message Renderer
+
+Build fully custom message UI:
+
+```tsx
+import { useAIChat } from '@yourgpt/react';
+import { Markdown, ToolSteps, FollowUpQuestions, parseFollowUps } from '@yourgpt/ui';
+
+function CustomChat() {
+  const { messages, sendMessage } = useAIChat();
+
+  return (
+    <div className="flex flex-col gap-4">
+      {messages.map(msg => {
+        const { cleanContent, followUps } = parseFollowUps(msg.content);
+
+        return (
+          <div key={msg.id} className={msg.role === 'user' ? 'ml-auto' : ''}>
+            {/* Tool executions */}
+            {msg.toolCalls && (
+              <ToolSteps>
+                {msg.toolCalls.map(tc => (
+                  <ToolStep key={tc.id} name={tc.name} status={tc.status} />
+                ))}
+              </ToolSteps>
+            )}
+
+            {/* Message content */}
+            <Markdown content={cleanContent} />
+
+            {/* Follow-ups */}
+            {followUps.length > 0 && (
+              <FollowUpQuestions
+                questions={followUps}
+                onSelect={sendMessage}
+              />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+```

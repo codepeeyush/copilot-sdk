@@ -3,6 +3,7 @@ export {
   ChatHeader,
   Suggestions,
   DefaultMessage,
+  ToolExecutionMessage,
   type ChatProps,
   type ChatMessage,
 } from "./chat";

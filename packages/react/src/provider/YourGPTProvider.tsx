@@ -145,6 +145,15 @@ export interface YourGPTProviderProps {
    * Use for custom storage backends (e.g., server-side)
    */
   customPermissionStorage?: PermissionStorageAdapter;
+  /**
+   * Enable debug logging (default: false in production, true in development)
+   */
+  debug?: boolean;
+  /**
+   * Enable streaming responses (default: true)
+   * Set to false for non-streaming mode (useful for debugging/comparison)
+   */
+  streaming?: boolean;
   /** Children */
   children: ReactNode;
 }
@@ -214,6 +223,7 @@ type AgentLoopAction =
       payload: { iteration: number; maxIterations: number };
     }
   | { type: "SET_MAX_ITERATIONS_REACHED"; payload: boolean }
+  | { type: "SET_PROCESSING"; payload: boolean }
   | { type: "CLEAR_EXECUTIONS" };
 
 /**
@@ -249,12 +259,18 @@ function agentLoopReducer(
         ...state,
         maxIterationsReached: action.payload,
       };
+    case "SET_PROCESSING":
+      return {
+        ...state,
+        isProcessing: action.payload,
+      };
     case "CLEAR_EXECUTIONS":
       return {
         ...state,
         toolExecutions: [],
         iteration: 0,
         maxIterationsReached: false,
+        isProcessing: false,
       };
     default:
       return state;
@@ -459,6 +475,7 @@ function threadsReducer(
         if (
           !updatedThread.title &&
           action.payload.message.role === "user" &&
+          action.payload.message.content &&
           thread.messages.length === 0
         ) {
           updatedThread.title = generateThreadTitle(
@@ -512,7 +529,11 @@ function threadsReducer(
             msg.id === action.payload.messageId
               ? {
                   ...msg,
-                  thinking: (msg.thinking || "") + action.payload.thinking,
+                  metadata: {
+                    ...msg.metadata,
+                    thinking:
+                      (msg.metadata?.thinking || "") + action.payload.thinking,
+                  },
                 }
               : msg,
           ),
@@ -530,7 +551,7 @@ function threadsReducer(
           ...thread,
           messages: thread.messages.map((msg) =>
             msg.id === action.payload.messageId
-              ? { ...msg, toolCalls: action.payload.toolCalls }
+              ? { ...msg, tool_calls: action.payload.toolCalls }
               : msg,
           ),
           updatedAt: new Date(),
@@ -550,7 +571,13 @@ function threadsReducer(
             msg.id === action.payload.messageId
               ? {
                   ...msg,
-                  sources: [...(msg.sources || []), action.payload.source],
+                  metadata: {
+                    ...msg.metadata,
+                    sources: [
+                      ...(msg.metadata?.sources || []),
+                      action.payload.source,
+                    ],
+                  },
                 }
               : msg,
           ),
@@ -646,8 +673,22 @@ export function YourGPTProvider({
   knowledgeBase,
   permissionStorage,
   customPermissionStorage,
+  debug,
+  streaming,
   children,
 }: YourGPTProviderProps) {
+  // Debug logger - only logs when debug is enabled
+  // Default: false (user must explicitly enable)
+  const isDebugEnabled = debug === true;
+  const debugLog = useCallback(
+    (...args: unknown[]) => {
+      if (isDebugEnabled) {
+        console.log(...args);
+      }
+    },
+    [isDebugEnabled],
+  );
+
   // Check if user has premium features
   // TODO: [Cloud Integration] Validate API key against YourGPT cloud
   // to get enabled features, plan details, and usage limits.
@@ -902,15 +943,15 @@ export function YourGPTProvider({
             ? `Take a screenshot to ${params.reason}?`
             : "Take a screenshot of the current screen?",
         handler: async () => {
-          console.log("[YourGPT] capture_screenshot: handler called");
+          debugLog("[YourGPT] capture_screenshot: handler called");
           try {
-            console.log(
+            debugLog(
               "[YourGPT] capture_screenshot: calling captureScreenshot...",
             );
             const screenshot = await captureScreenshot(
               toolsConfig.screenshotOptions,
             );
-            console.log("[YourGPT] capture_screenshot: success", {
+            debugLog("[YourGPT] capture_screenshot: success", {
               width: screenshot.width,
               height: screenshot.height,
             });
@@ -972,7 +1013,7 @@ export function YourGPTProvider({
         needsApproval: toolsConfig.requireConsent !== false,
         approvalMessage: "Access console logs to help debug the issue?",
         handler: async (params: { types?: string[]; limit?: number }) => {
-          console.log("[YourGPT] get_console_logs: handler called", params);
+          debugLog("[YourGPT] get_console_logs: handler called", params);
           try {
             const logs = getConsoleLogs({
               ...toolsConfig.consoleOptions,
@@ -981,7 +1022,7 @@ export function YourGPTProvider({
                 | undefined,
               limit: params.limit,
             });
-            console.log("[YourGPT] get_console_logs: success", {
+            debugLog("[YourGPT] get_console_logs: success", {
               count: logs.logs.length,
             });
             return {
@@ -1032,14 +1073,14 @@ export function YourGPTProvider({
         needsApproval: toolsConfig.requireConsent !== false,
         approvalMessage: "Access network request logs to help debug the issue?",
         handler: async (params: { failedOnly?: boolean; limit?: number }) => {
-          console.log("[YourGPT] get_network_requests: handler called", params);
+          debugLog("[YourGPT] get_network_requests: handler called", params);
           try {
             const requests = getNetworkRequests({
               ...toolsConfig.networkOptions,
               failedOnly: params.failedOnly,
               limit: params.limit,
             });
-            console.log("[YourGPT] get_network_requests: success", {
+            debugLog("[YourGPT] get_network_requests: success", {
               count: requests.requests.length,
             });
             return {
@@ -1136,24 +1177,25 @@ export function YourGPTProvider({
             role: m.role,
             content: m.content,
           };
-          if (options?.includeAttachments && m.attachments) {
-            msg.attachments = m.attachments;
+          if (options?.includeAttachments && m.metadata?.attachments) {
+            msg.attachments = m.metadata.attachments;
           }
           // Preserve tool_calls and tool_call_id for tool results
-          // Note: Message type uses toolCalls (camelCase), but API uses tool_calls (snake_case)
-          // Handle both ToolCall (with arguments) and ToolCallInfo (with args)
-          if (m.toolCalls && m.toolCalls.length > 0) {
-            msg.tool_calls = m.toolCalls.map((tc) => {
-              // Get arguments from either 'arguments' (ToolCall) or 'args' (ToolCallInfo)
+          // ToolCall has function.arguments (string), ToolCallInfo has args (object)
+          if (m.tool_calls && m.tool_calls.length > 0) {
+            msg.tool_calls = m.tool_calls.map((tc) => {
+              // Handle both ToolCall (function.arguments) and ToolCallInfo (args)
               const tcArgs =
-                tc.arguments ||
+                tc.function?.arguments ||
                 (tc as unknown as { args: Record<string, unknown> }).args ||
                 {};
+              const tcName =
+                tc.function?.name || (tc as unknown as { name: string }).name;
               return {
                 id: tc.id,
-                type: "function",
+                type: "function" as const,
                 function: {
-                  name: tc.name,
+                  name: tcName,
                   arguments:
                     typeof tcArgs === "string"
                       ? tcArgs
@@ -1199,6 +1241,8 @@ export function YourGPTProvider({
                 limit: knowledgeBase.limit,
               }
             : undefined,
+        // Pass streaming flag (default: true)
+        streaming: streaming ?? true,
       };
     },
     [
@@ -1207,6 +1251,7 @@ export function YourGPTProvider({
       config,
       buildSystemPromptWithContexts,
       knowledgeBase,
+      streaming,
     ],
   );
 
@@ -1365,7 +1410,7 @@ export function YourGPTProvider({
         id: generateMessageId(),
         role: "user",
         content: enrichedContent,
-        createdAt: new Date(),
+        created_at: new Date(),
         // Store context metadata
         metadata: {
           hasContext: true,
@@ -1379,13 +1424,16 @@ export function YourGPTProvider({
 
       // Include screenshot as attachment if present
       if (context.screenshot) {
-        userMessage.attachments = [
-          {
-            type: "image",
-            data: context.screenshot.data,
-            mimeType: `image/${context.screenshot.format}`,
-          },
-        ];
+        userMessage.metadata = {
+          ...userMessage.metadata,
+          attachments: [
+            {
+              type: "image" as const,
+              data: context.screenshot.data,
+              mimeType: `image/${context.screenshot.format}`,
+            },
+          ],
+        };
       }
 
       threadsDispatch({
@@ -1403,7 +1451,7 @@ export function YourGPTProvider({
         id: generateMessageId(),
         role: "assistant",
         content: "",
-        createdAt: new Date(),
+        created_at: new Date(),
       };
 
       threadsDispatch({
@@ -1433,8 +1481,106 @@ export function YourGPTProvider({
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        for await (const event of streamSSE(response)) {
-          handleStreamEvent(event, assistantMessage.id);
+        // Check content-type to determine if streaming or JSON
+        const contentType = response.headers.get("content-type") || "";
+
+        if (contentType.includes("application/json")) {
+          // NON-STREAMING: Parse JSON response
+          const jsonResponse = await response.json();
+          debugLog("[YourGPT] Non-streaming JSON response:", jsonResponse);
+
+          if (jsonResponse.error) {
+            throw new Error(jsonResponse.error.message || "Unknown error");
+          }
+
+          // Update assistant message with content
+          if (jsonResponse.content) {
+            threadsDispatch({
+              type: "UPDATE_MESSAGE_IN_THREAD",
+              payload: {
+                threadId: threadsState.activeThreadId,
+                messageId: assistantMessage.id,
+                content: jsonResponse.content,
+              },
+            });
+          }
+
+          // Handle tool calls if present - emit action events for UI
+          if (jsonResponse.toolCalls && jsonResponse.toolCalls.length > 0) {
+            for (const tc of jsonResponse.toolCalls) {
+              handleStreamEvent(
+                { type: "action:start", id: tc.id, name: tc.name },
+                assistantMessage.id,
+              );
+              handleStreamEvent(
+                {
+                  type: "action:args",
+                  id: tc.id,
+                  args: JSON.stringify(tc.args),
+                },
+                assistantMessage.id,
+              );
+            }
+
+            // If requiresAction, emit tool_calls event to trigger client-side execution
+            if (jsonResponse.requiresAction) {
+              const toolCallsForExecution = jsonResponse.toolCalls.map(
+                (tc: {
+                  id: string;
+                  name: string;
+                  args: Record<string, unknown>;
+                }) => ({
+                  id: tc.id,
+                  name: tc.name,
+                  args: tc.args,
+                }),
+              );
+
+              // Build assistant message with tool_calls for the event
+              const assistantToolMessage = {
+                role: "assistant" as const,
+                content: jsonResponse.content || null,
+                tool_calls: jsonResponse.toolCalls.map(
+                  (tc: {
+                    id: string;
+                    name: string;
+                    args: Record<string, unknown>;
+                  }) => ({
+                    id: tc.id,
+                    type: "function" as const,
+                    function: {
+                      name: tc.name,
+                      arguments: JSON.stringify(tc.args),
+                    },
+                  }),
+                ),
+              };
+
+              handleStreamEvent(
+                {
+                  type: "tool_calls",
+                  toolCalls: toolCallsForExecution,
+                  assistantMessage: assistantToolMessage,
+                },
+                assistantMessage.id,
+              );
+            }
+          }
+
+          // Handle done event
+          handleStreamEvent(
+            {
+              type: "done",
+              messages: jsonResponse.messages,
+              requiresAction: jsonResponse.requiresAction,
+            },
+            assistantMessage.id,
+          );
+        } else {
+          // STREAMING: Parse SSE events
+          for await (const event of streamSSE(response)) {
+            handleStreamEvent(event, assistantMessage.id);
+          }
         }
       } catch (error) {
         if ((error as Error).name !== "AbortError") {
@@ -1459,6 +1605,8 @@ export function YourGPTProvider({
       formatContextForAI,
       buildRequestBody,
       buildRequestHeaders,
+      debugLog,
+      threadsState.activeThreadId,
     ],
   );
 
@@ -1615,17 +1763,17 @@ export function YourGPTProvider({
    */
   const executeToolsAndContinue = useCallback(
     async (previousMessages: Message[], assistantMessageId: string) => {
-      console.log("[YourGPT:Execute] executeToolsAndContinue called");
+      debugLog("[YourGPT:Execute] executeToolsAndContinue called");
       const toolCalls = pendingToolCallsRef.current;
       const assistantMessage = pendingAssistantMessageRef.current;
 
-      console.log(
+      debugLog(
         "[YourGPT:Execute] pendingToolCalls:",
         toolCalls.length,
         toolCalls.map((t) => t.name),
       );
       if (toolCalls.length === 0) {
-        console.log("[YourGPT:Execute] No tool calls, returning");
+        debugLog("[YourGPT:Execute] No tool calls, returning");
         return;
       }
 
@@ -1642,7 +1790,7 @@ export function YourGPTProvider({
           (e) => e.id === tc.id,
         );
         const currentApprovalStatus = execution?.approvalStatus || "none";
-        console.log(
+        debugLog(
           "[YourGPT:Execute] Tool:",
           tc.name,
           "approvalStatus:",
@@ -1707,7 +1855,7 @@ export function YourGPTProvider({
 
       // If any tools are waiting for approval, pause execution
       if (toolsNeedingApproval.length > 0) {
-        console.log(
+        debugLog(
           "[YourGPT:Execute] Tools waiting for approval:",
           toolsNeedingApproval,
         );
@@ -1719,9 +1867,7 @@ export function YourGPTProvider({
         return; // Wait for user approval
       }
 
-      console.log(
-        "[YourGPT:Execute] All tools approved, proceeding to execute",
-      );
+      debugLog("[YourGPT:Execute] All tools approved, proceeding to execute");
 
       // Execute all pending tool calls (either approved or don't need approval)
       const toolResults: Array<{ id: string; result: ToolResponse }> = [];
@@ -1758,14 +1904,14 @@ export function YourGPTProvider({
 
         if (tool?.handler) {
           try {
-            console.log(
+            debugLog(
               "[YourGPT:Execute] Calling handler for:",
               tc.name,
               "args:",
               tc.args,
             );
             result = await tool.handler(tc.args);
-            console.log(
+            debugLog(
               "[YourGPT:Execute] Handler returned for:",
               tc.name,
               "success:",
@@ -1849,7 +1995,7 @@ export function YourGPTProvider({
         screenshotUserMessage = createMessage({
           role: "user",
           content: "Here's my screen:",
-          attachments: screenshotAttachments,
+          metadata: { attachments: screenshotAttachments },
         });
         if (currentThreadId) {
           threadsDispatch({
@@ -1860,7 +2006,7 @@ export function YourGPTProvider({
             },
           });
         }
-        console.log(
+        debugLog(
           "[YourGPT] Added screenshot as user message:",
           screenshotUserMessage.id,
         );
@@ -1878,7 +2024,7 @@ export function YourGPTProvider({
         id: responseMessageId,
         role: "assistant",
         content: "",
-        createdAt: new Date(),
+        created_at: new Date(),
       };
       if (currentThreadId) {
         threadsDispatch({
@@ -1889,7 +2035,7 @@ export function YourGPTProvider({
           },
         });
       }
-      console.log(
+      debugLog(
         "[YourGPT] Created new assistant message for follow-up response:",
         responseMessageId,
       );
@@ -1916,18 +2062,21 @@ export function YourGPTProvider({
               role: m.role,
               content: m.content,
             };
-            // Preserve toolCalls (camelCase from Message type) - convert to snake_case for API
-            if (m.toolCalls && m.toolCalls.length > 0) {
-              msg.tool_calls = m.toolCalls.map((tc) => {
+            // Preserve tool_calls - already in OpenAI format
+            if (m.tool_calls && m.tool_calls.length > 0) {
+              msg.tool_calls = m.tool_calls.map((tc) => {
+                // Handle both ToolCall (function.arguments) and ToolCallInfo (args)
                 const tcArgs =
-                  tc.arguments ||
+                  tc.function?.arguments ||
                   (tc as unknown as { args: Record<string, unknown> }).args ||
                   {};
+                const tcName =
+                  tc.function?.name || (tc as unknown as { name: string }).name;
                 return {
                   id: tc.id,
                   type: "function",
                   function: {
-                    name: tc.name,
+                    name: tcName,
                     arguments:
                       typeof tcArgs === "string"
                         ? tcArgs
@@ -1946,8 +2095,8 @@ export function YourGPTProvider({
               msg.tool_call_id = extendedMsg.tool_call_id;
             }
             // Preserve attachments if present (for vision/image messages)
-            if (m.attachments && m.attachments.length > 0) {
-              msg.attachments = m.attachments;
+            if (m.metadata?.attachments && m.metadata.attachments.length > 0) {
+              msg.attachments = m.metadata.attachments;
             }
             return msg;
           }),
@@ -1974,12 +2123,11 @@ export function YourGPTProvider({
         if (currentThreadId) {
           const toolMsg: Message = {
             id: generateMessageId(),
-            role: "tool" as Message["role"],
+            role: "tool",
             content: JSON.stringify(result),
-            createdAt: new Date(),
+            tool_call_id: id, // Direct assignment - Message type supports this field
+            created_at: new Date(),
           };
-          // Add tool_call_id for proper message format
-          (toolMsg as unknown as Record<string, unknown>).tool_call_id = id;
           threadsDispatch({
             type: "ADD_MESSAGE_TO_THREAD",
             payload: {
@@ -1997,11 +2145,14 @@ export function YourGPTProvider({
           role: "user",
           content: screenshotUserMessage.content,
           // Attachments will be converted to provider-specific format by the adapter
-          attachments: screenshotUserMessage.attachments,
+          attachments: screenshotUserMessage.metadata?.attachments,
         });
       }
 
       // Send follow-up request to server
+      // Set processing state to show "Continuing..." loader
+      agentLoopDispatch({ type: "SET_PROCESSING", payload: true });
+
       try {
         const response = await fetch(getEndpoint(), {
           method: "POST",
@@ -2025,6 +2176,8 @@ export function YourGPTProvider({
                 description: t.description,
                 inputSchema: t.inputSchema,
               })),
+            // Pass streaming flag (default: true)
+            streaming: streaming ?? true,
           }),
           signal: abortControllerRef.current?.signal,
         });
@@ -2033,12 +2186,120 @@ export function YourGPTProvider({
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
-        // Process the response stream using the ref
+        // Process the response using the ref
         // Use responseMessageId (which is either the new message after screenshot, or original)
         const streamHandler = handleStreamEventRef.current;
         if (streamHandler) {
-          for await (const event of streamSSE(response)) {
-            await streamHandler(event, responseMessageId);
+          // Check content-type to determine if streaming or JSON
+          const contentType = response.headers.get("content-type") || "";
+
+          if (contentType.includes("application/json")) {
+            // NON-STREAMING: Parse JSON response
+            agentLoopDispatch({ type: "SET_PROCESSING", payload: false });
+            const jsonResponse = await response.json();
+            debugLog(
+              "[YourGPT] Non-streaming JSON response (continue):",
+              jsonResponse,
+            );
+
+            if (jsonResponse.error) {
+              throw new Error(jsonResponse.error.message || "Unknown error");
+            }
+
+            // Update assistant message with content
+            if (jsonResponse.content) {
+              threadsDispatch({
+                type: "UPDATE_MESSAGE_IN_THREAD",
+                payload: {
+                  threadId: threadsState.activeThreadId,
+                  messageId: responseMessageId,
+                  content: jsonResponse.content,
+                },
+              });
+            }
+
+            // Handle tool calls if present - emit action events for UI
+            if (jsonResponse.toolCalls && jsonResponse.toolCalls.length > 0) {
+              for (const tc of jsonResponse.toolCalls) {
+                await streamHandler(
+                  { type: "action:start", id: tc.id, name: tc.name },
+                  responseMessageId,
+                );
+                await streamHandler(
+                  {
+                    type: "action:args",
+                    id: tc.id,
+                    args: JSON.stringify(tc.args),
+                  },
+                  responseMessageId,
+                );
+              }
+
+              // If requiresAction, emit tool_calls event to trigger client-side execution
+              if (jsonResponse.requiresAction) {
+                const toolCallsForExecution = jsonResponse.toolCalls.map(
+                  (tc: {
+                    id: string;
+                    name: string;
+                    args: Record<string, unknown>;
+                  }) => ({
+                    id: tc.id,
+                    name: tc.name,
+                    args: tc.args,
+                  }),
+                );
+
+                // Build assistant message with tool_calls for the event
+                const assistantToolMessage = {
+                  role: "assistant" as const,
+                  content: jsonResponse.content || null,
+                  tool_calls: jsonResponse.toolCalls.map(
+                    (tc: {
+                      id: string;
+                      name: string;
+                      args: Record<string, unknown>;
+                    }) => ({
+                      id: tc.id,
+                      type: "function" as const,
+                      function: {
+                        name: tc.name,
+                        arguments: JSON.stringify(tc.args),
+                      },
+                    }),
+                  ),
+                };
+
+                await streamHandler(
+                  {
+                    type: "tool_calls",
+                    toolCalls: toolCallsForExecution,
+                    assistantMessage: assistantToolMessage,
+                  },
+                  responseMessageId,
+                );
+              }
+            }
+
+            // Handle done event
+            await streamHandler(
+              {
+                type: "done",
+                messages: jsonResponse.messages,
+                requiresAction: jsonResponse.requiresAction,
+              },
+              responseMessageId,
+            );
+          } else {
+            // STREAMING: Parse SSE events
+            let firstEvent = true;
+            for await (const event of streamSSE(response)) {
+              // Clear processing state on first event (stream started)
+              if (firstEvent) {
+                agentLoopDispatch({ type: "SET_PROCESSING", payload: false });
+                firstEvent = false;
+              }
+              await streamHandler(event, responseMessageId);
+            }
           }
         }
 
@@ -2055,35 +2316,38 @@ export function YourGPTProvider({
                 typeof m.content === "string"
                   ? m.content
                   : m.content === null
-                    ? ""
+                    ? null
                     : JSON.stringify(m.content),
-              createdAt: new Date(),
+              created_at: new Date(),
             };
             // Preserve tool_calls if present
             if (m.tool_calls) {
-              (msg as unknown as Record<string, unknown>).tool_calls =
-                m.tool_calls;
+              msg.tool_calls = m.tool_calls as Message["tool_calls"];
             }
             // Preserve tool_call_id if present (for tool messages)
             if (m.tool_call_id) {
-              (msg as unknown as Record<string, unknown>).tool_call_id =
-                m.tool_call_id;
+              msg.tool_call_id = m.tool_call_id as string;
             }
             // Preserve attachments if present (for vision/image messages)
             if (m.attachments) {
-              msg.attachments = m.attachments as MessageAttachment[];
+              msg.metadata = {
+                ...msg.metadata,
+                attachments: m.attachments as MessageAttachment[],
+              };
             }
             return msg;
           });
           await executeToolsAndContinue(updatedMessages, responseMessageId);
         }
       } catch (error) {
+        // Clear processing state on error
+        agentLoopDispatch({ type: "SET_PROCESSING", payload: false });
         if ((error as Error).name !== "AbortError") {
           throw error;
         }
       }
     },
-    [currentThreadId, cloud, config, getEndpoint, systemPrompt],
+    [currentThreadId, cloud, config, getEndpoint, systemPrompt, streaming],
   );
 
   const sendMessage = useCallback(
@@ -2104,8 +2368,8 @@ export function YourGPTProvider({
           for (const execution of currentExecutions) {
             // Find the assistant message that has this tool call
             for (const msg of thread.messages) {
-              if (msg.role === "assistant" && msg.toolCalls) {
-                const hasToolCall = msg.toolCalls.some(
+              if (msg.role === "assistant" && msg.tool_calls) {
+                const hasToolCall = msg.tool_calls.some(
                   (tc) => tc.id === execution.id,
                 );
                 if (hasToolCall) {
@@ -2164,7 +2428,7 @@ export function YourGPTProvider({
         id: generateMessageId(),
         role: "user",
         content: content.trim(),
-        createdAt: new Date(),
+        created_at: new Date(),
       };
 
       threadsDispatch({
@@ -2181,7 +2445,7 @@ export function YourGPTProvider({
         id: generateMessageId(),
         role: "assistant",
         content: "",
-        createdAt: new Date(),
+        created_at: new Date(),
       };
 
       threadsDispatch({
@@ -2212,11 +2476,109 @@ export function YourGPTProvider({
         // Store current assistant message ID for tool execution
         currentAssistantMessageIdRef.current = assistantMessage.id;
 
-        for await (const event of streamSSE(response)) {
-          handleStreamEvent(event, assistantMessage.id);
+        // Check content-type to determine if streaming or JSON
+        const contentType = response.headers.get("content-type") || "";
+
+        if (contentType.includes("application/json")) {
+          // NON-STREAMING: Parse JSON response
+          const jsonResponse = await response.json();
+          debugLog("[YourGPT] Non-streaming JSON response:", jsonResponse);
+
+          if (jsonResponse.error) {
+            throw new Error(jsonResponse.error.message || "Unknown error");
+          }
+
+          // Update assistant message with content
+          if (jsonResponse.content) {
+            threadsDispatch({
+              type: "UPDATE_MESSAGE_IN_THREAD",
+              payload: {
+                threadId: threadsState.activeThreadId,
+                messageId: assistantMessage.id,
+                content: jsonResponse.content,
+              },
+            });
+          }
+
+          // Handle tool calls if present - emit action events for UI
+          if (jsonResponse.toolCalls && jsonResponse.toolCalls.length > 0) {
+            for (const tc of jsonResponse.toolCalls) {
+              handleStreamEvent(
+                { type: "action:start", id: tc.id, name: tc.name },
+                assistantMessage.id,
+              );
+              handleStreamEvent(
+                {
+                  type: "action:args",
+                  id: tc.id,
+                  args: JSON.stringify(tc.args),
+                },
+                assistantMessage.id,
+              );
+            }
+
+            // If requiresAction, emit tool_calls event to trigger client-side execution
+            if (jsonResponse.requiresAction) {
+              const toolCallsForExecution = jsonResponse.toolCalls.map(
+                (tc: {
+                  id: string;
+                  name: string;
+                  args: Record<string, unknown>;
+                }) => ({
+                  id: tc.id,
+                  name: tc.name,
+                  args: tc.args,
+                }),
+              );
+
+              // Build assistant message with tool_calls for the event
+              const assistantToolMessage = {
+                role: "assistant" as const,
+                content: jsonResponse.content || null,
+                tool_calls: jsonResponse.toolCalls.map(
+                  (tc: {
+                    id: string;
+                    name: string;
+                    args: Record<string, unknown>;
+                  }) => ({
+                    id: tc.id,
+                    type: "function" as const,
+                    function: {
+                      name: tc.name,
+                      arguments: JSON.stringify(tc.args),
+                    },
+                  }),
+                ),
+              };
+
+              handleStreamEvent(
+                {
+                  type: "tool_calls",
+                  toolCalls: toolCallsForExecution,
+                  assistantMessage: assistantToolMessage,
+                },
+                assistantMessage.id,
+              );
+            }
+          }
+
+          // Handle done event
+          handleStreamEvent(
+            {
+              type: "done",
+              messages: jsonResponse.messages,
+              requiresAction: jsonResponse.requiresAction,
+            },
+            assistantMessage.id,
+          );
+        } else {
+          // STREAMING: Parse SSE events
+          for await (const event of streamSSE(response)) {
+            handleStreamEvent(event, assistantMessage.id);
+          }
         }
 
-        // After stream ends, check if we need to execute tools (Vercel AI SDK pattern)
+        // After response ends, check if we need to execute tools (Vercel AI SDK pattern)
         if (pendingToolCallsRef.current.length > 0) {
           await executeToolsAndContinue(
             [...currentMessages, userMessage],
@@ -2257,6 +2619,8 @@ export function YourGPTProvider({
       systemPrompt,
       buildRequestBody,
       buildRequestHeaders,
+      debugLog,
+      threadsState.activeThreadId,
     ],
   );
 
@@ -2366,13 +2730,16 @@ export function YourGPTProvider({
           pendingAssistantMessageRef.current = event.assistantMessage;
 
           // Persist tool_calls on the assistant message for history preservation
-          // Convert ToolCallInfo (with args) to ToolCall (with arguments)
+          // Convert ToolCallInfo (with args) to ToolCall (with function.arguments)
           {
             const toolCallsForMessage: ToolCall[] = event.toolCalls.map(
               (tc) => ({
                 id: tc.id,
-                name: tc.name,
-                arguments: tc.args,
+                type: "function" as const,
+                function: {
+                  name: tc.name,
+                  arguments: JSON.stringify(tc.args),
+                },
               }),
             );
             threadsDispatch({
@@ -2447,26 +2814,28 @@ export function YourGPTProvider({
           // If server returned messages (from server-side tool execution),
           // replace the streaming assistant message with the proper message chain
           if (event.messages && event.messages.length > 0) {
-            // Convert server messages (snake_case) to client Message format (camelCase)
+            // Convert server messages to client Message format
             const clientMessages: Message[] = event.messages.map((m) => {
               const msg: Message = {
                 id: generateMessageId(),
                 role: m.role as Message["role"],
-                content: m.content || "",
-                createdAt: new Date(),
+                content: m.content || null,
+                created_at: new Date(),
               };
-              // Convert tool_calls to toolCalls
+              // Keep tool_calls in OpenAI format
               if (m.tool_calls && m.tool_calls.length > 0) {
-                msg.toolCalls = m.tool_calls.map((tc) => ({
+                msg.tool_calls = m.tool_calls.map((tc) => ({
                   id: tc.id,
-                  name: tc.function.name,
-                  arguments: JSON.parse(tc.function.arguments || "{}"),
+                  type: "function" as const,
+                  function: {
+                    name: tc.function.name,
+                    arguments: tc.function.arguments || "{}",
+                  },
                 }));
               }
               // Preserve tool_call_id for tool messages
               if (m.tool_call_id) {
-                (msg as unknown as Record<string, unknown>).tool_call_id =
-                  m.tool_call_id;
+                msg.tool_call_id = m.tool_call_id;
               }
               return msg;
             });
@@ -2538,7 +2907,9 @@ export function YourGPTProvider({
       });
 
       const lastUserMessage = messages[lastUserIndex];
-      await sendMessage(lastUserMessage.content);
+      if (lastUserMessage.content) {
+        await sendMessage(lastUserMessage.content);
+      }
     },
     [currentMessages, sendMessage, threadsState.activeThreadId],
   );
@@ -2614,7 +2985,7 @@ export function YourGPTProvider({
    */
   const approveToolExecution = useCallback(
     async (executionId: string, permissionLevel?: PermissionLevel) => {
-      console.log(
+      debugLog(
         "[YourGPT:Approval] approveToolExecution called:",
         executionId,
         permissionLevel,
@@ -2622,7 +2993,7 @@ export function YourGPTProvider({
       const execution = agentLoopState.toolExecutions.find(
         (e) => e.id === executionId,
       );
-      console.log(
+      debugLog(
         "[YourGPT:Approval] Found execution:",
         execution?.name,
         execution?.approvalStatus,
@@ -2643,7 +3014,7 @@ export function YourGPTProvider({
           },
         },
       });
-      console.log("[YourGPT:Approval] Dispatched approval update");
+      debugLog("[YourGPT:Approval] Dispatched approval update");
     },
     [agentLoopState.toolExecutions, setToolPermission],
   );
@@ -2694,32 +3065,19 @@ export function YourGPTProvider({
 
   // Effect to resume tool execution when all approvals are resolved
   useEffect(() => {
-    console.log(
-      "[YourGPT:ResumeEffect] Effect triggered, pendingApprovals:",
-      pendingApprovals.length,
-    );
     // Check if we have pending messages waiting for approval
     if (!pendingMessagesForApprovalRef.current) {
-      console.log("[YourGPT:ResumeEffect] No pending messages ref");
       return;
     }
     if (!pendingAssistantIdForApprovalRef.current) {
-      console.log("[YourGPT:ResumeEffect] No pending assistant id ref");
       return;
     }
 
     // Check if there are still pending approvals
     if (pendingApprovals.length > 0) {
-      console.log(
-        "[YourGPT:ResumeEffect] Still have pending approvals:",
-        pendingApprovals.map((p) => p.name),
-      );
       return;
     }
 
-    console.log(
-      "[YourGPT:ResumeEffect] All approvals resolved, resuming execution",
-    );
     // All approvals resolved - resume execution
     const messages = pendingMessagesForApprovalRef.current;
     const assistantId = pendingAssistantIdForApprovalRef.current;

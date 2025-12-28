@@ -9,6 +9,7 @@ import {
   PermissionConfirmation,
   type PermissionLevel,
 } from "../../ui/permission-confirmation";
+import { FollowUpQuestions, parseFollowUps } from "../../ui/follow-up";
 import type { ChatMessage, MessageAttachment } from "./types";
 
 type DefaultMessageProps = {
@@ -35,6 +36,14 @@ type DefaultMessageProps = {
     reason?: string,
     permissionLevel?: PermissionLevel,
   ) => void;
+  /** Show follow-up questions (default: true) */
+  showFollowUps?: boolean;
+  /** Called when a follow-up question is clicked */
+  onFollowUpClick?: (question: string) => void;
+  /** Custom class for follow-up container */
+  followUpClassName?: string;
+  /** Custom class for follow-up buttons */
+  followUpButtonClassName?: string;
 };
 
 export function DefaultMessage({
@@ -49,9 +58,74 @@ export function DefaultMessage({
   isLoading = false,
   onApproveToolExecution,
   onRejectToolExecution,
+  showFollowUps = true,
+  onFollowUpClick,
+  followUpClassName,
+  followUpButtonClassName,
 }: DefaultMessageProps) {
   const isUser = message.role === "user";
   const isStreaming = isLastMessage && isLoading;
+
+  // Parse follow-up questions from assistant messages
+  const { cleanContent, followUps } = React.useMemo(() => {
+    if (isUser || !message.content) {
+      return { cleanContent: message.content, followUps: [] };
+    }
+    return parseFollowUps(message.content);
+  }, [message.content, isUser]);
+
+  // Only show follow-ups on the last assistant message when not loading
+  const shouldShowFollowUps =
+    showFollowUps &&
+    !isUser &&
+    isLastMessage &&
+    !isLoading &&
+    followUps.length > 0 &&
+    onFollowUpClick;
+
+  // Tool result message - shows tool execution result
+  if (message.role === "tool") {
+    // Parse the tool result content
+    let resultContent = message.content;
+    let isSuccess = true;
+    try {
+      const parsed = JSON.parse(message.content);
+      isSuccess = parsed.success !== false;
+      resultContent =
+        parsed.message || parsed.error || JSON.stringify(parsed, null, 2);
+    } catch {
+      // Keep original content if not JSON
+    }
+
+    return (
+      <Message className="flex gap-2 pl-10">
+        <div
+          className={cn(
+            "flex-1 min-w-0 max-w-[80%] rounded-lg px-3 py-2 text-xs font-mono",
+            isSuccess
+              ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800"
+              : "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800",
+          )}
+        >
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className={cn(
+                "text-xs",
+                isSuccess
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400",
+              )}
+            >
+              {isSuccess ? "✓" : "✗"} Tool Result
+            </span>
+          </div>
+          <div className="text-muted-foreground whitespace-pre-wrap break-all">
+            {resultContent}
+          </div>
+        </div>
+      </Message>
+    );
+  }
 
   // User message - right aligned, avatar optional
   if (isUser) {
@@ -166,7 +240,7 @@ export function DefaultMessage({
         )}
 
         {/* Message Content - only show if there's content */}
-        {message.content?.trim() && (
+        {cleanContent?.trim() && (
           <MessageContent
             className={cn(
               "rounded-lg px-4 py-2 bg-muted",
@@ -175,7 +249,7 @@ export function DefaultMessage({
             markdown
             size={size}
           >
-            {message.content}
+            {cleanContent}
           </MessageContent>
         )}
 
@@ -186,6 +260,16 @@ export function DefaultMessage({
               <AttachmentPreview key={index} attachment={attachment} />
             ))}
           </div>
+        )}
+
+        {/* Follow-up Questions */}
+        {shouldShowFollowUps && (
+          <FollowUpQuestions
+            questions={followUps}
+            onSelect={onFollowUpClick!}
+            className={followUpClassName}
+            buttonClassName={followUpButtonClassName}
+          />
         )}
       </div>
     </Message>

@@ -69,13 +69,17 @@ export type {
 
 // Types
 export type {
-  // Message types
+  // Message types (OpenAI format)
   MessageRole,
   Message,
+  MessageMetadata,
   MessageAttachment,
   Source,
   ToolCall,
+  TokenUsage,
+  // Legacy (deprecated)
   ToolResult,
+  LegacyToolCall,
   // Config types
   LLMProvider,
   LLMConfig,
@@ -150,7 +154,16 @@ export { generateThreadTitle } from "./types";
 
 // Functions
 export {
+  // Message functions (OpenAI format)
   createMessage,
+  createUserMessage,
+  createAssistantMessage,
+  createToolMessage,
+  createToolCall,
+  parseToolCallArgs,
+  hasToolCalls,
+  isToolResult,
+  // Legacy/conversion
   actionToTool,
   parseStreamEvent,
   serializeStreamEvent,

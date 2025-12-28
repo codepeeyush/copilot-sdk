@@ -18,7 +18,7 @@ export type MessageAttachment = {
 
 export type ChatMessage = {
   id: string;
-  role: "user" | "assistant" | "system";
+  role: "user" | "assistant" | "system" | "tool";
   content: string;
   /** Thinking/reasoning content (for models with extended thinking) */
   thinking?: string;
@@ -26,6 +26,17 @@ export type ChatMessage = {
   toolExecutions?: ToolExecutionData[];
   /** Attachments (images, files) */
   attachments?: MessageAttachment[];
+  /** Tool call ID - for tool result messages (links to assistant's tool_calls) */
+  tool_call_id?: string;
+  /** Tool calls made by assistant */
+  tool_calls?: Array<{
+    id: string;
+    type: "function";
+    function: {
+      name: string;
+      arguments: string;
+    };
+  }>;
 };
 
 export type { ToolApprovalStatus, PermissionLevel };
@@ -81,6 +92,18 @@ export type ChatProps = {
   /** Called when a suggestion is clicked */
   onSuggestionClick?: (suggestion: string) => void;
 
+  // === Follow-up Questions ===
+  /**
+   * Show AI-generated follow-up questions below the last message
+   * AI should include them in format: [FOLLOWUP: Q1? | Q2? | Q3?]
+   * @default true
+   */
+  showFollowUps?: boolean;
+  /** Custom class for follow-up container */
+  followUpClassName?: string;
+  /** Custom class for follow-up buttons */
+  followUpButtonClassName?: string;
+
   // === Tool Executions ===
   /** Global tool executions to display (not per-message) */
   toolExecutions?: ToolExecutionData[];
@@ -92,6 +115,8 @@ export type ChatProps = {
   loopMaxIterations?: number;
   /** Whether the loop is running */
   loopRunning?: boolean;
+  /** Whether waiting for server after tool completion (shows "Continuing..." loader) */
+  isProcessing?: boolean;
 
   // === Tool Approval (Human-in-the-loop) ===
   /** Called when user approves a tool execution */

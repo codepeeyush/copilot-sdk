@@ -73,6 +73,8 @@ export interface AgentLoopState {
   maxIterations: number;
   /** Whether max iterations was reached */
   maxIterationsReached: boolean;
+  /** Whether waiting for server response after tool completion */
+  isProcessing: boolean;
 }
 
 /**
@@ -214,6 +216,7 @@ export const initialAgentLoopState: AgentLoopState = {
   iteration: 0,
   maxIterations: 20,
   maxIterationsReached: false,
+  isProcessing: false,
 };
 
 /**

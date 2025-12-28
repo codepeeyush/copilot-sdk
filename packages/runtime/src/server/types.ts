@@ -111,6 +111,8 @@ export interface ChatRequest {
   }>;
   /** Enable agentic loop mode */
   useAgentLoop?: boolean;
+  /** Enable streaming responses (default: true). Set to false for non-streaming mode. */
+  streaming?: boolean;
   /** YourGPT Knowledge Base configuration (enables search_knowledge tool) */
   knowledgeBase?: {
     /** Project UID for the knowledge base */

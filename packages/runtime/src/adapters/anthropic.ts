@@ -1,6 +1,10 @@
 import type { LLMConfig, StreamEvent } from "@yourgpt/core";
 import { generateMessageId } from "@yourgpt/core";
-import type { LLMAdapter, ChatCompletionRequest } from "./base";
+import type {
+  LLMAdapter,
+  ChatCompletionRequest,
+  CompletionResult,
+} from "./base";
 import {
   formatMessagesForAnthropic,
   messageToAnthropicContent,
@@ -77,6 +81,23 @@ export class AnthropicAdapter implements LLMAdapter {
       if (msg.role === "system") continue;
 
       if (msg.role === "assistant") {
+        // CRITICAL: Insert pending tool results BEFORE adding any assistant message
+        // Anthropic requires: assistant(tool_use) → user(tool_result) → assistant(response)
+        // Without this, the sequence becomes: assistant(tool_use) → assistant(response) → user(tool_result)
+        // which violates Anthropic's API requirements and causes error:
+        // "tool_use ids were found without tool_result blocks immediately after"
+        if (pendingToolResults.length > 0) {
+          messages.push({
+            role: "user",
+            content: pendingToolResults.map((tr) => ({
+              type: "tool_result",
+              tool_use_id: tr.tool_use_id,
+              content: tr.content,
+            })),
+          });
+          pendingToolResults.length = 0;
+        }
+
         // Convert assistant message with potential tool_calls
         const content: Array<Record<string, unknown>> = [];
 
@@ -212,9 +233,13 @@ export class AnthropicAdapter implements LLMAdapter {
     return messages;
   }
 
-  async *stream(request: ChatCompletionRequest): AsyncGenerator<StreamEvent> {
-    const client = await this.getClient();
-
+  /**
+   * Build common request options for both streaming and non-streaming
+   */
+  private buildRequestOptions(request: ChatCompletionRequest): {
+    options: Record<string, unknown>;
+    messages: Array<Record<string, unknown>>;
+  } {
     // Extract system message
     const systemMessage = request.systemPrompt || "";
 
@@ -255,30 +280,101 @@ export class AnthropicAdapter implements LLMAdapter {
       },
     }));
 
+    // Build request options
+    const options: Record<string, unknown> = {
+      model: request.config?.model || this.model,
+      max_tokens: request.config?.maxTokens || this.config.maxTokens || 4096,
+      system: systemMessage,
+      messages,
+      tools: tools?.length ? tools : undefined,
+    };
+
+    // Add thinking configuration if enabled
+    if (this.config.thinking?.type === "enabled") {
+      options.thinking = {
+        type: "enabled",
+        budget_tokens: this.config.thinking.budgetTokens || 10000,
+      };
+    }
+
+    return { options, messages };
+  }
+
+  /**
+   * Non-streaming completion (for debugging/comparison with original studio-ai)
+   */
+  async complete(request: ChatCompletionRequest): Promise<CompletionResult> {
+    const client = await this.getClient();
+    const { options } = this.buildRequestOptions(request);
+
+    // Ensure non-streaming mode
+    const nonStreamingOptions = {
+      ...options,
+      stream: false as const,
+    } as Record<string, unknown> & { stream: false };
+
+    console.log("[Anthropic Adapter] Non-streaming request:", {
+      model: options.model,
+      max_tokens: options.max_tokens,
+      messageCount: (options.messages as unknown[])?.length,
+      hasTools: !!(options.tools as unknown[])?.length,
+    });
+
+    try {
+      const response = await client.messages.create(nonStreamingOptions);
+
+      console.log("[Anthropic Adapter] Non-streaming response:", {
+        stopReason: response.stop_reason,
+        contentBlocks: response.content?.length,
+        usage: response.usage,
+      });
+
+      // Parse response
+      let content = "";
+      let thinking = "";
+      const toolCalls: Array<{
+        id: string;
+        name: string;
+        args: Record<string, unknown>;
+      }> = [];
+
+      for (const block of response.content) {
+        if (block.type === "text") {
+          content += block.text;
+        } else if (block.type === "thinking") {
+          thinking += (block as { thinking: string }).thinking;
+        } else if (block.type === "tool_use") {
+          toolCalls.push({
+            id: block.id,
+            name: block.name,
+            args: block.input as Record<string, unknown>,
+          });
+        }
+      }
+
+      return {
+        content,
+        toolCalls,
+        thinking: thinking || undefined,
+        rawResponse: response as Record<string, unknown>,
+      };
+    } catch (error) {
+      console.error("[Anthropic Adapter] Non-streaming error:", error);
+      throw error;
+    }
+  }
+
+  async *stream(request: ChatCompletionRequest): AsyncGenerator<StreamEvent> {
+    const client = await this.getClient();
+    const { options } = this.buildRequestOptions(request);
+
     const messageId = generateMessageId();
 
     // Emit message start
     yield { type: "message:start", id: messageId };
 
     try {
-      // Build request options
-      const requestOptions: Record<string, unknown> = {
-        model: request.config?.model || this.model,
-        max_tokens: request.config?.maxTokens || this.config.maxTokens || 4096,
-        system: systemMessage,
-        messages,
-        tools: tools?.length ? tools : undefined,
-      };
-
-      // Add thinking configuration if enabled
-      if (this.config.thinking?.type === "enabled") {
-        requestOptions.thinking = {
-          type: "enabled",
-          budget_tokens: this.config.thinking.budgetTokens || 10000,
-        };
-      }
-
-      const stream = await client.messages.stream(requestOptions);
+      const stream = await client.messages.stream(options);
 
       let currentToolUse: {
         id: string;

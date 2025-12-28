@@ -1,0 +1,359 @@
+---
+title: Tools & Agentic Loop
+description: Let AI take actions in your app
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+# Tools & Agentic Loop
+
+Tools let AI do things. Not just talk about things—actually *do* them.
+
+---
+
+## How It Works
+
+```
+User: "Book me a table for 2 at 7pm"
+         ↓
+AI decides to call: search_restaurants({ guests: 2, time: "19:00" })
+         ↓
+Your handler runs → returns available restaurants
+         ↓
+AI decides to call: make_reservation({ restaurant_id: "123", ... })
+         ↓
+Your handler runs → booking confirmed
+         ↓
+AI: "Done! You're booked at Luigi's for 7pm."
+```
+
+The SDK handles the back-and-forth. You just define the tools.
+
+---
+
+## Define a Tool
+
+```tsx
+import { useToolWithSchema } from '@yourgpt/react';
+import { z } from 'zod';
+
+function BookingTools() {
+  useToolWithSchema({
+    name: 'make_reservation',
+    description: 'Book a table at a restaurant',
+    schema: z.object({
+      restaurant_id: z.string(),
+      guests: z.number().min(1).max(20),
+      time: z.string().describe('Time in HH:MM format'),
+      notes: z.string().optional(),
+    }),
+    handler: async ({ restaurant_id, guests, time, notes }) => {
+      const booking = await api.createReservation({
+        restaurant_id,
+        guests,
+        time,
+        notes,
+      });
+
+      return {
+        success: true,
+        message: `Booked for ${guests} at ${time}`,
+        data: {
+          confirmation_id: booking.id,
+          restaurant_name: booking.restaurant.name,
+        },
+      };
+    },
+  });
+
+  return null;
+}
+```
+
+### Schema Tips
+
+```tsx
+// Good descriptions help the AI
+z.object({
+  query: z.string().describe('Search keywords'),
+  limit: z.number().optional().default(10).describe('Max results'),
+  category: z.enum(['electronics', 'clothing', 'home']).describe('Product category'),
+})
+```
+
+<Callout type="info">
+**Pro tip:** The `describe()` calls become part of the tool's schema that the AI sees. Be specific!
+</Callout>
+
+---
+
+## Built-in Smart Context Tools
+
+Enable these in the provider to let AI capture app context:
+
+```tsx
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  tools={{
+    screenshot: true,   // Capture viewport
+    console: true,      // Read console logs/errors
+    network: true,      // See failed API requests
+    requireConsent: true,
+  }}
+>
+```
+
+### How Consent Works
+
+1. AI detects user might need visual help (keywords like "error", "broken", "see")
+2. Confirmation UI appears asking permission
+3. User can allow once, allow always, or deny
+4. If allowed, context is captured and sent to AI
+
+### Customize Built-in Tools
+
+```tsx
+tools={{
+  screenshot: true,
+  screenshotOptions: {
+    maxWidth: 1920,
+    maxHeight: 1080,
+    quality: 0.8,
+  },
+
+  console: true,
+  consoleOptions: {
+    maxLogs: 50,
+    levels: ['error', 'warn'], // Only capture errors/warnings
+  },
+
+  network: true,
+  networkOptions: {
+    maxRequests: 20,
+    failedOnly: true,
+    captureBody: false,
+  },
+}}
+```
+
+---
+
+## Permission Storage
+
+Remember user's tool permissions across sessions:
+
+```tsx
+<YourGPTProvider
+  tools={{ screenshot: true, requireConsent: true }}
+  permissionStorage={{
+    type: 'localStorage',
+    keyPrefix: 'myapp-copilot',
+  }}
+>
+```
+
+Now "Allow always" persists across page reloads.
+
+---
+
+## Tool Response Shape
+
+What you return from handlers matters:
+
+```ts
+interface ToolResponse {
+  success: boolean;        // Did it work?
+  message?: string;        // Human-readable status
+  data?: any;              // Structured data for AI
+  error?: string;          // Error message if failed
+}
+```
+
+### Good Response Examples
+
+```tsx
+// Success with data
+return {
+  success: true,
+  message: 'Found 5 matching products',
+  data: {
+    products: results,
+    total_count: 5,
+  },
+};
+
+// Failure with context
+return {
+  success: false,
+  error: 'Product not found',
+  data: {
+    searched_id: productId,
+    suggestion: 'Try searching by name instead',
+  },
+};
+```
+
+---
+
+## Multiple Tools
+
+Register as many as you need:
+
+```tsx
+function EcommerceTools() {
+  // Search products
+  useToolWithSchema({
+    name: 'search_products',
+    description: 'Search product catalog',
+    schema: z.object({ query: z.string() }),
+    handler: async ({ query }) => {
+      const results = await searchProducts(query);
+      return { success: true, data: { products: results } };
+    },
+  });
+
+  // Add to cart
+  useToolWithSchema({
+    name: 'add_to_cart',
+    description: 'Add a product to shopping cart',
+    schema: z.object({
+      product_id: z.string(),
+      quantity: z.number().default(1),
+    }),
+    handler: async ({ product_id, quantity }) => {
+      await cart.add(product_id, quantity);
+      return { success: true, message: `Added ${quantity} item(s) to cart` };
+    },
+  });
+
+  // Get cart
+  useToolWithSchema({
+    name: 'get_cart',
+    description: 'Get current shopping cart contents',
+    schema: z.object({}),
+    handler: async () => {
+      const items = await cart.getItems();
+      return {
+        success: true,
+        data: {
+          items,
+          total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+        },
+      };
+    },
+  });
+
+  return null;
+}
+```
+
+---
+
+## Tool Execution UI
+
+Show users what's happening:
+
+```tsx
+import { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/ui';
+
+// Detailed view
+<ToolSteps>
+  <ToolStep name="search_products" status="completed" />
+  <ToolStep name="get_pricing" status="running" />
+  <ToolStep name="add_to_cart" status="pending" />
+</ToolSteps>
+
+// Compact inline view
+<InlineToolSteps steps={toolCalls} />
+```
+
+---
+
+## System Prompt Tips
+
+Help the AI know when to use tools:
+
+```tsx
+const runtime = createRuntime({
+  adapter: new AnthropicAdapter({ ... }),
+  systemPrompt: `You are a shopping assistant.
+
+Available tools:
+- search_products: Search for items (use when user asks about products)
+- add_to_cart: Add items (use when user wants to buy something)
+- get_cart: Check cart (use when user asks about their cart)
+
+When user asks to find something, use search_products first.
+When they want to buy, add_to_cart.
+Always confirm before checkout.`,
+});
+```
+
+---
+
+## Real-World Example
+
+Full-featured support copilot:
+
+```tsx
+function SupportCopilot() {
+  const { user } = useAuth();
+
+  // Context
+  useAIContext({
+    key: 'user-info',
+    data: { name: user.name, plan: user.subscription, joined: user.createdAt },
+    description: 'Current user information',
+  });
+
+  // Tool: Search help docs
+  useToolWithSchema({
+    name: 'search_help',
+    description: 'Search knowledge base for answers',
+    schema: z.object({ query: z.string() }),
+    handler: async ({ query }) => {
+      const articles = await kb.search(query);
+      return { success: true, data: { articles } };
+    },
+  });
+
+  // Tool: Create ticket
+  useToolWithSchema({
+    name: 'create_ticket',
+    description: 'Create a support ticket',
+    schema: z.object({
+      subject: z.string(),
+      description: z.string(),
+      priority: z.enum(['low', 'medium', 'high']),
+    }),
+    handler: async (data) => {
+      const ticket = await support.createTicket({ ...data, userId: user.id });
+      return {
+        success: true,
+        message: `Ticket #${ticket.id} created`,
+        data: { ticket_id: ticket.id, status: 'open' },
+      };
+    },
+  });
+
+  // Tool: Check ticket status
+  useToolWithSchema({
+    name: 'check_ticket',
+    description: 'Get status of a support ticket',
+    schema: z.object({ ticket_id: z.string() }),
+    handler: async ({ ticket_id }) => {
+      const ticket = await support.getTicket(ticket_id);
+      return { success: true, data: ticket };
+    },
+  });
+
+  return <CopilotChat title="Support" />;
+}
+```
+
+Now users can say things like:
+- "How do I reset my password?" → searches help docs
+- "This is broken, I need help" → creates ticket
+- "What's the status of my ticket?" → checks ticket

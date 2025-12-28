@@ -1,0 +1,289 @@
+---
+title: Runtime (Server)
+description: Server-side API handler for chat requests
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Runtime
+
+The server-side handler. Talks to LLMs, handles the agentic loop, streams responses.
+
+---
+
+## Quick Setup
+
+```ts title="app/api/chat/route.ts"
+import { createRuntime, AnthropicAdapter } from '@yourgpt/runtime';
+
+const runtime = createRuntime({
+  adapter: new AnthropicAdapter({
+    apiKey: process.env.ANTHROPIC_API_KEY!,
+    model: 'claude-sonnet-4-20250514',
+  }),
+  systemPrompt: 'You are a helpful assistant.',
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
+```
+
+That's it. The runtime handles:
+- Parsing incoming messages
+- Calling the LLM
+- Processing tool calls
+- Streaming responses via SSE
+
+---
+
+## Adapters
+
+<Tabs items={['Anthropic', 'OpenAI', 'Google']}>
+  <Tab value="Anthropic">
+    ```ts
+    import { AnthropicAdapter } from '@yourgpt/runtime';
+
+    new AnthropicAdapter({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      model: 'claude-sonnet-4-20250514',
+      // Optional
+      maxTokens: 4096,
+      temperature: 0.7,
+    })
+    ```
+
+    **Models:** `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-haiku-20241022`
+  </Tab>
+  <Tab value="OpenAI">
+    ```ts
+    import { OpenAIAdapter } from '@yourgpt/runtime';
+
+    new OpenAIAdapter({
+      apiKey: process.env.OPENAI_API_KEY!,
+      model: 'gpt-4o-mini',
+      // Optional
+      maxTokens: 4096,
+      temperature: 0.7,
+    })
+    ```
+
+    **Models:** `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `o1-mini`
+  </Tab>
+  <Tab value="Google">
+    ```ts
+    import { GoogleAdapter } from '@yourgpt/runtime';
+
+    new GoogleAdapter({
+      apiKey: process.env.GOOGLE_API_KEY!,
+      model: 'gemini-1.5-flash',
+    })
+    ```
+
+    **Models:** `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`
+  </Tab>
+</Tabs>
+
+---
+
+## System Prompt
+
+Tell the AI who it is and what it can do:
+
+```ts
+const runtime = createRuntime({
+  adapter: new AnthropicAdapter({ ... }),
+  systemPrompt: `You are a customer support agent for Acme Corp.
+
+You can help users with:
+- Account questions
+- Billing issues
+- Product support
+
+Be friendly but professional. If you don't know something, say so.
+
+Available tools:
+- search_help: Find answers in our knowledge base
+- create_ticket: Create a support ticket
+- get_order: Look up order details`,
+});
+```
+
+<Callout type="info">
+The system prompt is where you define the AI's personality and capabilities. Make it specific!
+</Callout>
+
+---
+
+## Configuration Options
+
+```ts
+const runtime = createRuntime({
+  adapter: new AnthropicAdapter({ ... }),
+
+  systemPrompt: 'You are helpful.',
+
+  // Max iterations in the agentic loop (default: 10)
+  maxIterations: 10,
+
+  // Custom headers for requests
+  headers: {
+    'X-Custom-Header': 'value',
+  },
+});
+```
+
+---
+
+## How the Loop Works
+
+```
+Client sends: { messages, tools }
+         ↓
+Runtime calls LLM with system prompt + messages + tools
+         ↓
+LLM responds with text OR tool_calls
+         ↓
+If tool_calls:
+  → Runtime sends tool_calls event to client
+  → Client executes tools, sends results back
+  → Runtime continues with results
+  → Loop until LLM responds with text
+         ↓
+Stream final response to client
+```
+
+The runtime handles all of this. You don't need to manage the loop yourself.
+
+---
+
+## SSE Events
+
+The runtime streams these events to the client:
+
+| Event | Description |
+|-------|-------------|
+| `content` | Text chunks as they're generated |
+| `tool_calls` | Tools the AI wants to execute |
+| `tool_results` | Results of tool execution (from client) |
+| `sources` | Knowledge base citations |
+| `done` | Stream complete |
+| `error` | Something went wrong |
+
+---
+
+## Custom Request Handling
+
+Need more control? Access the raw request:
+
+```ts
+export async function POST(request: Request) {
+  const body = await request.json();
+
+  // Add custom context
+  const customContext = await getCustomContext(body.userId);
+
+  // Modify system prompt based on user
+  const runtime = createRuntime({
+    adapter: new AnthropicAdapter({ ... }),
+    systemPrompt: `You are helping ${customContext.userName}...`,
+  });
+
+  return runtime.handleRequest(request, {
+    additionalContext: customContext,
+  });
+}
+```
+
+---
+
+## Error Handling
+
+```ts
+export async function POST(request: Request) {
+  try {
+    return await runtime.handleRequest(request);
+  } catch (error) {
+    console.error('Chat error:', error);
+    return new Response(
+      JSON.stringify({ error: 'Something went wrong' }),
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## Multi-Provider Setup
+
+Swap providers based on conditions:
+
+```ts
+function getAdapter(model: string) {
+  if (model.startsWith('claude')) {
+    return new AnthropicAdapter({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      model,
+    });
+  }
+  if (model.startsWith('gpt')) {
+    return new OpenAIAdapter({
+      apiKey: process.env.OPENAI_API_KEY!,
+      model,
+    });
+  }
+  throw new Error(`Unknown model: ${model}`);
+}
+
+export async function POST(request: Request) {
+  const { model, ...rest } = await request.json();
+
+  const runtime = createRuntime({
+    adapter: getAdapter(model),
+    systemPrompt: '...',
+  });
+
+  // Reconstruct request with remaining body
+  const newRequest = new Request(request.url, {
+    method: 'POST',
+    body: JSON.stringify(rest),
+  });
+
+  return runtime.handleRequest(newRequest);
+}
+```
+
+---
+
+## Express / Fastify
+
+Not using Next.js? No problem:
+
+```ts title="Express"
+import express from 'express';
+import { createRuntime, AnthropicAdapter } from '@yourgpt/runtime';
+
+const app = express();
+app.use(express.json());
+
+const runtime = createRuntime({
+  adapter: new AnthropicAdapter({ ... }),
+  systemPrompt: '...',
+});
+
+app.post('/api/chat', async (req, res) => {
+  const response = await runtime.handleRequest(
+    new Request('http://localhost/api/chat', {
+      method: 'POST',
+      body: JSON.stringify(req.body),
+    })
+  );
+
+  // Convert to Node response
+  res.status(response.status);
+  response.headers.forEach((value, key) => res.setHeader(key, value));
+  res.send(await response.text());
+});
+```

@@ -1,5 +1,10 @@
 // Base adapter
-export type { LLMAdapter, ChatCompletionRequest, AdapterFactory } from "./base";
+export type {
+  LLMAdapter,
+  ChatCompletionRequest,
+  AdapterFactory,
+  CompletionResult,
+} from "./base";
 export {
   formatMessages,
   formatTools,

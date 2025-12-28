@@ -104,6 +104,13 @@ export {
   type PermissionOption,
 } from "./components/ui/permission-confirmation";
 
+// Follow-up questions (AI-generated suggestions)
+export {
+  FollowUpQuestions,
+  parseFollowUps,
+  type FollowUpProps,
+} from "./components/ui/follow-up";
+
 // DevLogger (Development debugging tool)
 export {
   DevLogger,
@@ -118,6 +125,7 @@ export {
   Chat,
   CopilotChat,
   ConnectedChat, // Alias for CopilotChat (backwards compatibility)
+  ToolExecutionMessage,
   PoweredBy,
   type ChatProps,
   type ChatMessage,

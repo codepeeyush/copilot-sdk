@@ -1,0 +1,289 @@
+---
+title: React Hooks
+description: All the hooks you need to build custom AI interfaces
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# React Hooks
+
+Everything is a hook. No magic, no black boxes.
+
+---
+
+## useAIChat
+
+The main hook. Gives you messages, loading state, and the ability to send.
+
+```tsx
+import { useAIChat } from '@yourgpt/react';
+
+function MyChat() {
+  const {
+    messages,        // Message[]
+    isLoading,       // boolean
+    error,           // Error | null
+    sendMessage,     // (content: string) => Promise<void>
+    stopGeneration,  // () => void
+    clearMessages,   // () => void
+    regenerate,      // () => Promise<void>
+  } = useAIChat();
+
+  return (
+    <div>
+      {messages.map(msg => (
+        <div key={msg.id}>
+          <strong>{msg.role}:</strong> {msg.content}
+        </div>
+      ))}
+      <button onClick={() => sendMessage('Hello!')}>Send</button>
+    </div>
+  );
+}
+```
+
+### Message Shape
+
+```ts
+interface Message {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  sources?: Source[];      // Knowledge base citations
+  toolCalls?: ToolCall[];  // Tools the AI called
+  createdAt: Date;
+}
+```
+
+---
+
+## useToolWithSchema
+
+Define a tool with Zod validation. This is where the magic happens.
+
+```tsx
+import { useToolWithSchema } from '@yourgpt/react';
+import { z } from 'zod';
+
+function WeatherTool() {
+  useToolWithSchema({
+    name: 'get_weather',
+    description: 'Get current weather for a city',
+    schema: z.object({
+      city: z.string().describe('City name'),
+      units: z.enum(['celsius', 'fahrenheit']).optional(),
+    }),
+    handler: async ({ city, units }) => {
+      const data = await fetchWeather(city, units);
+      return {
+        success: true,
+        temperature: data.temp,
+        conditions: data.conditions,
+      };
+    },
+  });
+
+  return null;
+}
+```
+
+<Callout type="info">
+**The handler return value is what the AI sees.** Make it informative!
+</Callout>
+
+### Tool Response Shape
+
+```ts
+interface ToolResponse {
+  success: boolean;
+  message?: string;  // Human-readable status
+  data?: any;        // Structured data for AI
+  error?: string;    // Error message if failed
+}
+```
+
+---
+
+## useAIContext
+
+Give the AI context about your app state. The AI gets this with every message.
+
+```tsx
+import { useAIContext } from '@yourgpt/react';
+
+function ProductPage({ product }) {
+  useAIContext({
+    key: 'current-product',
+    data: {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      inStock: product.inventory > 0,
+    },
+    description: 'The product the user is currently viewing',
+  });
+
+  return <ProductView product={product} />;
+}
+```
+
+Now when user asks "is this in stock?", the AI knows which product they mean.
+
+---
+
+## useAIAction
+
+Register an action without a schema. Simpler but less type-safe.
+
+```tsx
+import { useAIAction } from '@yourgpt/react';
+
+function NavigationActions() {
+  const navigate = useNavigate();
+
+  useAIAction({
+    name: 'go_to_page',
+    description: 'Navigate to a page',
+    parameters: {
+      page: {
+        type: 'string',
+        description: 'Page name: home, products, cart, checkout',
+        required: true,
+      },
+    },
+    handler: async ({ page }) => {
+      navigate(`/${page}`);
+      return { success: true, navigatedTo: page };
+    },
+  });
+
+  return null;
+}
+```
+
+---
+
+## useDevLogger
+
+Debug the AI conversation flow. See exactly what's happening.
+
+```tsx
+import { useDevLogger } from '@yourgpt/react';
+import { DevLogger } from '@yourgpt/ui';
+
+function DebugPanel() {
+  const loggerState = useDevLogger();
+
+  return <DevLogger state={loggerState} position="bottom-left" />;
+}
+```
+
+Shows: messages, tool calls, context, timing.
+
+---
+
+## useSuggestions
+
+Generate smart suggestions based on context.
+
+```tsx
+import { useSuggestions } from '@yourgpt/react';
+
+function SuggestionChips() {
+  const { suggestions, isLoading, generate } = useSuggestions({
+    count: 4,
+    style: 'conversational',
+  });
+
+  return (
+    <div className="flex gap-2">
+      {suggestions.map((s, i) => (
+        <button key={i} onClick={() => sendMessage(s)}>
+          {s}
+        </button>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+## useKnowledgeBase
+
+Search a knowledge base and inject results into AI context.
+
+```tsx
+import { useKnowledgeBase } from '@yourgpt/react';
+
+function HelpChat() {
+  useKnowledgeBase({
+    projectUid: 'your-project-id',
+    token: 'your-api-token',
+    limit: 5,
+  });
+
+  // That's it! Knowledge base is now searched automatically
+  // when users ask questions.
+}
+```
+
+---
+
+## useYourGPTContext
+
+Access the full internal state. For advanced use cases.
+
+```tsx
+import { useYourGPTContext } from '@yourgpt/react';
+
+function AdvancedDebug() {
+  const {
+    chat,     // messages, isLoading, error
+    tools,    // registered tools, pending confirmations
+    agent,    // agentic loop state
+    config,   // provider config
+  } = useYourGPTContext();
+
+  return (
+    <pre>{JSON.stringify({ chat, tools }, null, 2)}</pre>
+  );
+}
+```
+
+---
+
+## Hook Composition
+
+Hooks compose naturally. Build complex flows:
+
+```tsx
+function SmartCopilot() {
+  // Chat state
+  const { messages, sendMessage, isLoading } = useAIChat();
+
+  // Context awareness
+  useAIContext({
+    key: 'user-tier',
+    data: { isPremium: user.subscription === 'pro' },
+    description: 'User subscription tier',
+  });
+
+  // Custom tools
+  useToolWithSchema({
+    name: 'upgrade_plan',
+    description: 'Show upgrade modal',
+    schema: z.object({}),
+    handler: async () => {
+      showUpgradeModal();
+      return { success: true, message: 'Showing upgrade options' };
+    },
+  });
+
+  // Knowledge base
+  useKnowledgeBase({ projectUid: 'help-docs', token: apiToken });
+
+  return <ChatUI messages={messages} onSend={sendMessage} />;
+}
+```

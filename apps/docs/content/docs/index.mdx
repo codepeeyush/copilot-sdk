@@ -1,0 +1,169 @@
+---
+title: YourGPT Copilot SDK
+description: Build AI copilots for your app in minutes, not weeks
+icon: Rocket
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Build AI Copilots That Actually *Get* Your App
+
+Your AI assistant shouldn't be clueless about what's happening on screen. **YourGPT Copilot SDK** gives your AI eyes, context, and the ability to take action.
+
+<Callout type="info">
+**3 lines of code. That's it.** Wrap your app, drop in the chat component, done.
+</Callout>
+
+---
+
+## What Makes This Different?
+
+<Cards>
+  <Card title="Context Aware" icon="👁️">
+    AI can see screenshots, read console errors, and inspect network failures. It actually understands what went wrong.
+  </Card>
+  <Card title="Tool Execution" icon="🛠️">
+    Define tools with Zod schemas. AI calls them, you handle the result. Full agentic loop support.
+  </Card>
+  <Card title="Stupid Simple" icon="⚡">
+    No complex setup. No state management headaches. Just React hooks that work.
+  </Card>
+  <Card title="Multi-LLM" icon="🧠">
+    OpenAI, Anthropic, Google, Groq, Ollama. Swap providers without changing your code.
+  </Card>
+</Cards>
+
+---
+
+## The Gist
+
+```tsx
+import { YourGPTProvider } from '@yourgpt/react';
+import { CopilotChat } from '@yourgpt/ui';
+
+function App() {
+  return (
+    <YourGPTProvider runtimeUrl="/api/chat">
+      <CopilotChat />
+    </YourGPTProvider>
+  );
+}
+```
+
+That's a working AI chat. Want the AI to see your screen when users say "I have an error"?
+
+```tsx
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  tools={{ screenshot: true, console: true, requireConsent: true }}
+>
+  <CopilotChat />
+</YourGPTProvider>
+```
+
+Done. The SDK handles consent UI, captures context, sends it to the AI.
+
+---
+
+## Packages
+
+| Package | What it does |
+|---------|--------------|
+| `@yourgpt/react` | Hooks + Provider. The brain. |
+| `@yourgpt/ui` | Chat components. The face. |
+| `@yourgpt/runtime` | Server-side handler. The backend. |
+| `@yourgpt/core` | Types + utils. The foundation. |
+
+---
+
+## Quick Install
+
+<Tabs items={['npm', 'pnpm', 'bun']}>
+  <Tab value="npm">
+    ```bash
+    npm install @yourgpt/react @yourgpt/ui @yourgpt/runtime
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add @yourgpt/react @yourgpt/ui @yourgpt/runtime
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bun add @yourgpt/react @yourgpt/ui @yourgpt/runtime
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## The Flow
+
+```
+User types message
+       ↓
+YourGPTProvider sends to your /api/chat
+       ↓
+Runtime talks to OpenAI/Anthropic/etc
+       ↓
+AI decides: respond OR call a tool
+       ↓
+Tool executes client-side → result sent back
+       ↓
+AI continues until done
+       ↓
+Response streams to UI
+```
+
+All of this is handled. You just define tools and build UI.
+
+---
+
+## Real Example: Navigation Tool
+
+```tsx
+import { useToolWithSchema } from '@yourgpt/react';
+import { z } from 'zod';
+
+function NavigationTool() {
+  const navigate = useNavigate();
+
+  useToolWithSchema({
+    name: 'navigate_to_page',
+    description: 'Navigate user to a specific page',
+    schema: z.object({
+      path: z.string().describe('The URL path to navigate to'),
+    }),
+    handler: async ({ path }) => {
+      navigate(path);
+      return { success: true, navigatedTo: path };
+    },
+  });
+
+  return null;
+}
+```
+
+Now when user says "take me to settings", AI calls `navigate_to_page({ path: '/settings' })`.
+
+---
+
+## What's Next?
+
+<Cards>
+  <Card title="Installation" href="/docs/installation" icon="📦">
+    Full setup guide with Next.js, Vite, and more
+  </Card>
+  <Card title="React Hooks" href="/docs/react" icon="⚛️">
+    useChat, useToolWithSchema, useAIContext
+  </Card>
+  <Card title="UI Components" href="/docs/ui" icon="🎨">
+    CopilotChat, DevLogger, and primitives
+  </Card>
+  <Card title="Custom Tools" href="/docs/tools" icon="🔧">
+    Build tools that do anything
+  </Card>
+</Cards>

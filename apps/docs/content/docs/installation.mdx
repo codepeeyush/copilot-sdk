@@ -1,0 +1,226 @@
+---
+title: Installation
+description: Get up and running in 5 minutes
+icon: Package
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+# Get Started
+
+<Callout type="info">
+**Prerequisites:** Node 18+, React 18+, an LLM API key
+</Callout>
+
+## Install
+
+<Tabs items={['npm', 'pnpm', 'bun']}>
+  <Tab value="npm">
+    ```bash
+    npm install @yourgpt/react @yourgpt/ui @yourgpt/runtime zod
+    ```
+  </Tab>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add @yourgpt/react @yourgpt/ui @yourgpt/runtime zod
+    ```
+  </Tab>
+  <Tab value="bun">
+    ```bash
+    bun add @yourgpt/react @yourgpt/ui @yourgpt/runtime zod
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Next.js Setup
+
+<Steps>
+  <Step>
+    ### Create the API Route
+
+    ```ts title="app/api/chat/route.ts"
+    import { createRuntime, AnthropicAdapter } from '@yourgpt/runtime';
+
+    const runtime = createRuntime({
+      adapter: new AnthropicAdapter({
+        apiKey: process.env.ANTHROPIC_API_KEY!,
+        model: 'claude-sonnet-4-20250514',
+      }),
+      systemPrompt: `You are a helpful assistant.`,
+    });
+
+    export async function POST(request: Request) {
+      return runtime.handleRequest(request);
+    }
+    ```
+  </Step>
+
+  <Step>
+    ### Add the Provider
+
+    ```tsx title="app/providers.tsx"
+    'use client';
+
+    import { YourGPTProvider } from '@yourgpt/react';
+
+    export function Providers({ children }: { children: React.ReactNode }) {
+      return (
+        <YourGPTProvider runtimeUrl="/api/chat">
+          {children}
+        </YourGPTProvider>
+      );
+    }
+    ```
+
+    ```tsx title="app/layout.tsx"
+    import { Providers } from './providers';
+
+    export default function RootLayout({ children }) {
+      return (
+        <html>
+          <body>
+            <Providers>{children}</Providers>
+          </body>
+        </html>
+      );
+    }
+    ```
+  </Step>
+
+  <Step>
+    ### Drop in the Chat
+
+    ```tsx title="app/page.tsx"
+    import { CopilotChat } from '@yourgpt/ui';
+
+    export default function Home() {
+      return (
+        <div className="h-screen p-4">
+          <CopilotChat className="h-full rounded-xl border" />
+        </div>
+      );
+    }
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Environment Variables
+
+```bash title=".env.local"
+# Pick your provider
+ANTHROPIC_API_KEY=sk-ant-...
+# or
+OPENAI_API_KEY=sk-...
+```
+
+---
+
+## Adapters
+
+```ts title="OpenAI"
+import { OpenAIAdapter } from '@yourgpt/runtime';
+
+new OpenAIAdapter({
+  apiKey: process.env.OPENAI_API_KEY!,
+  model: 'gpt-4o-mini',
+})
+```
+
+```ts title="Anthropic"
+import { AnthropicAdapter } from '@yourgpt/runtime';
+
+new AnthropicAdapter({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  model: 'claude-sonnet-4-20250514',
+})
+```
+
+```ts title="Google (Gemini)"
+import { GoogleAdapter } from '@yourgpt/runtime';
+
+new GoogleAdapter({
+  apiKey: process.env.GOOGLE_API_KEY!,
+  model: 'gemini-1.5-flash',
+})
+```
+
+---
+
+## Enable Smart Context
+
+Want the AI to see screenshots when users report errors?
+
+```tsx title="app/providers.tsx"
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  tools={{
+    screenshot: true,    // Capture viewport
+    console: true,       // Read console logs
+    network: true,       // See failed requests
+    requireConsent: true // Always ask first
+  }}
+>
+  {children}
+</YourGPTProvider>
+```
+
+That's it. When users say "I'm seeing an error", the AI will ask permission to capture context.
+
+---
+
+## Add Custom Tools
+
+```tsx title="components/CopilotTools.tsx"
+import { useToolWithSchema } from '@yourgpt/react';
+import { z } from 'zod';
+
+export function CopilotTools() {
+  useToolWithSchema({
+    name: 'search_products',
+    description: 'Search for products in the catalog',
+    schema: z.object({
+      query: z.string(),
+      limit: z.number().optional().default(10),
+    }),
+    handler: async ({ query, limit }) => {
+      const results = await searchProducts(query, limit);
+      return { success: true, products: results };
+    },
+  });
+
+  return null;
+}
+```
+
+Render it inside your provider:
+
+```tsx
+<YourGPTProvider runtimeUrl="/api/chat">
+  <CopilotTools />
+  <CopilotChat />
+</YourGPTProvider>
+```
+
+Now users can say "find me wireless headphones" and the AI handles the rest.
+
+---
+
+## Troubleshooting
+
+<Callout type="warn">
+**"Failed to connect"** - Make sure your API route is at `/api/chat` (or update `runtimeUrl`)
+</Callout>
+
+<Callout type="warn">
+**"Invalid API key"** - Check your `.env.local` and restart the dev server
+</Callout>
+
+<Callout type="warn">
+**Tools not showing** - Ensure tool components are inside `YourGPTProvider`
+</Callout>
