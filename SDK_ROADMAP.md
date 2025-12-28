@@ -224,11 +224,11 @@ registerComponent("InteractiveForm", FormComponent);
 ## Package Architecture
 
 ```
-@yourgpt/core         # Types, utilities, capture logic (vanilla JS)
-@yourgpt/react        # React hooks and provider
+@yourgpt/copilot-sdk-core         # Types, utilities, capture logic (vanilla JS)
+@yourgpt/copilot-sdk-react        # React hooks and provider
 @yourgpt/vue          # Vue composables (coming soon)
-@yourgpt/ui           # Pre-built chat components
-@yourgpt/runtime      # Server-side LLM adapters
+@yourgpt/copilot-sdk-ui           # Pre-built chat components
+@yourgpt/copilot-sdk-runtime      # Server-side LLM adapters
 ```
 
 ### Framework-Agnostic Design
@@ -236,14 +236,14 @@ registerComponent("InteractiveForm", FormComponent);
 Core capture logic is written in vanilla JavaScript:
 
 ```
-@yourgpt/core
+@yourgpt/copilot-sdk-core
 ├── tools/
 │   ├── screenshot.ts    # Works in any framework
 │   ├── console.ts
 │   ├── network.ts
 │   └── intentDetector.ts
 
-@yourgpt/react           # React wrapper
+@yourgpt/copilot-sdk-react           # React wrapper
 ├── hooks/useTools.ts
 
 @yourgpt/vue             # Vue wrapper (future)
@@ -255,12 +255,12 @@ Core capture logic is written in vanilla JavaScript:
 ## Quick Start
 
 ```bash
-npm install @yourgpt/react @yourgpt/ui
+npm install @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui
 ```
 
 ```tsx
-import { YourGPTProvider } from "@yourgpt/react";
-import { ChatWindow } from "@yourgpt/ui";
+import { YourGPTProvider } from "@yourgpt/copilot-sdk-react";
+import { ChatWindow } from "@yourgpt/copilot-sdk-ui";
 
 function App() {
   return (

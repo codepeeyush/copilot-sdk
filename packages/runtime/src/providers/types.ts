@@ -8,7 +8,7 @@ import type {
   ToolDefinition,
   UnifiedToolCall,
   UnifiedToolResult,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 
 /**
  * Provider formatter interface

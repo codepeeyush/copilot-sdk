@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useYourGPTContext } from "@yourgpt/react";
+import { useYourGPTContext } from "@yourgpt/copilot-sdk-react";
 import { Chat, type ChatProps } from "./chat";
 import type { ToolExecutionData } from "./tools/tool-execution-list";
 
@@ -36,8 +36,8 @@ export type CopilotChatProps = Omit<
  *
  * @example
  * ```tsx
- * import { YourGPTProvider } from '@yourgpt/react';
- * import { CopilotChat } from '@yourgpt/ui';
+ * import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+ * import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
  *
  * function App() {
  *   return (
@@ -79,23 +79,6 @@ export function CopilotChat(props: CopilotChatProps) {
       approvalStatus: exec.approvalStatus,
       approvalMessage: exec.approvalMessage,
     }),
-  );
-
-  // Debug: Log raw messages from state vs what we render
-  console.log(
-    "[CopilotChat] Raw messages from state:",
-    chat.messages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content:
-        m.content?.substring(0, 50) +
-        (m.content && m.content.length > 50 ? "..." : ""),
-      tool_calls: m.tool_calls?.map((tc) => ({
-        id: tc.id,
-        name: tc.function?.name,
-      })),
-      tool_call_id: m.tool_call_id,
-    })),
   );
 
   // Include all messages (user, assistant, tool) in the chat display
@@ -142,38 +125,6 @@ export function CopilotChat(props: CopilotChatProps) {
       toolExecutions: messageToolExecutions,
     };
   });
-
-  // Debug: Log visible messages that will be rendered
-  console.log(
-    "[CopilotChat] Visible messages to render:",
-    visibleMessages.map((m) => ({
-      id: m.id,
-      role: m.role,
-      content:
-        m.content?.substring(0, 50) +
-        (m.content && m.content.length > 50 ? "..." : ""),
-      tool_calls: m.tool_calls?.map((tc) => ({
-        id: tc.id,
-        name: tc.function?.name,
-      })),
-      tool_call_id: m.tool_call_id,
-      toolExecutions: m.toolExecutions?.map((e) => ({
-        id: e.id,
-        name: e.name,
-        status: e.status,
-      })),
-    })),
-  );
-
-  // Debug: Log current tool executions from agentLoop state
-  console.log(
-    "[CopilotChat] Tool executions from agentLoop:",
-    toolExecutions.map((e) => ({
-      id: e.id,
-      name: e.name,
-      status: e.status,
-    })),
-  );
 
   // Show suggestions only when no messages
   const suggestions =

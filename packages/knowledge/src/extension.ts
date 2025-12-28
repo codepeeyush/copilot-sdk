@@ -1,4 +1,4 @@
-import type { Extension } from "@yourgpt/core";
+import type { Extension } from "@yourgpt/copilot-sdk-core";
 import type { KnowledgeBaseConfig } from "./client/yourgpt-api";
 
 /**
@@ -18,8 +18,8 @@ export interface KnowledgeBaseExtensionConfig extends KnowledgeBaseConfig {
  *
  * @example
  * ```tsx
- * import { YourGPTProvider } from '@yourgpt/react';
- * import { KnowledgeBaseExtension } from '@yourgpt/knowledge';
+ * import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+ * import { KnowledgeBaseExtension } from '@yourgpt/copilot-sdk-knowledge';
  *
  * <YourGPTProvider
  *   config={{ provider: 'openai', apiKey: '...' }}

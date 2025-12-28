@@ -1,5 +1,5 @@
 /**
- * @yourgpt/ui
+ * @yourgpt/copilot-sdk-ui
  *
  * Pre-built UI components for YourGPT Copilot SDK
  */

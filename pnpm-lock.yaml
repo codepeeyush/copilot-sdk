@@ -385,10 +385,10 @@ importers:
       '@xyflow/react':
         specifier: ^12.3.0
         version: 12.10.0(@types/react@18.3.27)(immer@10.2.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@yourgpt/react':
+      '@yourgpt/copilot-sdk-react':
         specifier: workspace:^
         version: link:../../packages/react
-      '@yourgpt/ui':
+      '@yourgpt/copilot-sdk-ui':
         specifier: workspace:^
         version: link:../../packages/ui
       ajv:
@@ -758,7 +758,7 @@ importers:
       '@typescript-eslint/parser':
         specifier: ^6.12.0
         version: 6.21.0(eslint@8.57.1)(typescript@5.9.3)
-      '@yourgpt/runtime':
+      '@yourgpt/copilot-sdk-runtime':
         specifier: workspace:^
         version: link:../../packages/runtime
       autoprefixer:
@@ -816,10 +816,10 @@ importers:
 
   packages/knowledge:
     dependencies:
-      '@yourgpt/core':
+      '@yourgpt/copilot-sdk-core':
         specifier: workspace:*
         version: link:../core
-      '@yourgpt/react':
+      '@yourgpt/copilot-sdk-react':
         specifier: workspace:*
         version: link:../react
     devDependencies:
@@ -844,7 +844,7 @@ importers:
 
   packages/react:
     dependencies:
-      '@yourgpt/core':
+      '@yourgpt/copilot-sdk-core':
         specifier: workspace:*
         version: link:../core
     devDependencies:
@@ -872,7 +872,7 @@ importers:
 
   packages/runtime:
     dependencies:
-      '@yourgpt/core':
+      '@yourgpt/copilot-sdk-core':
         specifier: workspace:*
         version: link:../core
       hono:
@@ -915,10 +915,10 @@ importers:
       '@radix-ui/react-tooltip':
         specifier: ^1.2.8
         version: 1.2.8(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@yourgpt/core':
+      '@yourgpt/copilot-sdk-core':
         specifier: workspace:*
         version: link:../core
-      '@yourgpt/react':
+      '@yourgpt/copilot-sdk-react':
         specifier: workspace:*
         version: link:../react
       class-variance-authority:

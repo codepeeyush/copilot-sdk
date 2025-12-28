@@ -5,7 +5,7 @@ import type {
   PermissionStorageAdapter,
   PermissionStorageConfig,
   PermissionLevel,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 
 const DEFAULT_KEY_PREFIX = "yourgpt-permissions";
 

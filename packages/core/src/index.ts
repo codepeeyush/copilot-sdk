@@ -1,5 +1,5 @@
 /**
- * @yourgpt/core
+ * @yourgpt/copilot-sdk-core
  *
  * Core types and utilities for YourGPT Copilot SDK
  */
@@ -77,9 +77,6 @@ export type {
   Source,
   ToolCall,
   TokenUsage,
-  // Legacy (deprecated)
-  ToolResult,
-  LegacyToolCall,
   // Config types
   LLMProvider,
   LLMConfig,

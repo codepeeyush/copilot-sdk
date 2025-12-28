@@ -1,5 +1,5 @@
 {
-  "name": "@yourgpt/core",
+  "name": "@yourgpt/copilot-sdk-core",
   "version": "0.1.0",
   "description": "Core types and utilities for YourGPT Copilot SDK",
   "main": "./dist/index.js",

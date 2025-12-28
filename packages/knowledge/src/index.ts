@@ -1,5 +1,5 @@
 /**
- * @yourgpt/knowledge
+ * @yourgpt/copilot-sdk-knowledge
  *
  * Knowledge base extension for YourGPT Copilot SDK
  *
@@ -38,4 +38,4 @@ export {
 } from "./components/SourcesPanel";
 
 // Re-export Source type for convenience
-export type { Source } from "@yourgpt/core";
+export type { Source } from "@yourgpt/copilot-sdk-core";

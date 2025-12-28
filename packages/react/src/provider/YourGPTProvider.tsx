@@ -32,8 +32,8 @@ import type {
   ToolPermission,
   PermissionStorageConfig,
   PermissionStorageAdapter,
-} from "@yourgpt/core";
-import { generateThreadTitle } from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
+import { generateThreadTitle } from "@yourgpt/copilot-sdk-core";
 import {
   generateMessageId,
   generateThreadId,
@@ -51,7 +51,7 @@ import {
   getNetworkRequests,
   formatLogsForAI,
   formatRequestsForAI,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 import {
   addNode,
   removeNode,

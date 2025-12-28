@@ -246,7 +246,7 @@ export function zodObjectToInputSchema(schema: unknown): ToolInputSchema {
  * @example
  * ```ts
  * import { z } from "zod";
- * import { defineTool } from "@yourgpt/core";
+ * import { defineTool } from "@yourgpt/copilot-sdk-core";
  *
  * const navigateTool = defineTool({
  *   name: "navigate",

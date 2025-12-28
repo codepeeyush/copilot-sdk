@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import type { ActionDefinition } from "@yourgpt/core";
+import type { ActionDefinition } from "@yourgpt/copilot-sdk-core";
 import { useYourGPTContext } from "../context/YourGPTContext";
 
 /**

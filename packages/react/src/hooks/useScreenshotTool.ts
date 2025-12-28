@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useCallback } from "react";
-import { captureScreenshot, type ScreenshotOptions } from "@yourgpt/core";
+import {
+  captureScreenshot,
+  type ScreenshotOptions,
+} from "@yourgpt/copilot-sdk-core";
 import { useYourGPTContext } from "../context/YourGPTContext";
 
 /**

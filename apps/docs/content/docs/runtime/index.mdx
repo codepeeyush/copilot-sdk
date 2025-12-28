@@ -15,7 +15,7 @@ The server-side handler. Talks to LLMs, handles the agentic loop, streams respon
 ## Quick Setup
 
 ```ts title="app/api/chat/route.ts"
-import { createRuntime, AnthropicAdapter } from '@yourgpt/runtime';
+import { createRuntime, AnthropicAdapter } from '@yourgpt/copilot-sdk-runtime';
 
 const runtime = createRuntime({
   adapter: new AnthropicAdapter({
@@ -35,15 +35,16 @@ That's it. The runtime handles:
 - Calling the LLM
 - Processing tool calls
 - Streaming responses via SSE
+- Running the agentic loop
 
 ---
 
 ## Adapters
 
-<Tabs items={['Anthropic', 'OpenAI', 'Google']}>
+<Tabs items={['Anthropic', 'OpenAI', 'Groq', 'Ollama']}>
   <Tab value="Anthropic">
     ```ts
-    import { AnthropicAdapter } from '@yourgpt/runtime';
+    import { AnthropicAdapter } from '@yourgpt/copilot-sdk-runtime';
 
     new AnthropicAdapter({
       apiKey: process.env.ANTHROPIC_API_KEY!,
@@ -58,7 +59,7 @@ That's it. The runtime handles:
   </Tab>
   <Tab value="OpenAI">
     ```ts
-    import { OpenAIAdapter } from '@yourgpt/runtime';
+    import { OpenAIAdapter } from '@yourgpt/copilot-sdk-runtime';
 
     new OpenAIAdapter({
       apiKey: process.env.OPENAI_API_KEY!,
@@ -71,19 +72,55 @@ That's it. The runtime handles:
 
     **Models:** `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `o1-mini`
   </Tab>
-  <Tab value="Google">
+  <Tab value="Groq">
     ```ts
-    import { GoogleAdapter } from '@yourgpt/runtime';
+    import { GroqAdapter } from '@yourgpt/copilot-sdk-runtime';
 
-    new GoogleAdapter({
-      apiKey: process.env.GOOGLE_API_KEY!,
-      model: 'gemini-1.5-flash',
+    new GroqAdapter({
+      apiKey: process.env.GROQ_API_KEY!,
+      model: 'llama-3.3-70b-versatile',
+      // Optional
+      maxTokens: 4096,
+      temperature: 0.7,
     })
     ```
 
-    **Models:** `gemini-1.5-flash`, `gemini-1.5-pro`, `gemini-2.0-flash`
+    **Models:** `llama-3.3-70b-versatile`, `mixtral-8x7b-32768`, `gemma2-9b-it`
+  </Tab>
+  <Tab value="Ollama">
+    ```ts
+    import { OllamaAdapter } from '@yourgpt/copilot-sdk-runtime';
+
+    new OllamaAdapter({
+      baseUrl: 'http://localhost:11434',
+      model: 'llama3.2',
+      // Optional
+      maxTokens: 4096,
+      temperature: 0.7,
+    })
+    ```
+
+    **Models:** Any model available in your Ollama instance
   </Tab>
 </Tabs>
+
+### Factory Functions
+
+You can also use factory functions:
+
+```ts
+import {
+  createOpenAIAdapter,
+  createAnthropicAdapter,
+  createGroqAdapter,
+  createOllamaAdapter,
+} from '@yourgpt/copilot-sdk-runtime';
+
+const adapter = createAnthropicAdapter({
+  apiKey: process.env.ANTHROPIC_API_KEY!,
+  model: 'claude-sonnet-4-20250514',
+});
+```
 
 ---
 
@@ -136,7 +173,7 @@ const runtime = createRuntime({
 
 ---
 
-## How the Loop Works
+## How the Agentic Loop Works
 
 ```
 Client sends: { messages, tools }
@@ -149,12 +186,35 @@ If tool_calls:
   → Runtime sends tool_calls event to client
   → Client executes tools, sends results back
   → Runtime continues with results
-  → Loop until LLM responds with text
+  → Loop until LLM responds with text (or max iterations)
          ↓
 Stream final response to client
 ```
 
 The runtime handles all of this. You don't need to manage the loop yourself.
+
+### runAgentLoop
+
+For advanced use cases, you can run the agent loop directly:
+
+```ts
+import { runAgentLoop, DEFAULT_MAX_ITERATIONS } from '@yourgpt/copilot-sdk-runtime';
+
+const result = await runAgentLoop({
+  adapter,
+  messages,
+  tools,
+  systemPrompt,
+  maxIterations: DEFAULT_MAX_ITERATIONS, // 10
+  onToolCall: async (toolCall) => {
+    // Handle tool execution
+    return { success: true, data: {} };
+  },
+  onStream: (event) => {
+    // Handle streaming events
+  },
+});
+```
 
 ---
 
@@ -164,12 +224,182 @@ The runtime streams these events to the client:
 
 | Event | Description |
 |-------|-------------|
-| `content` | Text chunks as they're generated |
+| `message_start` | Stream started |
+| `message_delta` | Text chunks as they're generated |
+| `message_end` | Message complete |
 | `tool_calls` | Tools the AI wants to execute |
-| `tool_results` | Results of tool execution (from client) |
+| `tool_status` | Tool execution status update |
+| `tool_result` | Results of tool execution |
+| `loop_iteration` | Agent loop iteration info |
+| `loop_complete` | Agent loop finished |
 | `sources` | Knowledge base citations |
 | `done` | Stream complete |
 | `error` | Something went wrong |
+
+---
+
+## Framework Integrations
+
+### Next.js (App Router)
+
+```ts title="app/api/chat/route.ts"
+import { createRuntime, AnthropicAdapter } from '@yourgpt/copilot-sdk-runtime';
+
+const runtime = createRuntime({
+  adapter: new AnthropicAdapter({ ... }),
+  systemPrompt: '...',
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
+```
+
+### Next.js (Pages Router)
+
+```ts title="pages/api/chat.ts"
+import { createNextHandler, createRuntime } from '@yourgpt/copilot-sdk-runtime';
+
+const runtime = createRuntime({ ... });
+
+export default createNextHandler(runtime);
+```
+
+### Express
+
+```ts
+import express from 'express';
+import { createRuntime, createExpressMiddleware } from '@yourgpt/copilot-sdk-runtime';
+
+const app = express();
+const runtime = createRuntime({ ... });
+
+app.use('/api/chat', createExpressMiddleware(runtime));
+```
+
+### Hono
+
+```ts
+import { createHonoApp, createRuntime } from '@yourgpt/copilot-sdk-runtime';
+
+const runtime = createRuntime({ ... });
+const app = createHonoApp(runtime);
+
+export default app;
+```
+
+### Node.js HTTP
+
+```ts
+import http from 'http';
+import { createNodeHandler, createRuntime } from '@yourgpt/copilot-sdk-runtime';
+
+const runtime = createRuntime({ ... });
+const handler = createNodeHandler(runtime);
+
+const server = http.createServer(handler);
+server.listen(3000);
+```
+
+---
+
+## Streaming Utilities
+
+For custom streaming implementations:
+
+```ts
+import {
+  createSSEHeaders,
+  formatSSEData,
+  createEventStream,
+  createSSEResponse,
+} from '@yourgpt/copilot-sdk-runtime';
+
+// Get standard SSE headers
+const headers = createSSEHeaders();
+
+// Format data as SSE
+const sseData = formatSSEData({ type: 'message_delta', content: 'Hello' });
+
+// Create event stream
+const stream = createEventStream(async function* () {
+  yield { type: 'message_start' };
+  yield { type: 'message_delta', content: 'Hello' };
+  yield { type: 'done' };
+});
+
+// Create full SSE response
+const response = createSSEResponse(stream);
+```
+
+---
+
+## Provider Formatters
+
+For working with different LLM providers' tool formats:
+
+```ts
+import {
+  getFormatter,
+  isProviderSupported,
+  getSupportedProviders,
+  anthropicFormatter,
+  openaiFormatter,
+  geminiFormatter,
+} from '@yourgpt/copilot-sdk-runtime';
+
+// Get formatter for a provider
+const formatter = getFormatter('anthropic');
+
+// Format tool for provider
+const anthropicTool = formatter.formatTool(toolDefinition);
+
+// Parse tool call from provider response
+const toolCall = formatter.parseToolCall(providerResponse);
+
+// Format tool result for provider
+const toolResult = formatter.formatToolResult(result);
+
+// Check provider support
+if (isProviderSupported('anthropic')) {
+  // ...
+}
+
+// Get all supported providers
+const providers = getSupportedProviders(); // ['anthropic', 'openai', 'gemini']
+```
+
+---
+
+## Knowledge Base (Server-side)
+
+Integrate with YourGPT Knowledge Base:
+
+```ts
+import {
+  searchKnowledgeBase,
+  formatKnowledgeResultsForAI,
+  KNOWLEDGE_BASE_SYSTEM_INSTRUCTION,
+} from '@yourgpt/copilot-sdk-runtime';
+
+// Search knowledge base
+const results = await searchKnowledgeBase({
+  projectUid: 'your-project-id',
+  query: 'how to reset password',
+  token: 'your-api-token',
+  limit: 5,
+});
+
+// Format results for LLM context
+const context = formatKnowledgeResultsForAI(results);
+
+// Add to system prompt
+const systemPrompt = `${KNOWLEDGE_BASE_SYSTEM_INSTRUCTION}
+
+${context}
+
+You are a helpful assistant...`;
+```
 
 ---
 
@@ -221,6 +451,13 @@ export async function POST(request: Request) {
 Swap providers based on conditions:
 
 ```ts
+import {
+  OpenAIAdapter,
+  AnthropicAdapter,
+  GroqAdapter,
+  createRuntime,
+} from '@yourgpt/copilot-sdk-runtime';
+
 function getAdapter(model: string) {
   if (model.startsWith('claude')) {
     return new AnthropicAdapter({
@@ -231,6 +468,12 @@ function getAdapter(model: string) {
   if (model.startsWith('gpt')) {
     return new OpenAIAdapter({
       apiKey: process.env.OPENAI_API_KEY!,
+      model,
+    });
+  }
+  if (model.startsWith('llama') || model.startsWith('mixtral')) {
+    return new GroqAdapter({
+      apiKey: process.env.GROQ_API_KEY!,
       model,
     });
   }
@@ -245,7 +488,6 @@ export async function POST(request: Request) {
     systemPrompt: '...',
   });
 
-  // Reconstruct request with remaining body
   const newRequest = new Request(request.url, {
     method: 'POST',
     body: JSON.stringify(rest),
@@ -257,33 +499,57 @@ export async function POST(request: Request) {
 
 ---
 
-## Express / Fastify
+## All Exports
 
-Not using Next.js? No problem:
+```ts
+// Server
+export { Runtime, createRuntime } from '@yourgpt/copilot-sdk-runtime';
 
-```ts title="Express"
-import express from 'express';
-import { createRuntime, AnthropicAdapter } from '@yourgpt/runtime';
+// Framework integrations
+export {
+  createHonoApp,
+  createNextHandler,
+  createExpressMiddleware,
+  createNodeHandler,
+} from '@yourgpt/copilot-sdk-runtime';
 
-const app = express();
-app.use(express.json());
+// Streaming utilities
+export {
+  createSSEHeaders,
+  formatSSEData,
+  createEventStream,
+  createSSEResponse,
+} from '@yourgpt/copilot-sdk-runtime';
 
-const runtime = createRuntime({
-  adapter: new AnthropicAdapter({ ... }),
-  systemPrompt: '...',
-});
+// Agent loop
+export { runAgentLoop, DEFAULT_MAX_ITERATIONS } from '@yourgpt/copilot-sdk-runtime';
 
-app.post('/api/chat', async (req, res) => {
-  const response = await runtime.handleRequest(
-    new Request('http://localhost/api/chat', {
-      method: 'POST',
-      body: JSON.stringify(req.body),
-    })
-  );
+// Knowledge Base
+export {
+  searchKnowledgeBase,
+  formatKnowledgeResultsForAI,
+  KNOWLEDGE_BASE_SYSTEM_INSTRUCTION,
+} from '@yourgpt/copilot-sdk-runtime';
 
-  // Convert to Node response
-  res.status(response.status);
-  response.headers.forEach((value, key) => res.setHeader(key, value));
-  res.send(await response.text());
-});
+// Adapters
+export {
+  OpenAIAdapter,
+  createOpenAIAdapter,
+  AnthropicAdapter,
+  createAnthropicAdapter,
+  GroqAdapter,
+  createGroqAdapter,
+  OllamaAdapter,
+  createOllamaAdapter,
+} from '@yourgpt/copilot-sdk-runtime';
+
+// Provider formatters
+export {
+  getFormatter,
+  isProviderSupported,
+  getSupportedProviders,
+  anthropicFormatter,
+  openaiFormatter,
+  geminiFormatter,
+} from '@yourgpt/copilot-sdk-runtime';
 ```

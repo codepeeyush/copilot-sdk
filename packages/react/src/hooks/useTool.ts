@@ -6,7 +6,7 @@ import type {
   ToolResponse,
   ToolContext,
   ToolRenderProps,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 import { useYourGPTContext } from "../context/YourGPTContext";
 
 /**

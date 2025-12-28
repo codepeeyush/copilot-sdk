@@ -1,4 +1,4 @@
-import type { Source } from "@yourgpt/core";
+import type { Source } from "@yourgpt/copilot-sdk-core";
 
 /**
  * YourGPT Knowledge Base configuration

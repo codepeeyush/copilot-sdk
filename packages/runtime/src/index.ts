@@ -1,5 +1,5 @@
 /**
- * @yourgpt/runtime
+ * @yourgpt/copilot-sdk-runtime
  *
  * Backend runtime server for YourGPT Copilot SDK
  */
@@ -112,4 +112,4 @@ export type {
   UnifiedToolResult,
   ToolExecution,
   AgentLoopConfig,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";

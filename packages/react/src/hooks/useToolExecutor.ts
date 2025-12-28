@@ -6,7 +6,7 @@ import type {
   ToolResponse,
   UnifiedToolCall,
   ToolExecution,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 import { useYourGPTContext } from "../context/YourGPTContext";
 
 /**

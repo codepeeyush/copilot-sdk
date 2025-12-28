@@ -1,5 +1,5 @@
 {
-  "name": "@yourgpt/react",
+  "name": "@yourgpt/copilot-sdk-react",
   "version": "0.1.0",
   "description": "React hooks and components for YourGPT Copilot SDK",
   "main": "./dist/index.js",
@@ -23,7 +23,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@yourgpt/core": "workspace:*"
+    "@yourgpt/copilot-sdk-core": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

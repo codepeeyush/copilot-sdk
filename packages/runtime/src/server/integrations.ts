@@ -74,7 +74,7 @@ export function createHonoApp(runtime: Runtime): Hono {
  * @example
  * ```ts
  * // app/api/chat/route.ts
- * import { createNextHandler } from '@yourgpt/runtime';
+ * import { createNextHandler } from '@yourgpt/copilot-sdk-runtime';
  *
  * const handler = createNextHandler({
  *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
@@ -97,7 +97,7 @@ export function createNextHandler(config: RuntimeConfig) {
  * @example
  * ```ts
  * import express from 'express';
- * import { createExpressMiddleware } from '@yourgpt/runtime';
+ * import { createExpressMiddleware } from '@yourgpt/copilot-sdk-runtime';
  *
  * const app = express();
  *
@@ -169,7 +169,7 @@ export function createExpressMiddleware(config: RuntimeConfig) {
  * @example
  * ```ts
  * import http from 'http';
- * import { createNodeHandler } from '@yourgpt/runtime';
+ * import { createNodeHandler } from '@yourgpt/copilot-sdk-runtime';
  *
  * const handler = createNodeHandler({
  *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },

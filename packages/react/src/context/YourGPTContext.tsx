@@ -16,7 +16,7 @@ import type {
   ToolApprovalStatus,
   PermissionLevel,
   ToolPermission,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 import type { ContextTreeNode } from "../utils/context-tree";
 
 /**

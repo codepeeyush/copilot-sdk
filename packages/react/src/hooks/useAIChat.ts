@@ -54,7 +54,7 @@ export type UseAIChatReturn = Omit<
  * @example
  * ```tsx
  * // Use with CopilotChat component (recommended)
- * import { CopilotChat } from '@yourgpt/ui';
+ * import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
  *
  * function App() {
  *   return (

@@ -209,9 +209,30 @@ export function DefaultMessage({
           />
         )}
 
-        {/* Tool Approval Confirmations (with permission options) */}
+        {/* Message Content - show FIRST (AI's words before tool calls) */}
+        {cleanContent?.trim() && (
+          <MessageContent
+            className={cn(
+              "rounded-lg px-4 py-2 bg-muted",
+              assistantMessageClassName,
+            )}
+            markdown
+            size={size}
+          >
+            {cleanContent}
+          </MessageContent>
+        )}
+
+        {/* Tool Steps (compact display) - show AFTER message content */}
+        {toolSteps && toolSteps.length > 0 && (
+          <div className="mt-2 rounded-lg bg-muted/50 px-3 py-2">
+            <ToolSteps steps={toolSteps} />
+          </div>
+        )}
+
+        {/* Tool Approval Confirmations (with permission options) - show last for pending tools */}
         {pendingApprovalTools && pendingApprovalTools.length > 0 && (
-          <div className="mb-2 space-y-2">
+          <div className="mt-2 space-y-2">
             {pendingApprovalTools.map((tool) => (
               <PermissionConfirmation
                 key={tool.id}
@@ -230,27 +251,6 @@ export function DefaultMessage({
               />
             ))}
           </div>
-        )}
-
-        {/* Tool Steps (compact display) */}
-        {toolSteps && toolSteps.length > 0 && (
-          <div className="mb-2 rounded-lg bg-muted/50 px-3 py-2">
-            <ToolSteps steps={toolSteps} />
-          </div>
-        )}
-
-        {/* Message Content - only show if there's content */}
-        {cleanContent?.trim() && (
-          <MessageContent
-            className={cn(
-              "rounded-lg px-4 py-2 bg-muted",
-              assistantMessageClassName,
-            )}
-            markdown
-            size={size}
-          >
-            {cleanContent}
-          </MessageContent>
         )}
 
         {/* Image Attachments */}

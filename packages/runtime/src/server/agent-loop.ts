@@ -19,8 +19,11 @@ import type {
   AIProvider,
   AgentLoopConfig,
   Message,
-} from "@yourgpt/core";
-import { generateToolCallId, generateMessageId } from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
+import {
+  generateToolCallId,
+  generateMessageId,
+} from "@yourgpt/copilot-sdk-core";
 import { getFormatter } from "../providers";
 
 // ========================================

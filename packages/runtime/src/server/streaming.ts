@@ -1,4 +1,4 @@
-import type { StreamEvent } from "@yourgpt/core";
+import type { StreamEvent } from "@yourgpt/copilot-sdk-core";
 
 /**
  * Create SSE response headers

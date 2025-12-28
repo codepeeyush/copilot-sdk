@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import type { Source } from "@yourgpt/core";
+import type { Source } from "@yourgpt/copilot-sdk-core";
 
 /**
  * SourcesPanel props

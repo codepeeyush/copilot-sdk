@@ -4,7 +4,7 @@ import type {
   KnowledgeBaseConfig,
   ToolDefinition,
   AgentLoopConfig,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 import type { LLMAdapter } from "../adapters";
 
 /**

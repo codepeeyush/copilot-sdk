@@ -5,10 +5,30 @@ description: All the hooks you need to build custom AI interfaces
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Cards, Card } from 'fumadocs-ui/components/card';
 
 # React Hooks
 
 Everything is a hook. No magic, no black boxes.
+
+---
+
+## Hook Overview
+
+<Cards>
+  <Card title="useAIChat" icon="💬">
+    Main chat hook - messages, loading state, send/stop
+  </Card>
+  <Card title="useToolWithSchema" icon="🔧">
+    Define tools with Zod schemas for type-safe AI actions
+  </Card>
+  <Card title="useAIContext" icon="📋">
+    Provide app context that AI sees with every message
+  </Card>
+  <Card title="useYourGPTContext" icon="⚙️">
+    Access full internal SDK state for advanced use cases
+  </Card>
+</Cards>
 
 ---
 
@@ -17,7 +37,7 @@ Everything is a hook. No magic, no black boxes.
 The main hook. Gives you messages, loading state, and the ability to send.
 
 ```tsx
-import { useAIChat } from '@yourgpt/react';
+import { useAIChat } from '@yourgpt/copilot-sdk-react';
 
 function MyChat() {
   const {
@@ -48,7 +68,7 @@ function MyChat() {
 ```ts
 interface Message {
   id: string;
-  role: 'user' | 'assistant' | 'system';
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
   sources?: Source[];      // Knowledge base citations
   toolCalls?: ToolCall[];  // Tools the AI called
@@ -63,7 +83,7 @@ interface Message {
 Define a tool with Zod validation. This is where the magic happens.
 
 ```tsx
-import { useToolWithSchema } from '@yourgpt/react';
+import { useToolWithSchema } from '@yourgpt/copilot-sdk-react';
 import { z } from 'zod';
 
 function WeatherTool() {
@@ -92,14 +112,67 @@ function WeatherTool() {
 **The handler return value is what the AI sees.** Make it informative!
 </Callout>
 
-### Tool Response Shape
+### useToolsWithSchema
 
-```ts
-interface ToolResponse {
-  success: boolean;
-  message?: string;  // Human-readable status
-  data?: any;        // Structured data for AI
-  error?: string;    // Error message if failed
+Register multiple tools at once:
+
+```tsx
+import { useToolsWithSchema } from '@yourgpt/copilot-sdk-react';
+import { z } from 'zod';
+
+function MyTools() {
+  useToolsWithSchema([
+    {
+      name: 'search_products',
+      description: 'Search for products',
+      schema: z.object({ query: z.string() }),
+      handler: async ({ query }) => {
+        const results = await searchProducts(query);
+        return { success: true, products: results };
+      },
+    },
+    {
+      name: 'add_to_cart',
+      description: 'Add item to cart',
+      schema: z.object({ productId: z.string(), quantity: z.number() }),
+      handler: async ({ productId, quantity }) => {
+        await addToCart(productId, quantity);
+        return { success: true, message: 'Added to cart' };
+      },
+    },
+  ]);
+
+  return null;
+}
+```
+
+---
+
+## useTool / useTools
+
+Register tools without Zod schemas (simpler but less type-safe):
+
+```tsx
+import { useTool } from '@yourgpt/copilot-sdk-react';
+
+function NavigationTool() {
+  useTool({
+    name: 'navigate',
+    description: 'Navigate to a page',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'URL path' },
+      },
+      required: ['path'],
+    },
+    handler: async ({ path }) => {
+      window.location.href = path;
+      return { success: true };
+    },
+  });
+
+  return null;
 }
 ```
 
@@ -110,7 +183,7 @@ interface ToolResponse {
 Give the AI context about your app state. The AI gets this with every message.
 
 ```tsx
-import { useAIContext } from '@yourgpt/react';
+import { useAIContext } from '@yourgpt/copilot-sdk-react';
 
 function ProductPage({ product }) {
   useAIContext({
@@ -130,6 +203,31 @@ function ProductPage({ product }) {
 
 Now when user asks "is this in stock?", the AI knows which product they mean.
 
+### useAIContexts
+
+Register multiple contexts at once:
+
+```tsx
+import { useAIContexts } from '@yourgpt/copilot-sdk-react';
+
+function AppContext() {
+  useAIContexts([
+    {
+      key: 'user',
+      data: { name: user.name, plan: user.subscription },
+      description: 'Current user info',
+    },
+    {
+      key: 'cart',
+      data: { itemCount: cart.items.length, total: cart.total },
+      description: 'Shopping cart state',
+    },
+  ]);
+
+  return null;
+}
+```
+
 ---
 
 ## useAIAction
@@ -137,7 +235,7 @@ Now when user asks "is this in stock?", the AI knows which product they mean.
 Register an action without a schema. Simpler but less type-safe.
 
 ```tsx
-import { useAIAction } from '@yourgpt/react';
+import { useAIAction } from '@yourgpt/copilot-sdk-react';
 
 function NavigationActions() {
   const navigate = useNavigate();
@@ -164,13 +262,116 @@ function NavigationActions() {
 
 ---
 
+## useToolExecutor
+
+Track and manage tool executions in the agentic loop:
+
+```tsx
+import { useToolExecutor } from '@yourgpt/copilot-sdk-react';
+
+function ToolStatus() {
+  const {
+    executions,       // ToolExecution[] - all tool executions
+    pendingCount,     // number - tools waiting for approval
+    runningCount,     // number - currently executing
+    completedCount,   // number - finished
+    approve,          // (executionId: string) => void
+    reject,           // (executionId: string) => void
+  } = useToolExecutor();
+
+  return (
+    <div>
+      {executions.map(exec => (
+        <div key={exec.id}>
+          {exec.toolName}: {exec.status}
+          {exec.status === 'pending_approval' && (
+            <>
+              <button onClick={() => approve(exec.id)}>Approve</button>
+              <button onClick={() => reject(exec.id)}>Reject</button>
+            </>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+## useAgent
+
+Full control over the agentic loop:
+
+```tsx
+import { useAgent } from '@yourgpt/copilot-sdk-react';
+
+function AgentController() {
+  const {
+    isRunning,        // boolean - is agent loop active
+    currentIteration, // number - current loop iteration
+    maxIterations,    // number - max allowed iterations
+    stop,             // () => void - stop the loop
+  } = useAgent();
+
+  return (
+    <div>
+      {isRunning && (
+        <>
+          <span>Iteration {currentIteration}/{maxIterations}</span>
+          <button onClick={stop}>Stop Agent</button>
+        </>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## useThreads
+
+Manage multiple conversation threads:
+
+```tsx
+import { useThreads } from '@yourgpt/copilot-sdk-react';
+
+function ThreadSidebar() {
+  const {
+    threads,          // Thread[] - all threads
+    currentThread,    // Thread | null - active thread
+    createThread,     // () => Thread - create new
+    switchThread,     // (threadId: string) => void
+    deleteThread,     // (threadId: string) => void
+    updateThread,     // (threadId: string, data: Partial<Thread>) => void
+  } = useThreads();
+
+  return (
+    <div>
+      <button onClick={createThread}>New Chat</button>
+      {threads.map(thread => (
+        <div
+          key={thread.id}
+          onClick={() => switchThread(thread.id)}
+          className={thread.id === currentThread?.id ? 'active' : ''}
+        >
+          {thread.title || 'New conversation'}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
 ## useDevLogger
 
 Debug the AI conversation flow. See exactly what's happening.
 
 ```tsx
-import { useDevLogger } from '@yourgpt/react';
-import { DevLogger } from '@yourgpt/ui';
+import { useDevLogger } from '@yourgpt/copilot-sdk-react';
+import { DevLogger } from '@yourgpt/copilot-sdk-ui';
 
 function DebugPanel() {
   const loggerState = useDevLogger();
@@ -188,7 +389,7 @@ Shows: messages, tool calls, context, timing.
 Generate smart suggestions based on context.
 
 ```tsx
-import { useSuggestions } from '@yourgpt/react';
+import { useSuggestions } from '@yourgpt/copilot-sdk-react';
 
 function SuggestionChips() {
   const { suggestions, isLoading, generate } = useSuggestions({
@@ -210,12 +411,48 @@ function SuggestionChips() {
 
 ---
 
+## useAITools
+
+Manage smart context tools (screenshot, console, network):
+
+```tsx
+import { useAITools } from '@yourgpt/copilot-sdk-react';
+
+function ContextTools() {
+  const {
+    isEnabled,           // boolean - are tools enabled
+    pendingConsent,      // ToolConsentRequest | null
+    capturedContext,     // CapturedContext | null
+    requestConsent,      // (toolType: ToolType) => void
+    approveConsent,      // () => void
+    rejectConsent,       // () => void
+    captureScreenshot,   // () => Promise<string>
+    captureConsole,      // () => Promise<ConsoleLogEntry[]>
+    captureNetwork,      // () => Promise<NetworkRequestEntry[]>
+  } = useAITools();
+
+  return (
+    <div>
+      {pendingConsent && (
+        <div>
+          Allow {pendingConsent.toolType}?
+          <button onClick={approveConsent}>Yes</button>
+          <button onClick={rejectConsent}>No</button>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
 ## useKnowledgeBase
 
 Search a knowledge base and inject results into AI context.
 
 ```tsx
-import { useKnowledgeBase } from '@yourgpt/react';
+import { useKnowledgeBase } from '@yourgpt/copilot-sdk-react';
 
 function HelpChat() {
   useKnowledgeBase({
@@ -236,7 +473,7 @@ function HelpChat() {
 Access the full internal state. For advanced use cases.
 
 ```tsx
-import { useYourGPTContext } from '@yourgpt/react';
+import { useYourGPTContext } from '@yourgpt/copilot-sdk-react';
 
 function AdvancedDebug() {
   const {
@@ -250,6 +487,76 @@ function AdvancedDebug() {
     <pre>{JSON.stringify({ chat, tools }, null, 2)}</pre>
   );
 }
+```
+
+---
+
+## useThreadsContext
+
+Access thread management context directly:
+
+```tsx
+import { useThreadsContext } from '@yourgpt/copilot-sdk-react';
+
+function ThreadInfo() {
+  const {
+    threads,
+    currentThreadId,
+    isLoading,
+  } = useThreadsContext();
+
+  return <span>{threads.length} conversations</span>;
+}
+```
+
+---
+
+## useIsPremium
+
+Check if a premium API key is configured:
+
+```tsx
+import { useIsPremium } from '@yourgpt/copilot-sdk-react';
+
+function PremiumFeature() {
+  const isPremium = useIsPremium();
+
+  if (!isPremium) {
+    return <span>Upgrade for this feature</span>;
+  }
+
+  return <AdvancedFeature />;
+}
+```
+
+---
+
+## Permission Storage Utilities
+
+Remember user's tool permissions across sessions:
+
+```tsx
+import {
+  createPermissionStorage,
+  createSessionPermissionCache,
+} from '@yourgpt/copilot-sdk-react';
+
+// Persist to localStorage
+const storage = createPermissionStorage({
+  type: 'localStorage',
+  keyPrefix: 'myapp-copilot',
+});
+
+// Or session-only cache
+const sessionCache = createSessionPermissionCache();
+
+// Use in provider
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  permissionStorage={storage}
+>
+  {children}
+</YourGPTProvider>
 ```
 
 ---
@@ -284,6 +591,45 @@ function SmartCopilot() {
   // Knowledge base
   useKnowledgeBase({ projectUid: 'help-docs', token: apiToken });
 
+  // Thread management
+  const { threads, createThread } = useThreads();
+
   return <ChatUI messages={messages} onSend={sendMessage} />;
 }
+```
+
+---
+
+## All Exports
+
+```ts
+// Provider
+export { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+
+// Context Hooks
+export { useYourGPTContext } from '@yourgpt/copilot-sdk-react';
+export { useThreadsContext } from '@yourgpt/copilot-sdk-react';
+
+// Chat & Action Hooks
+export { useAIChat, useIsPremium } from '@yourgpt/copilot-sdk-react';
+export { useAIAction, useAIActions } from '@yourgpt/copilot-sdk-react';
+export { useAIContext, useAIContexts } from '@yourgpt/copilot-sdk-react';
+export { useAITools, useSuggestions } from '@yourgpt/copilot-sdk-react';
+
+// Tool Hooks (Agentic Loop)
+export { useTool, useTools } from '@yourgpt/copilot-sdk-react';
+export { useToolWithSchema, useToolsWithSchema } from '@yourgpt/copilot-sdk-react';
+export { useToolExecutor } from '@yourgpt/copilot-sdk-react';
+
+// Agent & Thread Hooks
+export { useAgent, useThreads } from '@yourgpt/copilot-sdk-react';
+
+// Knowledge Base
+export { useKnowledgeBase } from '@yourgpt/copilot-sdk-react';
+
+// Development
+export { useDevLogger } from '@yourgpt/copilot-sdk-react';
+
+// Utilities
+export { createPermissionStorage, createSessionPermissionCache } from '@yourgpt/copilot-sdk-react';
 ```

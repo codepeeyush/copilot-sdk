@@ -1,5 +1,5 @@
-import type { LLMConfig, StreamEvent } from "@yourgpt/core";
-import { generateMessageId } from "@yourgpt/core";
+import type { LLMConfig, StreamEvent } from "@yourgpt/copilot-sdk-core";
+import { generateMessageId } from "@yourgpt/copilot-sdk-core";
 import type {
   LLMAdapter,
   ChatCompletionRequest,
@@ -313,21 +313,8 @@ export class AnthropicAdapter implements LLMAdapter {
       stream: false as const,
     } as Record<string, unknown> & { stream: false };
 
-    console.log("[Anthropic Adapter] Non-streaming request:", {
-      model: options.model,
-      max_tokens: options.max_tokens,
-      messageCount: (options.messages as unknown[])?.length,
-      hasTools: !!(options.tools as unknown[])?.length,
-    });
-
     try {
       const response = await client.messages.create(nonStreamingOptions);
-
-      console.log("[Anthropic Adapter] Non-streaming response:", {
-        stopReason: response.stop_reason,
-        contentBlocks: response.content?.length,
-        usage: response.usage,
-      });
 
       // Parse response
       let content = "";
@@ -359,7 +346,6 @@ export class AnthropicAdapter implements LLMAdapter {
         rawResponse: response as Record<string, unknown>,
       };
     } catch (error) {
-      console.error("[Anthropic Adapter] Non-streaming error:", error);
       throw error;
     }
   }

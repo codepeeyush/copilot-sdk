@@ -13,12 +13,31 @@ Two options: use our ready-made components or build with primitives.
 
 ---
 
+## Component Overview
+
+<Cards>
+  <Card title="CopilotChat" icon="💬">
+    Full-featured chat with integrated state. Drop it in and go.
+  </Card>
+  <Card title="Chat" icon="📝">
+    Lightweight stateless chat. You control the messages.
+  </Card>
+  <Card title="DevLogger" icon="🔍">
+    Debug panel for development. See AI's thought process.
+  </Card>
+  <Card title="Primitives" icon="🧱">
+    Building blocks for custom UIs.
+  </Card>
+</Cards>
+
+---
+
 ## CopilotChat
 
 The all-in-one chat component. Just drop it in.
 
 ```tsx
-import { CopilotChat } from '@yourgpt/ui';
+import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
 
 <CopilotChat
   title="AI Assistant"
@@ -44,6 +63,44 @@ import { CopilotChat } from '@yourgpt/ui';
 | `showFollowUps` | `boolean` | `true` | Show AI-generated follow-ups |
 | `className` | `string` | - | Container classes |
 
+### Aliases
+
+`ConnectedChat` is an alias for `CopilotChat` for backwards compatibility:
+
+```tsx
+import { ConnectedChat } from '@yourgpt/copilot-sdk-ui';
+
+// Same as CopilotChat
+<ConnectedChat title="Support" />
+```
+
+---
+
+## Chat
+
+Lightweight stateless chat component. You provide the messages.
+
+```tsx
+import { Chat } from '@yourgpt/copilot-sdk-ui';
+
+function MyChat() {
+  const [messages, setMessages] = useState([]);
+  const [input, setInput] = useState('');
+
+  return (
+    <Chat
+      messages={messages}
+      input={input}
+      onInputChange={setInput}
+      onSubmit={handleSubmit}
+      isLoading={isLoading}
+    />
+  );
+}
+```
+
+Use this when you need full control over message state.
+
 ---
 
 ## DevLogger
@@ -51,8 +108,8 @@ import { CopilotChat } from '@yourgpt/ui';
 Debug panel for development. See the AI's thought process.
 
 ```tsx
-import { DevLogger } from '@yourgpt/ui';
-import { useDevLogger } from '@yourgpt/react';
+import { DevLogger } from '@yourgpt/copilot-sdk-ui';
+import { useDevLogger } from '@yourgpt/copilot-sdk-react';
 
 function DebugMode() {
   const state = useDevLogger();
@@ -69,6 +126,13 @@ Shows:
 - Context being sent
 - Timing info
 
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `state` | `DevLoggerState` | required | State from `useDevLogger()` |
+| `position` | `string` | `"bottom-right"` | `"bottom-left"`, `"bottom-right"`, `"top-left"`, `"top-right"` |
+
 ---
 
 ## Primitives
@@ -80,9 +144,22 @@ Build your own UI with these building blocks.
 Renders AI responses with syntax highlighting.
 
 ```tsx
-import { Markdown } from '@yourgpt/ui';
+import { Markdown } from '@yourgpt/copilot-sdk-ui';
 
 <Markdown content={message.content} />
+```
+
+### CodeBlock
+
+Syntax-highlighted code with copy button.
+
+```tsx
+import { CodeBlock } from '@yourgpt/copilot-sdk-ui';
+
+<CodeBlock
+  language="typescript"
+  code={`function hello() { return "world"; }`}
+/>
 ```
 
 ### MessagePrimitive
@@ -90,7 +167,7 @@ import { Markdown } from '@yourgpt/ui';
 Styled message container.
 
 ```tsx
-import { MessagePrimitive, MessageAvatar, MessageContent } from '@yourgpt/ui';
+import { MessagePrimitive, MessageAvatar, MessageContent } from '@yourgpt/copilot-sdk-ui';
 
 <MessagePrimitive variant={msg.role}>
   <MessageAvatar role={msg.role} />
@@ -110,8 +187,9 @@ import {
   PromptInputTextarea,
   PromptInputActions,
   PromptInputAction,
-} from '@yourgpt/ui';
-import { SendIcon, StopIcon } from '@yourgpt/ui';
+  SendIcon,
+  StopIcon,
+} from '@yourgpt/copilot-sdk-ui';
 
 <PromptInput onSubmit={sendMessage}>
   <PromptInputTextarea placeholder="Type here..." />
@@ -129,13 +207,42 @@ import { SendIcon, StopIcon } from '@yourgpt/ui';
 </PromptInput>
 ```
 
+### ChatContainer
+
+Scrollable chat container with auto-scroll.
+
+```tsx
+import {
+  ChatContainerRoot,
+  ChatContainerContent,
+  ChatContainerScrollAnchor,
+  useChatContainer,
+} from '@yourgpt/copilot-sdk-ui';
+
+function ChatArea({ messages }) {
+  const { containerRef, scrollToBottom } = useChatContainer();
+
+  return (
+    <ChatContainerRoot ref={containerRef}>
+      <ChatContainerContent>
+        {messages.map(msg => (
+          <Message key={msg.id} message={msg} />
+        ))}
+        <ChatContainerScrollAnchor />
+      </ChatContainerContent>
+    </ChatContainerRoot>
+  );
+}
+```
+
 ### ToolSteps
 
 Show tool execution progress.
 
 ```tsx
-import { ToolSteps, ToolStep } from '@yourgpt/ui';
+import { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/copilot-sdk-ui';
 
+// Detailed view
 <ToolSteps>
   <ToolStep
     name="search_products"
@@ -147,6 +254,30 @@ import { ToolSteps, ToolStep } from '@yourgpt/ui';
     status="running"
   />
 </ToolSteps>
+
+// Compact inline view
+<InlineToolSteps steps={[
+  { name: 'search', status: 'completed' },
+  { name: 'process', status: 'running' },
+]} />
+```
+
+### ToolExecutionMessage
+
+Display tool execution in chat messages.
+
+```tsx
+import { ToolExecutionMessage } from '@yourgpt/copilot-sdk-ui';
+
+<ToolExecutionMessage
+  execution={{
+    id: 'exec-1',
+    toolName: 'search_products',
+    status: 'completed',
+    args: { query: 'headphones' },
+    result: { success: true, products: [...] },
+  }}
+/>
 ```
 
 ### SimpleReasoning
@@ -154,7 +285,7 @@ import { ToolSteps, ToolStep } from '@yourgpt/ui';
 Show AI's thinking process (for models that support it).
 
 ```tsx
-import { SimpleReasoning } from '@yourgpt/ui';
+import { SimpleReasoning } from '@yourgpt/copilot-sdk-ui';
 
 <SimpleReasoning
   thinking="Let me analyze this step by step..."
@@ -162,12 +293,27 @@ import { SimpleReasoning } from '@yourgpt/ui';
 />
 ```
 
+### Reasoning (Advanced)
+
+Composable reasoning component:
+
+```tsx
+import { Reasoning, ReasoningTrigger, ReasoningContent } from '@yourgpt/copilot-sdk-ui';
+
+<Reasoning>
+  <ReasoningTrigger>Show thinking</ReasoningTrigger>
+  <ReasoningContent>
+    {thinkingContent}
+  </ReasoningContent>
+</Reasoning>
+```
+
 ### Source
 
 Display knowledge base citations.
 
 ```tsx
-import { Source, SourceTrigger, SourceContent } from '@yourgpt/ui';
+import { Source, SourceTrigger, SourceContent } from '@yourgpt/copilot-sdk-ui';
 
 <Source>
   <SourceTrigger>View sources (3)</SourceTrigger>
@@ -184,7 +330,7 @@ import { Source, SourceTrigger, SourceContent } from '@yourgpt/ui';
 AI-generated follow-up suggestions.
 
 ```tsx
-import { FollowUpQuestions, parseFollowUps } from '@yourgpt/ui';
+import { FollowUpQuestions, parseFollowUps } from '@yourgpt/copilot-sdk-ui';
 
 const { cleanContent, followUps } = parseFollowUps(message.content);
 
@@ -198,10 +344,10 @@ const { cleanContent, followUps } = parseFollowUps(message.content);
 
 ### Confirmation
 
-Tool approval UI with persistent permissions.
+Tool approval UI.
 
 ```tsx
-import { SimpleConfirmation } from '@yourgpt/ui';
+import { SimpleConfirmation } from '@yourgpt/copilot-sdk-ui';
 
 <SimpleConfirmation
   toolName="capture_screenshot"
@@ -210,6 +356,95 @@ import { SimpleConfirmation } from '@yourgpt/ui';
   onApprove={() => handleApprove()}
   onReject={() => handleReject()}
 />
+```
+
+### PermissionConfirmation
+
+Tool approval with "don't ask again" option.
+
+```tsx
+import { PermissionConfirmation, CompactPermissionConfirmation } from '@yourgpt/copilot-sdk-ui';
+
+// Full version
+<PermissionConfirmation
+  toolName="screenshot"
+  onPermissionChange={(level) => handlePermission(level)}
+/>
+
+// Compact inline version
+<CompactPermissionConfirmation
+  toolName="screenshot"
+  onPermissionChange={(level) => handlePermission(level)}
+/>
+```
+
+### Tooltip
+
+Accessible tooltips.
+
+```tsx
+import { Tooltip, TooltipProvider, TooltipTrigger, TooltipContent } from '@yourgpt/copilot-sdk-ui';
+
+<TooltipProvider>
+  <Tooltip>
+    <TooltipTrigger>Hover me</TooltipTrigger>
+    <TooltipContent>Tooltip content</TooltipContent>
+  </Tooltip>
+</TooltipProvider>
+```
+
+### FeedbackBar
+
+Message feedback (thumbs up/down).
+
+```tsx
+import { FeedbackBar } from '@yourgpt/copilot-sdk-ui';
+
+<FeedbackBar
+  onFeedback={(type) => handleFeedback(type)}
+/>
+```
+
+### ScrollButton
+
+Scroll-to-bottom button.
+
+```tsx
+import { ScrollButton } from '@yourgpt/copilot-sdk-ui';
+
+<ScrollButton onClick={scrollToBottom} visible={!isAtBottom} />
+```
+
+### Loader
+
+Loading spinner.
+
+```tsx
+import { Loader } from '@yourgpt/copilot-sdk-ui';
+
+<Loader size="md" />
+```
+
+### Button
+
+Styled button component.
+
+```tsx
+import { Button } from '@yourgpt/copilot-sdk-ui';
+
+<Button variant="primary" size="md" onClick={handleClick}>
+  Click me
+</Button>
+```
+
+### PoweredBy
+
+Attribution component.
+
+```tsx
+import { PoweredBy } from '@yourgpt/copilot-sdk-ui';
+
+<PoweredBy />
 ```
 
 ---
@@ -221,6 +456,8 @@ import {
   SendIcon,
   StopIcon,
   CloseIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   CopyIcon,
   CheckIcon,
   ThumbsUpIcon,
@@ -228,7 +465,27 @@ import {
   RefreshIcon,
   UserIcon,
   BotIcon,
-} from '@yourgpt/ui';
+  XIcon,
+  AlertTriangleIcon,
+} from '@yourgpt/copilot-sdk-ui';
+```
+
+---
+
+## Utilities
+
+### cn
+
+Class name utility (combines clsx + tailwind-merge):
+
+```tsx
+import { cn } from '@yourgpt/copilot-sdk-ui';
+
+<div className={cn(
+  "base-class",
+  isActive && "active-class",
+  className
+)} />
 ```
 
 ---
@@ -271,8 +528,17 @@ Or use Tailwind classes directly:
 Build fully custom message UI:
 
 ```tsx
-import { useAIChat } from '@yourgpt/react';
-import { Markdown, ToolSteps, FollowUpQuestions, parseFollowUps } from '@yourgpt/ui';
+import { useAIChat } from '@yourgpt/copilot-sdk-react';
+import {
+  Markdown,
+  ToolSteps,
+  ToolStep,
+  FollowUpQuestions,
+  parseFollowUps,
+  MessagePrimitive,
+  MessageAvatar,
+  MessageContent,
+} from '@yourgpt/copilot-sdk-ui';
 
 function CustomChat() {
   const { messages, sendMessage } = useAIChat();
@@ -283,30 +549,226 @@ function CustomChat() {
         const { cleanContent, followUps } = parseFollowUps(msg.content);
 
         return (
-          <div key={msg.id} className={msg.role === 'user' ? 'ml-auto' : ''}>
-            {/* Tool executions */}
-            {msg.toolCalls && (
-              <ToolSteps>
-                {msg.toolCalls.map(tc => (
-                  <ToolStep key={tc.id} name={tc.name} status={tc.status} />
-                ))}
-              </ToolSteps>
-            )}
+          <MessagePrimitive key={msg.id} variant={msg.role}>
+            <MessageAvatar role={msg.role} />
+            <MessageContent>
+              {/* Tool executions */}
+              {msg.toolCalls && msg.toolCalls.length > 0 && (
+                <ToolSteps>
+                  {msg.toolCalls.map(tc => (
+                    <ToolStep key={tc.id} name={tc.name} status={tc.status} />
+                  ))}
+                </ToolSteps>
+              )}
 
-            {/* Message content */}
-            <Markdown content={cleanContent} />
+              {/* Message content */}
+              <Markdown content={cleanContent} />
 
-            {/* Follow-ups */}
-            {followUps.length > 0 && (
-              <FollowUpQuestions
-                questions={followUps}
-                onSelect={sendMessage}
-              />
-            )}
-          </div>
+              {/* Follow-ups */}
+              {followUps.length > 0 && (
+                <FollowUpQuestions
+                  questions={followUps}
+                  onSelect={sendMessage}
+                />
+              )}
+            </MessageContent>
+          </MessagePrimitive>
         );
       })}
     </div>
   );
 }
+```
+
+---
+
+## Complete Custom Chat Example
+
+```tsx
+import { useAIChat } from '@yourgpt/copilot-sdk-react';
+import {
+  ChatContainerRoot,
+  ChatContainerContent,
+  ChatContainerScrollAnchor,
+  useChatContainer,
+  MessagePrimitive,
+  MessageAvatar,
+  MessageContent,
+  Markdown,
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+  PromptInputAction,
+  SendIcon,
+  StopIcon,
+  Loader,
+} from '@yourgpt/copilot-sdk-ui';
+
+function CustomCopilot() {
+  const { messages, isLoading, sendMessage, stopGeneration } = useAIChat();
+  const { containerRef } = useChatContainer();
+  const [input, setInput] = useState('');
+
+  const handleSubmit = () => {
+    if (input.trim()) {
+      sendMessage(input);
+      setInput('');
+    }
+  };
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Messages */}
+      <ChatContainerRoot ref={containerRef} className="flex-1">
+        <ChatContainerContent>
+          {messages.map(msg => (
+            <MessagePrimitive key={msg.id} variant={msg.role}>
+              <MessageAvatar role={msg.role} />
+              <MessageContent>
+                <Markdown content={msg.content} />
+              </MessageContent>
+            </MessagePrimitive>
+          ))}
+          {isLoading && <Loader />}
+          <ChatContainerScrollAnchor />
+        </ChatContainerContent>
+      </ChatContainerRoot>
+
+      {/* Input */}
+      <PromptInput onSubmit={handleSubmit}>
+        <PromptInputTextarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Type a message..."
+        />
+        <PromptInputActions>
+          {isLoading ? (
+            <PromptInputAction onClick={stopGeneration}>
+              <StopIcon />
+            </PromptInputAction>
+          ) : (
+            <PromptInputAction type="submit">
+              <SendIcon />
+            </PromptInputAction>
+          )}
+        </PromptInputActions>
+      </PromptInput>
+    </div>
+  );
+}
+```
+
+---
+
+## All Exports
+
+```ts
+// Composed Components
+export {
+  Chat,
+  CopilotChat,
+  ConnectedChat,
+  ToolExecutionMessage,
+  PoweredBy,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Primitives
+export {
+  Loader,
+  Markdown,
+  CodeBlock,
+  Button,
+  FeedbackBar,
+  ScrollButton,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Message
+export {
+  MessagePrimitive,
+  MessageAvatar,
+  MessageContent,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Input
+export {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputActions,
+  PromptInputAction,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Container
+export {
+  ChatContainerRoot,
+  ChatContainerContent,
+  ChatContainerScrollAnchor,
+  useChatContainer,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Tooltip
+export {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+  TooltipContent,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Source
+export { Source, SourceContent, SourceTrigger } from '@yourgpt/copilot-sdk-ui';
+
+// Reasoning
+export {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+  SimpleReasoning,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Tool Steps
+export { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/copilot-sdk-ui';
+
+// Confirmation
+export {
+  Confirmation,
+  ConfirmationPending,
+  ConfirmationApproved,
+  ConfirmationRejected,
+  ConfirmationMessage,
+  ConfirmationActions,
+  SimpleConfirmation,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Permission Confirmation
+export {
+  PermissionConfirmation,
+  CompactPermissionConfirmation,
+  DEFAULT_PERMISSION_OPTIONS,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Follow-up
+export { FollowUpQuestions, parseFollowUps } from '@yourgpt/copilot-sdk-ui';
+
+// DevLogger
+export { DevLogger } from '@yourgpt/copilot-sdk-ui';
+
+// Icons
+export {
+  SendIcon,
+  StopIcon,
+  CloseIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+  CopyIcon,
+  CheckIcon,
+  ThumbsUpIcon,
+  ThumbsDownIcon,
+  RefreshIcon,
+  UserIcon,
+  BotIcon,
+  XIcon,
+  AlertTriangleIcon,
+} from '@yourgpt/copilot-sdk-ui';
+
+// Utilities
+export { cn } from '@yourgpt/copilot-sdk-ui';
 ```

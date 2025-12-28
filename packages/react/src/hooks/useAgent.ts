@@ -2,8 +2,8 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useYourGPTContext } from "../context/YourGPTContext";
-import type { StreamEvent } from "@yourgpt/core";
-import { streamSSE } from "@yourgpt/core";
+import type { StreamEvent } from "@yourgpt/copilot-sdk-core";
+import { streamSSE } from "@yourgpt/copilot-sdk-core";
 
 /**
  * useAgent options

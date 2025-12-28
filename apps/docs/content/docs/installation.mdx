@@ -19,17 +19,17 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 <Tabs items={['npm', 'pnpm', 'bun']}>
   <Tab value="npm">
     ```bash
-    npm install @yourgpt/react @yourgpt/ui @yourgpt/runtime zod
+    npm install @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
     ```
   </Tab>
   <Tab value="pnpm">
     ```bash
-    pnpm add @yourgpt/react @yourgpt/ui @yourgpt/runtime zod
+    pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @yourgpt/react @yourgpt/ui @yourgpt/runtime zod
+    bun add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
     ```
   </Tab>
 </Tabs>
@@ -43,7 +43,7 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
     ### Create the API Route
 
     ```ts title="app/api/chat/route.ts"
-    import { createRuntime, AnthropicAdapter } from '@yourgpt/runtime';
+    import { createRuntime, AnthropicAdapter } from '@yourgpt/copilot-sdk-runtime';
 
     const runtime = createRuntime({
       adapter: new AnthropicAdapter({
@@ -65,7 +65,7 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
     ```tsx title="app/providers.tsx"
     'use client';
 
-    import { YourGPTProvider } from '@yourgpt/react';
+    import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
 
     export function Providers({ children }: { children: React.ReactNode }) {
       return (
@@ -95,7 +95,7 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
     ### Drop in the Chat
 
     ```tsx title="app/page.tsx"
-    import { CopilotChat } from '@yourgpt/ui';
+    import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
 
     export default function Home() {
       return (
@@ -117,38 +117,60 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 ANTHROPIC_API_KEY=sk-ant-...
 # or
 OPENAI_API_KEY=sk-...
+# or
+GROQ_API_KEY=gsk_...
 ```
 
 ---
 
 ## Adapters
 
-```ts title="OpenAI"
-import { OpenAIAdapter } from '@yourgpt/runtime';
+<Tabs items={['OpenAI', 'Anthropic', 'Groq', 'Ollama']}>
+  <Tab value="OpenAI">
+    ```ts
+    import { OpenAIAdapter } from '@yourgpt/copilot-sdk-runtime';
 
-new OpenAIAdapter({
-  apiKey: process.env.OPENAI_API_KEY!,
-  model: 'gpt-4o-mini',
-})
-```
+    new OpenAIAdapter({
+      apiKey: process.env.OPENAI_API_KEY!,
+      model: 'gpt-4o-mini',
+    })
+    ```
+    **Models:** `gpt-4o`, `gpt-4o-mini`, `gpt-4-turbo`, `o1-mini`
+  </Tab>
+  <Tab value="Anthropic">
+    ```ts
+    import { AnthropicAdapter } from '@yourgpt/copilot-sdk-runtime';
 
-```ts title="Anthropic"
-import { AnthropicAdapter } from '@yourgpt/runtime';
+    new AnthropicAdapter({
+      apiKey: process.env.ANTHROPIC_API_KEY!,
+      model: 'claude-sonnet-4-20250514',
+    })
+    ```
+    **Models:** `claude-sonnet-4-20250514`, `claude-opus-4-20250514`, `claude-3-5-haiku-20241022`
+  </Tab>
+  <Tab value="Groq">
+    ```ts
+    import { GroqAdapter } from '@yourgpt/copilot-sdk-runtime';
 
-new AnthropicAdapter({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-  model: 'claude-sonnet-4-20250514',
-})
-```
+    new GroqAdapter({
+      apiKey: process.env.GROQ_API_KEY!,
+      model: 'llama-3.3-70b-versatile',
+    })
+    ```
+    **Models:** `llama-3.3-70b-versatile`, `mixtral-8x7b-32768`, `gemma2-9b-it`
+  </Tab>
+  <Tab value="Ollama">
+    ```ts
+    import { OllamaAdapter } from '@yourgpt/copilot-sdk-runtime';
 
-```ts title="Google (Gemini)"
-import { GoogleAdapter } from '@yourgpt/runtime';
-
-new GoogleAdapter({
-  apiKey: process.env.GOOGLE_API_KEY!,
-  model: 'gemini-1.5-flash',
-})
-```
+    new OllamaAdapter({
+      baseUrl: 'http://localhost:11434',
+      model: 'llama3.2',
+    })
+    ```
+    **Models:** Any model available in your Ollama instance
+  </Tab>
+</Tabs>
 
 ---
 
@@ -177,7 +199,7 @@ That's it. When users say "I'm seeing an error", the AI will ask permission to c
 ## Add Custom Tools
 
 ```tsx title="components/CopilotTools.tsx"
-import { useToolWithSchema } from '@yourgpt/react';
+import { useToolWithSchema } from '@yourgpt/copilot-sdk-react';
 import { z } from 'zod';
 
 export function CopilotTools() {
@@ -208,6 +230,38 @@ Render it inside your provider:
 ```
 
 Now users can say "find me wireless headphones" and the AI handles the rest.
+
+---
+
+## Framework Integrations
+
+The runtime supports multiple server frameworks:
+
+```ts title="Next.js (App Router)"
+import { createRuntime } from '@yourgpt/copilot-sdk-runtime';
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
+```
+
+```ts title="Express"
+import { createExpressMiddleware } from '@yourgpt/copilot-sdk-runtime';
+
+app.use('/api/chat', createExpressMiddleware(runtime));
+```
+
+```ts title="Hono"
+import { createHonoApp } from '@yourgpt/copilot-sdk-runtime';
+
+const app = createHonoApp(runtime);
+```
+
+```ts title="Node.js HTTP"
+import { createNodeHandler } from '@yourgpt/copilot-sdk-runtime';
+
+const handler = createNodeHandler(runtime);
+```
 
 ---
 

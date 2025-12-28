@@ -18,7 +18,7 @@ import type {
   Thread,
   ThreadData,
   CapturedContext,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 
 /**
  * Full internal return type with all features

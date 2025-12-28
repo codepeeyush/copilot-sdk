@@ -40,8 +40,8 @@ Your AI assistant shouldn't be clueless about what's happening on screen. **Your
 ## The Gist
 
 ```tsx
-import { YourGPTProvider } from '@yourgpt/react';
-import { CopilotChat } from '@yourgpt/ui';
+import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
 
 function App() {
   return (
@@ -71,10 +71,11 @@ Done. The SDK handles consent UI, captures context, sends it to the AI.
 
 | Package | What it does |
 |---------|--------------|
-| `@yourgpt/react` | Hooks + Provider. The brain. |
-| `@yourgpt/ui` | Chat components. The face. |
-| `@yourgpt/runtime` | Server-side handler. The backend. |
-| `@yourgpt/core` | Types + utils. The foundation. |
+| `@yourgpt/copilot-sdk-react` | Hooks + Provider. The brain. |
+| `@yourgpt/copilot-sdk-ui` | Chat components. The face. |
+| `@yourgpt/copilot-sdk-runtime` | Server-side adapters + streaming. The backend. |
+| `@yourgpt/copilot-sdk-core` | Types, utils, smart context tools. The foundation. |
+| `@yourgpt/copilot-sdk-knowledge` | Knowledge base integration for RAG. Optional. |
 
 ---
 
@@ -83,17 +84,17 @@ Done. The SDK handles consent UI, captures context, sends it to the AI.
 <Tabs items={['npm', 'pnpm', 'bun']}>
   <Tab value="npm">
     ```bash
-    npm install @yourgpt/react @yourgpt/ui @yourgpt/runtime
+    npm install @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime
     ```
   </Tab>
   <Tab value="pnpm">
     ```bash
-    pnpm add @yourgpt/react @yourgpt/ui @yourgpt/runtime
+    pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @yourgpt/react @yourgpt/ui @yourgpt/runtime
+    bun add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime
     ```
   </Tab>
 </Tabs>
@@ -113,7 +114,7 @@ AI decides: respond OR call a tool
        ↓
 Tool executes client-side → result sent back
        ↓
-AI continues until done
+AI continues until done (agentic loop)
        ↓
 Response streams to UI
 ```
@@ -125,7 +126,7 @@ All of this is handled. You just define tools and build UI.
 ## Real Example: Navigation Tool
 
 ```tsx
-import { useToolWithSchema } from '@yourgpt/react';
+import { useToolWithSchema } from '@yourgpt/copilot-sdk-react';
 import { z } from 'zod';
 
 function NavigationTool() {
@@ -158,7 +159,7 @@ Now when user says "take me to settings", AI calls `navigate_to_page({ path: '/s
     Full setup guide with Next.js, Vite, and more
   </Card>
   <Card title="React Hooks" href="/docs/react" icon="⚛️">
-    useChat, useToolWithSchema, useAIContext
+    useAIChat, useToolWithSchema, useAIContext, and more
   </Card>
   <Card title="UI Components" href="/docs/ui" icon="🎨">
     CopilotChat, DevLogger, and primitives

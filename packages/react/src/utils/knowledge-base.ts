@@ -8,7 +8,7 @@ import type {
   YourGPTKnowledgeBaseConfig,
   YourGPTKnowledgeBaseResult,
   YourGPTKnowledgeBaseSearchResponse,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 
 const KNOWLEDGE_BASE_API =
   "https://api.yourgpt.ai/chatbot/v1/searchIndexDocument";

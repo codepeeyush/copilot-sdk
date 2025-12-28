@@ -33,10 +33,29 @@ The SDK handles the back-and-forth. You just define the tools.
 
 ---
 
-## Define a Tool
+## Tool Registration Methods
+
+<Cards>
+  <Card title="useToolWithSchema" icon="✨">
+    Recommended. Type-safe with Zod schemas.
+  </Card>
+  <Card title="useToolsWithSchema" icon="📦">
+    Register multiple Zod-based tools at once.
+  </Card>
+  <Card title="useTool" icon="🔧">
+    Basic tool with JSON Schema. Less type-safe.
+  </Card>
+  <Card title="useTools" icon="📋">
+    Register multiple basic tools at once.
+  </Card>
+</Cards>
+
+---
+
+## Define a Tool with Zod
 
 ```tsx
-import { useToolWithSchema } from '@yourgpt/react';
+import { useToolWithSchema } from '@yourgpt/copilot-sdk-react';
 import { z } from 'zod';
 
 function BookingTools() {
@@ -86,6 +105,88 @@ z.object({
 <Callout type="info">
 **Pro tip:** The `describe()` calls become part of the tool's schema that the AI sees. Be specific!
 </Callout>
+
+---
+
+## Multiple Tools with useToolsWithSchema
+
+```tsx
+import { useToolsWithSchema } from '@yourgpt/copilot-sdk-react';
+import { z } from 'zod';
+
+function EcommerceTools() {
+  useToolsWithSchema([
+    {
+      name: 'search_products',
+      description: 'Search product catalog',
+      schema: z.object({ query: z.string() }),
+      handler: async ({ query }) => {
+        const results = await searchProducts(query);
+        return { success: true, data: { products: results } };
+      },
+    },
+    {
+      name: 'add_to_cart',
+      description: 'Add a product to shopping cart',
+      schema: z.object({
+        product_id: z.string(),
+        quantity: z.number().default(1),
+      }),
+      handler: async ({ product_id, quantity }) => {
+        await cart.add(product_id, quantity);
+        return { success: true, message: `Added ${quantity} item(s) to cart` };
+      },
+    },
+    {
+      name: 'get_cart',
+      description: 'Get current shopping cart contents',
+      schema: z.object({}),
+      handler: async () => {
+        const items = await cart.getItems();
+        return {
+          success: true,
+          data: {
+            items,
+            total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
+          },
+        };
+      },
+    },
+  ]);
+
+  return null;
+}
+```
+
+---
+
+## Basic Tool with useTool
+
+For simpler cases without Zod:
+
+```tsx
+import { useTool } from '@yourgpt/copilot-sdk-react';
+
+function NavigationTool() {
+  useTool({
+    name: 'navigate',
+    description: 'Navigate to a page in the app',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        path: { type: 'string', description: 'URL path to navigate to' },
+      },
+      required: ['path'],
+    },
+    handler: async ({ path }) => {
+      window.location.href = path;
+      return { success: true, navigatedTo: path };
+    },
+  });
+
+  return null;
+}
+```
 
 ---
 
@@ -140,21 +241,79 @@ tools={{
 
 ---
 
+## Tool Execution Tracking
+
+Use `useToolExecutor` to track and manage tool executions:
+
+```tsx
+import { useToolExecutor } from '@yourgpt/copilot-sdk-react';
+
+function ToolStatusPanel() {
+  const {
+    executions,       // All tool executions
+    pendingCount,     // Waiting for approval
+    runningCount,     // Currently executing
+    completedCount,   // Finished
+    approve,          // Approve a pending tool
+    reject,           // Reject a pending tool
+  } = useToolExecutor();
+
+  return (
+    <div>
+      <h3>Tool Executions</h3>
+      {executions.map(exec => (
+        <div key={exec.id} className="tool-execution">
+          <span>{exec.toolName}</span>
+          <span>{exec.status}</span>
+          {exec.status === 'pending_approval' && (
+            <div>
+              <button onClick={() => approve(exec.id)}>Approve</button>
+              <button onClick={() => reject(exec.id)}>Reject</button>
+            </div>
+          )}
+          {exec.result && (
+            <pre>{JSON.stringify(exec.result, null, 2)}</pre>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
 ## Permission Storage
 
 Remember user's tool permissions across sessions:
 
 ```tsx
+import { createPermissionStorage } from '@yourgpt/copilot-sdk-react';
+
+// Create persistent storage
+const permissionStorage = createPermissionStorage({
+  type: 'localStorage',
+  keyPrefix: 'myapp-copilot',
+});
+
 <YourGPTProvider
+  runtimeUrl="/api/chat"
   tools={{ screenshot: true, requireConsent: true }}
-  permissionStorage={{
-    type: 'localStorage',
-    keyPrefix: 'myapp-copilot',
-  }}
+  permissionStorage={permissionStorage}
 >
 ```
 
 Now "Allow always" persists across page reloads.
+
+### Permission Levels
+
+```ts
+type PermissionLevel =
+  | 'allow_once'      // Allow this one time
+  | 'allow_always'    // Remember and always allow
+  | 'deny_once'       // Deny this one time
+  | 'deny_always';    // Remember and always deny
+```
 
 ---
 
@@ -195,58 +354,16 @@ return {
 };
 ```
 
----
-
-## Multiple Tools
-
-Register as many as you need:
+### Using Helper Functions
 
 ```tsx
-function EcommerceTools() {
-  // Search products
-  useToolWithSchema({
-    name: 'search_products',
-    description: 'Search product catalog',
-    schema: z.object({ query: z.string() }),
-    handler: async ({ query }) => {
-      const results = await searchProducts(query);
-      return { success: true, data: { products: results } };
-    },
-  });
+import { success, failure } from '@yourgpt/copilot-sdk-core';
 
-  // Add to cart
-  useToolWithSchema({
-    name: 'add_to_cart',
-    description: 'Add a product to shopping cart',
-    schema: z.object({
-      product_id: z.string(),
-      quantity: z.number().default(1),
-    }),
-    handler: async ({ product_id, quantity }) => {
-      await cart.add(product_id, quantity);
-      return { success: true, message: `Added ${quantity} item(s) to cart` };
-    },
-  });
+// Success helper
+return success({ products: results }, 'Found 5 products');
 
-  // Get cart
-  useToolWithSchema({
-    name: 'get_cart',
-    description: 'Get current shopping cart contents',
-    schema: z.object({}),
-    handler: async () => {
-      const items = await cart.getItems();
-      return {
-        success: true,
-        data: {
-          items,
-          total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-        },
-      };
-    },
-  });
-
-  return null;
-}
+// Failure helper
+return failure('Product not found', { searched_id: productId });
 ```
 
 ---
@@ -256,7 +373,7 @@ function EcommerceTools() {
 Show users what's happening:
 
 ```tsx
-import { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/ui';
+import { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/copilot-sdk-ui';
 
 // Detailed view
 <ToolSteps>
@@ -267,6 +384,24 @@ import { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/ui';
 
 // Compact inline view
 <InlineToolSteps steps={toolCalls} />
+```
+
+### Tool Execution Message
+
+Display tool executions in the chat:
+
+```tsx
+import { ToolExecutionMessage } from '@yourgpt/copilot-sdk-ui';
+
+<ToolExecutionMessage
+  execution={{
+    id: 'exec-1',
+    toolName: 'search_products',
+    status: 'completed',
+    args: { query: 'headphones' },
+    result: { success: true, products: [...] },
+  }}
+/>
 ```
 
 ---
@@ -288,6 +423,43 @@ Available tools:
 When user asks to find something, use search_products first.
 When they want to buy, add_to_cart.
 Always confirm before checkout.`,
+});
+```
+
+---
+
+## Defining Tools with Core Utilities
+
+For advanced use cases, use core utilities:
+
+```tsx
+import { defineTool, defineClientTool, defineServerTool } from '@yourgpt/copilot-sdk-core';
+import { z } from 'zod';
+
+// Generic tool definition
+const searchTool = defineTool({
+  name: 'search',
+  description: 'Search for items',
+  schema: z.object({ query: z.string() }),
+});
+
+// Client-side tool (runs in browser)
+const clientTool = defineClientTool({
+  name: 'scroll_to',
+  description: 'Scroll to an element',
+  schema: z.object({ selector: z.string() }),
+  handler: async ({ selector }) => {
+    document.querySelector(selector)?.scrollIntoView();
+    return { success: true };
+  },
+});
+
+// Server-side tool (runs on server)
+const serverTool = defineServerTool({
+  name: 'query_database',
+  description: 'Query the database',
+  schema: z.object({ sql: z.string() }),
+  // No handler - handled server-side
 });
 ```
 
@@ -357,3 +529,43 @@ Now users can say things like:
 - "How do I reset my password?" → searches help docs
 - "This is broken, I need help" → creates ticket
 - "What's the status of my ticket?" → checks ticket
+
+---
+
+## All Tool-Related Exports
+
+```ts
+// React Hooks
+export {
+  useTool,
+  useTools,
+  useToolWithSchema,
+  useToolsWithSchema,
+  useToolExecutor,
+} from '@yourgpt/copilot-sdk-react';
+
+// Core Utilities
+export {
+  defineTool,
+  defineClientTool,
+  defineServerTool,
+  success,
+  failure,
+  createToolResult,
+  toolToOpenAIFormat,
+  toolToAnthropicFormat,
+  zodToJsonSchema,
+  zodObjectToInputSchema,
+} from '@yourgpt/copilot-sdk-core';
+
+// UI Components
+export {
+  ToolSteps,
+  ToolStep,
+  InlineToolSteps,
+  ToolExecutionMessage,
+  SimpleConfirmation,
+  PermissionConfirmation,
+  CompactPermissionConfirmation,
+} from '@yourgpt/copilot-sdk-ui';
+```

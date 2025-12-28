@@ -282,27 +282,3 @@ export function hasToolCalls(message: Message): boolean {
 export function isToolResult(message: Message): boolean {
   return message.role === "tool" && !!message.tool_call_id;
 }
-
-// ============================================
-// Legacy types (kept for backwards compat during migration)
-// TODO: Remove after migration complete
-// ============================================
-
-/**
- * @deprecated Use ToolCall instead
- */
-export interface LegacyToolCall {
-  id: string;
-  name: string;
-  arguments: Record<string, unknown>;
-}
-
-/**
- * @deprecated Use createToolMessage instead
- */
-export interface ToolResult {
-  toolCallId: string;
-  content: string;
-  success: boolean;
-  error?: string;
-}

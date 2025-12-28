@@ -4,7 +4,7 @@
  * Routes to the correct provider formatter based on provider type
  */
 
-import type { AIProvider } from "@yourgpt/core";
+import type { AIProvider } from "@yourgpt/copilot-sdk-core";
 import type { ProviderFormatter } from "./types";
 import { anthropicFormatter } from "./anthropic";
 import { openaiFormatter } from "./openai";

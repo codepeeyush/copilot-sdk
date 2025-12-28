@@ -8,8 +8,8 @@ import type {
   ToolContext,
   ToolRenderProps,
   ToolInputSchema,
-} from "@yourgpt/core";
-import { zodObjectToInputSchema } from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
+import { zodObjectToInputSchema } from "@yourgpt/copilot-sdk-core";
 import { useYourGPTContext } from "../context/YourGPTContext";
 
 /**

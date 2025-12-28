@@ -1,5 +1,5 @@
 /**
- * @yourgpt/react
+ * @yourgpt/copilot-sdk-react
  *
  * React hooks and components for YourGPT Copilot SDK
  */
@@ -81,7 +81,7 @@ export {
 } from "./utils/permission-storage";
 
 // DevLogger (Development debugging tool)
-// Use with: import { DevLogger } from "@yourgpt/ui";
+// Use with: import { DevLogger } from "@yourgpt/copilot-sdk-ui";
 export { useDevLogger, type DevLoggerState } from "./hooks/useDevLogger";
 
 // Re-export core types for convenience
@@ -118,4 +118,4 @@ export type {
   ToolPermission,
   PermissionStorageConfig,
   PermissionStorageAdapter,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";

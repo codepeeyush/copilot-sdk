@@ -1,4 +1,7 @@
-import type { ThreadData, ThreadStorageAdapter } from "@yourgpt/core";
+import type {
+  ThreadData,
+  ThreadStorageAdapter,
+} from "@yourgpt/copilot-sdk-core";
 
 const STORAGE_KEY = "yourgpt-threads";
 

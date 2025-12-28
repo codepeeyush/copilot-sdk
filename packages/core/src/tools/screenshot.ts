@@ -62,8 +62,6 @@ async function getHtml2Canvas(): Promise<typeof import("html2canvas").default> {
 export async function captureScreenshot(
   options: ScreenshotOptions = {},
 ): Promise<ScreenshotResult> {
-  console.log("[YourGPT:Screenshot] captureScreenshot called", options);
-
   if (!isBrowser) {
     throw new Error(
       "Screenshot capture is only available in browser environment",
@@ -72,37 +70,24 @@ export async function captureScreenshot(
 
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const element = opts.element || document.body;
-  console.log(
-    "[YourGPT:Screenshot] Element:",
-    element.tagName,
-    element.id || element.className,
-  );
 
   // Get element dimensions
   const rect = element.getBoundingClientRect();
   let width = rect.width || window.innerWidth;
   let height = rect.height || window.innerHeight;
-  console.log("[YourGPT:Screenshot] Dimensions:", { width, height });
 
   // Scale down if needed
   const scale = Math.min(opts.maxWidth / width, opts.maxHeight / height, 1);
   width = Math.round(width * scale);
   height = Math.round(height * scale);
-  console.log("[YourGPT:Screenshot] Scaled dimensions:", {
-    width,
-    height,
-    scale,
-  });
 
   let canvas: HTMLCanvasElement;
 
   try {
     // Load html2canvas dynamically
-    console.log("[YourGPT:Screenshot] Loading html2canvas...");
     const html2canvas = await getHtml2Canvas();
 
     // Capture using html2canvas
-    console.log("[YourGPT:Screenshot] Capturing with html2canvas...");
     canvas = await html2canvas(element, {
       scale: scale,
       useCORS: true, // Enable cross-origin images
@@ -118,11 +103,7 @@ export async function captureScreenshot(
       x: rect.left + window.scrollX,
       y: rect.top + window.scrollY,
     });
-
-    console.log("[YourGPT:Screenshot] html2canvas capture successful");
   } catch (error) {
-    console.error("[YourGPT:Screenshot] html2canvas error:", error);
-
     // Fallback to placeholder if html2canvas fails
     canvas = document.createElement("canvas");
     canvas.width = width;
@@ -166,10 +147,6 @@ export async function captureScreenshot(
     }
   }
 
-  console.log(
-    "[YourGPT:Screenshot] Returning result, data length:",
-    data.length,
-  );
   return {
     data,
     format: opts.format,

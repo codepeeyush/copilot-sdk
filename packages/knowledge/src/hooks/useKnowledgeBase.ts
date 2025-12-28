@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
-import type { Source } from "@yourgpt/core";
+import type { Source } from "@yourgpt/copilot-sdk-core";
 import {
   YourGPTKnowledgeBase,
   type KnowledgeBaseConfig,

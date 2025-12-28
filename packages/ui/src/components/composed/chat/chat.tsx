@@ -22,7 +22,6 @@ import { ChatHeader } from "./chat-header";
 import { Suggestions } from "./suggestions";
 import { DefaultMessage } from "./default-message";
 import { ToolExecutionMessage } from "./tool-execution-message";
-import { LoopProgressBadge } from "../tools/loop-progress";
 import type { ChatProps } from "./types";
 
 export function Chat({
@@ -253,22 +252,6 @@ export function Chat({
               </div>
             </Message>
           )}
-
-          {/* Loop Progress Badge - commented out for now
-          {showToolExecutions &&
-            loopIteration !== undefined &&
-            loopMaxIterations !== undefined &&
-            (loopRunning || loopIteration > 0) && (
-              <div className={cn("mt-2", classNames.loopProgress)}>
-                <LoopProgressBadge
-                  iteration={loopIteration}
-                  maxIterations={loopMaxIterations}
-                  isRunning={loopRunning}
-                  maxReached={loopIteration >= loopMaxIterations}
-                />
-              </div>
-            )}
-          */}
 
           <ChatContainerScrollAnchor />
         </ChatContainerContent>

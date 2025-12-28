@@ -1,5 +1,5 @@
 {
-  "name": "@yourgpt/runtime",
+  "name": "@yourgpt/copilot-sdk-runtime",
   "version": "0.1.0",
   "description": "Backend runtime server for YourGPT Copilot SDK",
   "main": "./dist/index.js",
@@ -28,7 +28,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@yourgpt/core": "workspace:*",
+    "@yourgpt/copilot-sdk-core": "workspace:*",
     "hono": "^4.3.0",
     "zod": "^3.23.0"
   },

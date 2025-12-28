@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import type { Thread, ThreadData } from "@yourgpt/core";
+import type { Thread, ThreadData } from "@yourgpt/copilot-sdk-core";
 
 /**
  * Threads context value interface

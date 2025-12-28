@@ -1,5 +1,5 @@
 {
-  "name": "@yourgpt/knowledge",
+  "name": "@yourgpt/copilot-sdk-knowledge",
   "version": "0.1.0",
   "description": "Knowledge base extension for YourGPT Copilot SDK",
   "main": "./dist/index.js",
@@ -23,8 +23,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@yourgpt/core": "workspace:*",
-    "@yourgpt/react": "workspace:*"
+    "@yourgpt/copilot-sdk-core": "workspace:*",
+    "@yourgpt/copilot-sdk-react": "workspace:*"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0",

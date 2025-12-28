@@ -1,0 +1,71 @@
+# YourGPT Copilot SDK
+
+Open-source SDK for building AI assistants with **App Context Awareness**.
+
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+## Installation
+
+```bash
+pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui
+```
+
+## Quick Start
+
+### Frontend
+
+```tsx
+import { YourGPTProvider } from "@yourgpt/copilot-sdk-react";
+import { Chat } from "@yourgpt/copilot-sdk-ui";
+import "@yourgpt/copilot-sdk-ui/styles.css";
+
+function App() {
+  return (
+    <YourGPTProvider
+      runtimeUrl="/api/chat"
+      tools={{ screenshot: true, console: true, network: true }}
+    >
+      <Chat />
+    </YourGPTProvider>
+  );
+}
+```
+
+### Backend (Next.js)
+
+```ts
+// app/api/chat/route.ts
+import { createRuntime } from "@yourgpt/copilot-sdk-runtime";
+import { OpenAIAdapter } from "@yourgpt/copilot-sdk-runtime/adapters";
+
+const runtime = createRuntime({
+  adapter: new OpenAIAdapter({
+    apiKey: process.env.OPENAI_API_KEY!,
+    model: "gpt-4o",
+  }),
+});
+
+export const POST = runtime.handler;
+```
+
+## Packages
+
+| Package                          | Description                     |
+| -------------------------------- | ------------------------------- |
+| `@yourgpt/copilot-sdk-core`      | Types, utilities, capture tools |
+| `@yourgpt/copilot-sdk-react`     | React hooks and provider        |
+| `@yourgpt/copilot-sdk-ui`        | Pre-built chat components       |
+| `@yourgpt/copilot-sdk-runtime`   | Server-side LLM adapters        |
+| `@yourgpt/copilot-sdk-knowledge` | Knowledge base integration      |
+
+## Documentation
+
+Visit [yourgpt-copilot.vercel.app](https://yourgpt-copilot.vercel.app)
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md)
+
+## License
+
+[MIT](./LICENSE)

@@ -9,8 +9,8 @@ import type {
   ToolCallInfo,
   AssistantToolMessage,
   DoneEventMessage,
-} from "@yourgpt/core";
-import { createMessage } from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
+import { createMessage } from "@yourgpt/copilot-sdk-core";
 import type { LLMAdapter, ChatCompletionRequest } from "../adapters";
 import {
   createOpenAIAdapter,
@@ -100,10 +100,6 @@ export class Runtime {
 
         // PLACEHOLDER: This is where the actual vector search will be implemented
         // For now, return a message indicating where the KB search will happen
-        console.log(
-          `[YourGPT Knowledge Base] Searching "${kb.id}" for: "${query}" (limit: ${limit})`,
-        );
-
         return {
           status: "placeholder",
           message: `🔍 Finding in Knowledge Base "${kb.name || kb.id}" (ID: ${kb.id})`,
@@ -277,14 +273,6 @@ export class Runtime {
     try {
       const body = (await request.json()) as ChatRequest;
 
-      // Always log streaming flag for debugging
-      console.log(
-        "[YourGPT Runtime] Streaming flag:",
-        body.streaming,
-        "Type:",
-        typeof body.streaming,
-      );
-
       if (this.config.debug) {
         console.log(
           "[YourGPT Runtime] Request:",
@@ -302,7 +290,6 @@ export class Runtime {
 
       // NON-STREAMING: Return JSON response instead of SSE
       if (body.streaming === false) {
-        console.log("[YourGPT Runtime] Using non-streaming JSON response");
         return this.handleNonStreamingRequest(
           body,
           signal,

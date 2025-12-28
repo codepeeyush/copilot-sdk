@@ -4,7 +4,7 @@ import type {
   ActionDefinition,
   StreamEvent,
   LLMConfig,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 
 /**
  * Chat completion request

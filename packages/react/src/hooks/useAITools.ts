@@ -11,7 +11,7 @@ import type {
   ScreenshotOptions,
   ConsoleLogOptions,
   NetworkRequestOptions,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 import {
   // Screenshot
   captureScreenshot,
@@ -33,7 +33,7 @@ import {
   // Intent
   detectIntent,
   generateSuggestionReason,
-} from "@yourgpt/core";
+} from "@yourgpt/copilot-sdk-core";
 
 /**
  * useAITools options

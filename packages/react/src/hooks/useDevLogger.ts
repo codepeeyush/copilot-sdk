@@ -5,7 +5,7 @@ import { useYourGPTContext } from "../context/YourGPTContext";
 
 /**
  * SDK State for DevLogger
- * This type is compatible with DevLoggerState in @yourgpt/ui
+ * This type is compatible with DevLoggerState in @yourgpt/copilot-sdk-ui
  */
 export interface DevLoggerState {
   chat: {
