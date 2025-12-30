@@ -1,0 +1,160 @@
+---
+title: Groq
+description: Ultra-fast inference with Llama and Mixtral models
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<div className="not-prose mb-8 p-6 rounded-xl border bg-gradient-to-br from-yellow-500/5 to-amber-500/10">
+  <div className="flex items-center gap-4">
+    <div className="text-5xl">⚡</div>
+    <div>
+      <h2 className="text-2xl font-bold m-0">Groq</h2>
+      <p className="text-muted-foreground m-0">Ultra-fast Llama & Mixtral inference</p>
+    </div>
+  </div>
+</div>
+
+# Groq
+
+**Blazing fast inference.** Groq's LPU hardware delivers 10x faster responses than traditional GPUs.
+
+<Callout type="info">
+Groq is ideal for real-time applications where latency matters.
+</Callout>
+
+---
+
+## Setup
+
+### 1. Get API Key
+
+Get your API key from [console.groq.com](https://console.groq.com/)
+
+### 2. Add Environment Variable
+
+```bash
+# .env.local
+GROQ_API_KEY=gsk_...
+```
+
+### 3. Configure Provider
+
+```tsx
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  llm={{
+    provider: 'groq',
+    model: 'llama-3.1-70b-versatile',
+  }}
+>
+  <CopilotChat />
+</YourGPTProvider>
+```
+
+---
+
+## Available Models
+
+| Model | Context | Speed | Best For |
+|-------|---------|-------|----------|
+| `llama-3.1-70b-versatile` | 128K | Very Fast | General use |
+| `llama-3.1-8b-instant` | 128K | Ultra Fast | Quick responses |
+| `llama-3.2-90b-vision-preview` | 128K | Fast | Multimodal |
+| `mixtral-8x7b-32768` | 32K | Very Fast | Balanced |
+| `gemma2-9b-it` | 8K | Ultra Fast | Lightweight |
+
+<Callout type="info">
+**Recommended:** `llama-3.1-70b-versatile` for quality, `llama-3.1-8b-instant` for speed.
+</Callout>
+
+---
+
+## Speed Comparison
+
+| Provider | Time to First Token | Total Response Time |
+|----------|---------------------|---------------------|
+| **Groq** | ~100ms | ~500ms |
+| OpenAI | ~500ms | ~3s |
+| Anthropic | ~700ms | ~4s |
+
+*Groq is 5-10x faster for most queries.*
+
+---
+
+## Configuration Options
+
+```tsx
+llm={{
+  provider: 'groq',
+  model: 'llama-3.1-70b-versatile',
+  temperature: 0.7,
+  maxTokens: 4096,
+  topP: 1,
+}}
+```
+
+---
+
+## Use Cases
+
+### Real-Time Chat
+
+Perfect for applications needing instant responses:
+
+```tsx
+// Users see responses appear instantly
+<CopilotChat placeholder="Ask anything (instant response)..." />
+```
+
+### Autocomplete / Suggestions
+
+```tsx
+// Fast enough for keystroke-level suggestions
+const getSuggestions = async (input: string) => {
+  // Groq responds fast enough for autocomplete
+};
+```
+
+### High-Volume Applications
+
+Lower latency = better user experience at scale.
+
+---
+
+## Tool Calling
+
+Llama models support function calling:
+
+```tsx
+useToolWithSchema({
+  name: 'quick_search',
+  description: 'Search for information quickly',
+  schema: z.object({
+    query: z.string(),
+  }),
+  handler: async ({ query }) => {
+    const results = await search(query);
+    return { success: true, data: results };
+  },
+});
+```
+
+---
+
+## Pricing
+
+| Model | Price |
+|-------|-------|
+| llama-3.1-70b | $0.59/1M tokens |
+| llama-3.1-8b | $0.05/1M tokens |
+| mixtral-8x7b | $0.24/1M tokens |
+
+*Very affordable. Check [Groq pricing](https://groq.com/) for current rates.*
+
+---
+
+## Next Steps
+
+- [Mistral](/docs/providers/mistral) - European AI
+- [Streaming](/docs/features/streaming) - Real-time responses

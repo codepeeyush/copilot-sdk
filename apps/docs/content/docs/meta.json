@@ -3,12 +3,18 @@
   "pages": [
     "---Getting Started---",
     "index",
-    "installation",
-    "---Packages---",
-    "react",
-    "ui",
-    "runtime",
-    "---Features---",
-    "tools"
+    "quickstart",
+    "---Copilot---",
+    "overview",
+    "chat",
+    "customizations",
+    "tools",
+    "generative-ui",
+    "smart-ai-context",
+    "multimodal",
+    "---",
+    "providers",
+    "---API Reference---",
+    "api-reference"
   ]
 }

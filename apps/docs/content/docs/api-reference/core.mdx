@@ -1,0 +1,97 @@
+---
+title: Core
+description: Core utilities, built-in tools, and types
+icon: Box
+---
+
+# Core Package
+
+Core utilities, built-in tools, and shared types.
+
+```bash
+npm install @yourgpt/copilot-sdk-core
+```
+
+---
+
+## Built-in Tools
+
+```tsx
+import { builtinTools } from '@yourgpt/copilot-sdk-core';
+
+// Available tools
+builtinTools.capture_screenshot  // Screenshot tool
+builtinTools.capture_console     // Console logs tool
+```
+
+---
+
+## Types
+
+### UIMessage
+
+```tsx
+interface UIMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'tool' | 'system';
+  content: string;
+  createdAt: Date;
+  toolCalls?: ToolCall[];
+  toolCallId?: string;
+  thinking?: string;
+  attachments?: Attachment[];
+}
+```
+
+### ToolExecution
+
+```tsx
+interface ToolExecution {
+  id: string;
+  name: string;
+  args: Record<string, unknown>;
+  status: 'pending' | 'executing' | 'completed' | 'error';
+  result?: unknown;
+  error?: string;
+  approvalStatus?: 'required' | 'approved' | 'rejected';
+}
+```
+
+### ToolDefinition
+
+```tsx
+interface ToolDefinition {
+  name: string;
+  description: string;
+  parameters: ZodSchema;
+  handler: (params: any) => Promise<any>;
+  requiresApproval?: boolean;
+}
+```
+
+### Attachment
+
+```tsx
+interface Attachment {
+  id: string;
+  type: 'image' | 'file' | 'audio' | 'video';
+  name: string;
+  url?: string;
+  base64?: string;
+  mimeType: string;
+  size?: number;
+}
+```
+
+### ToolCall
+
+```tsx
+interface ToolCall {
+  id: string;
+  type: 'function';
+  function: {
+    name: string;
+    arguments: string;  // JSON string
+  };
+}
+```

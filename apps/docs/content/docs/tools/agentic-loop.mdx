@@ -1,0 +1,383 @@
+---
+title: Multi-Step Agentic Loop
+description: Multi-step AI reasoning with continuous tool calls
+icon: RefreshCw
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Multi-Step Agentic Loop
+
+Enable AI to make multiple tool calls in sequence, reasoning through complex tasks step by step.
+
+---
+
+## Overview
+
+Without agentic loop:
+```
+User: "Book a flight to NYC and a hotel nearby"
+AI: [Calls book_flight] → Done (forgot hotel)
+```
+
+With agentic loop:
+```
+User: "Book a flight to NYC and a hotel nearby"
+AI: [Calls search_flights]
+    → Analyzes results
+    → [Calls book_flight]
+    → [Calls search_hotels]
+    → [Calls book_hotel]
+    → "Done! Booked flight UA123 and Hotel Marriott Times Square"
+```
+
+---
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Agentic Loop                           │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  User Message                                               │
+│       ↓                                                     │
+│  ┌─────────────┐                                           │
+│  │   LLM       │ ← Decides what tool to call               │
+│  └─────────────┘                                           │
+│       ↓                                                     │
+│  ┌─────────────┐                                           │
+│  │ Tool Exec   │ ← Executes tool, gets result              │
+│  └─────────────┘                                           │
+│       ↓                                                     │
+│  ┌─────────────┐                                           │
+│  │   LLM       │ ← Analyzes result, decides next step      │
+│  └─────────────┘                                           │
+│       ↓                                                     │
+│  [Repeat until task complete or max iterations]             │
+│       ↓                                                     │
+│  Final Response                                             │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Configuration
+
+The agentic loop is configured on the backend runtime:
+
+```ts
+// app/api/chat/route.ts
+import { createRuntime, createOpenAI } from '@yourgpt/copilot-sdk-runtime';
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+  // Agentic loop settings
+  maxIterations: 20,  // Maximum tool call cycles (default: 20)
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
+```
+
+### maxIterations
+
+Prevents infinite loops by limiting how many times AI can call tools:
+
+| Value | Use Case |
+|-------|----------|
+| `5` | Simple tasks, quick responses |
+| `10` | Medium complexity |
+| `20` | Complex multi-step tasks (default) |
+| `50` | Very complex workflows |
+
+<Callout type="warning">
+Higher values allow more complex tasks but increase latency and token usage. Start low and increase as needed.
+</Callout>
+
+---
+
+## Tracking Execution State
+
+Monitor the agentic loop from the frontend:
+
+```tsx
+import { useYourGPT } from '@yourgpt/copilot-sdk-react';
+
+function AgentProgress() {
+  const { toolExecutions, isLoading } = useYourGPT();
+
+  // Filter to current batch
+  const currentExecutions = toolExecutions.filter(
+    exec => exec.status === 'executing' || exec.status === 'completed'
+  );
+
+  if (!isLoading || currentExecutions.length === 0) {
+    return null;
+  }
+
+  return (
+    <div className="p-4 border rounded-lg bg-muted/50">
+      <p className="text-sm font-medium mb-2">AI is working...</p>
+      <div className="space-y-2">
+        {currentExecutions.map(exec => (
+          <div key={exec.id} className="flex items-center gap-2 text-sm">
+            {exec.status === 'executing' ? (
+              <Spinner className="h-4 w-4" />
+            ) : (
+              <Check className="h-4 w-4 text-green-500" />
+            )}
+            <span>{exec.name}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Tool Execution States
+
+```typescript
+type ToolExecutionStatus =
+  | 'pending'      // Waiting to start
+  | 'executing'    // Currently running
+  | 'completed'    // Finished successfully
+  | 'error'        // Failed with error
+  | 'failed'       // Handler threw exception
+  | 'rejected';    // User rejected approval
+```
+
+Track these to show progress:
+
+```tsx
+function ExecutionTimeline({ executions }) {
+  return (
+    <div className="space-y-2">
+      {executions.map((exec, i) => (
+        <div key={exec.id} className="flex items-center gap-3">
+          <div className={cn(
+            "w-2 h-2 rounded-full",
+            exec.status === 'completed' && "bg-green-500",
+            exec.status === 'executing' && "bg-blue-500 animate-pulse",
+            exec.status === 'error' && "bg-red-500",
+            exec.status === 'pending' && "bg-gray-300",
+          )} />
+          <span className="text-sm">
+            {i + 1}. {exec.name}
+            {exec.status === 'completed' && ' ✓'}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+```
+
+---
+
+## Example: Multi-Step Task
+
+```tsx
+// Define interconnected tools
+useTools({
+  search_products: {
+    description: 'Search for products',
+    parameters: z.object({ query: z.string() }),
+    handler: async ({ query }) => {
+      const products = await searchAPI(query);
+      return { success: true, data: products };
+    },
+  },
+
+  get_product_details: {
+    description: 'Get detailed info about a product',
+    parameters: z.object({ productId: z.string() }),
+    handler: async ({ productId }) => {
+      const details = await getProductDetails(productId);
+      return { success: true, data: details };
+    },
+  },
+
+  check_availability: {
+    description: 'Check if product is available in user location',
+    parameters: z.object({ productId: z.string(), zipCode: z.string() }),
+    handler: async ({ productId, zipCode }) => {
+      const availability = await checkStock(productId, zipCode);
+      return { success: true, data: availability };
+    },
+  },
+
+  add_to_cart: {
+    description: 'Add product to shopping cart',
+    parameters: z.object({ productId: z.string(), quantity: z.number() }),
+    handler: async ({ productId, quantity }) => {
+      await cart.add(productId, quantity);
+      return { success: true, message: 'Added to cart' };
+    },
+  },
+});
+```
+
+**User prompt:** "Find wireless headphones under $100 that ship to 94102 and add the best one to my cart"
+
+**AI executes:**
+1. `search_products({ query: "wireless headphones under $100" })`
+2. Analyzes results, picks top rated
+3. `get_product_details({ productId: "prod_123" })`
+4. `check_availability({ productId: "prod_123", zipCode: "94102" })`
+5. Confirms available
+6. `add_to_cart({ productId: "prod_123", quantity: 1 })`
+7. Returns: "Added Sony WH-1000XM4 ($89.99) to your cart. Ships to 94102 in 2 days."
+
+---
+
+## Stopping the Loop
+
+Users can stop the agentic loop mid-execution:
+
+```tsx
+function ChatControls() {
+  const { isLoading, stop } = useYourGPT();
+
+  return (
+    <div>
+      {isLoading && (
+        <button onClick={stop} className="btn-secondary">
+          Stop AI
+        </button>
+      )}
+    </div>
+  );
+}
+```
+
+---
+
+## Progress UI Pattern
+
+Show users what's happening:
+
+```tsx
+function AgenticProgress() {
+  const { toolExecutions, isLoading, status } = useYourGPT();
+
+  // Only show during active tool execution
+  const isProcessingTools = isLoading && toolExecutions.some(
+    e => e.status === 'executing'
+  );
+
+  if (!isProcessingTools) return null;
+
+  const completed = toolExecutions.filter(e => e.status === 'completed').length;
+  const total = toolExecutions.length;
+
+  return (
+    <div className="fixed bottom-20 left-1/2 -translate-x-1/2 bg-background border rounded-lg shadow-lg p-4">
+      <div className="flex items-center gap-3">
+        <Spinner />
+        <div>
+          <p className="font-medium">Working on it...</p>
+          <p className="text-sm text-muted-foreground">
+            Step {completed + 1} of {total}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Best Practices
+
+### 1. Design Tools for Composition
+
+```tsx
+// ✅ Good - small, composable tools
+useTools({
+  get_user: { /* ... */ },
+  get_orders: { /* ... */ },
+  get_order_details: { /* ... */ },
+  cancel_order: { /* ... */ },
+});
+
+// ❌ Bad - monolithic tool
+useTools({
+  manage_everything: {
+    // Does too much, AI can't break down tasks
+  },
+});
+```
+
+### 2. Return Helpful Results
+
+```tsx
+// ✅ Good - AI can reason about this
+return {
+  success: true,
+  data: {
+    found: 5,
+    products: results,
+    suggestion: results.length === 0 ? 'Try broader search terms' : null,
+  },
+};
+
+// ❌ Bad - opaque result
+return { ok: true };
+```
+
+### 3. Handle Long Operations
+
+```tsx
+useTools({
+  generate_report: {
+    description: 'Generate analytics report (may take 30s)',
+    handler: async ({ timeRange }) => {
+      // For long operations, provide progress hints
+      return {
+        success: true,
+        data: report,
+        _aiContext: 'Report generated. Contains 50 pages of analytics.',
+      };
+    },
+  },
+});
+```
+
+---
+
+## Callbacks (Advanced)
+
+Listen to agentic loop events:
+
+```tsx
+// In provider setup
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  onToolStart={(execution) => {
+    console.log('Tool starting:', execution.name);
+    analytics.track('tool_start', { tool: execution.name });
+  }}
+  onToolComplete={(execution) => {
+    console.log('Tool completed:', execution.name);
+  }}
+  onMaxIterationsReached={() => {
+    toast.warning('AI reached maximum steps. Task may be incomplete.');
+  }}
+>
+```
+
+---
+
+## Next Steps
+
+- [Tool Approval](/docs/tool-approval) - Add human confirmation
+- [AI Response Control](/docs/ai-response-control) - Control AI responses
+- [Streaming](/docs/streaming) - Real-time updates

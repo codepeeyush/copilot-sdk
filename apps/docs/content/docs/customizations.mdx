@@ -1,0 +1,246 @@
+---
+title: Customizations
+description: Customize the look and behavior of your copilot
+icon: Paintbrush
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Customizations
+
+Customize the appearance, behavior, and branding of your AI copilot.
+
+---
+
+## Theme
+
+### Colors
+
+```tsx
+<CopilotChat
+  theme={{
+    primaryColor: '#6366f1',
+    backgroundColor: '#ffffff',
+    textColor: '#1f2937',
+    borderRadius: '12px',
+  }}
+/>
+```
+
+### Dark Mode
+
+```tsx
+<CopilotChat
+  theme={{
+    mode: 'dark', // 'light' | 'dark' | 'system'
+  }}
+/>
+```
+
+---
+
+## Branding
+
+### Custom Header
+
+```tsx
+<CopilotChat
+  header={{
+    title: 'Support Assistant',
+    subtitle: 'How can I help you today?',
+    logo: '/logo.svg',
+  }}
+/>
+```
+
+### Welcome Message
+
+```tsx
+<CopilotChat
+  welcomeMessage="Hi! I'm your AI assistant. Ask me anything about our products."
+/>
+```
+
+### Placeholder
+
+```tsx
+<CopilotChat
+  placeholder="Type your question here..."
+/>
+```
+
+---
+
+## Layout
+
+### Position
+
+```tsx
+// Floating button (default)
+<CopilotChat position="bottom-right" />
+
+// Embedded in page
+<CopilotChat embedded={true} />
+
+// Full page
+<CopilotChat fullPage={true} />
+```
+
+### Size
+
+```tsx
+<CopilotChat
+  width={400}
+  height={600}
+  maxHeight="80vh"
+/>
+```
+
+---
+
+## Input Options
+
+### Attachments
+
+```tsx
+<CopilotChat
+  attachmentsEnabled={true}
+  allowedFileTypes={['image/*', '.pdf', '.doc']}
+  maxFileSize={10 * 1024 * 1024} // 10MB
+/>
+```
+
+### Voice Input
+
+```tsx
+<CopilotChat
+  voiceEnabled={true}
+/>
+```
+
+---
+
+## Messages
+
+### User/AI Avatars
+
+```tsx
+<CopilotChat
+  userAvatar="/user-avatar.png"
+  assistantAvatar="/ai-avatar.png"
+/>
+```
+
+### Message Formatting
+
+```tsx
+<CopilotChat
+  renderMessage={(message) => (
+    <div className="custom-message">
+      <Markdown>{message.content}</Markdown>
+    </div>
+  )}
+/>
+```
+
+---
+
+## Behavior
+
+### Auto-focus
+
+```tsx
+<CopilotChat
+  autoFocus={true}
+/>
+```
+
+### Persist History
+
+```tsx
+<CopilotChat
+  persistHistory={true}
+  storageKey="my-app-chat"
+/>
+```
+
+### Scroll Behavior
+
+```tsx
+<CopilotChat
+  scrollBehavior="smooth" // 'smooth' | 'instant' | 'auto'
+/>
+```
+
+---
+
+## Custom CSS
+
+### CSS Variables
+
+```css
+:root {
+  --copilot-primary: #6366f1;
+  --copilot-bg: #ffffff;
+  --copilot-text: #1f2937;
+  --copilot-border: #e5e7eb;
+  --copilot-radius: 12px;
+}
+```
+
+### Class Names
+
+```tsx
+<CopilotChat
+  className="my-custom-chat"
+  classNames={{
+    container: 'chat-container',
+    header: 'chat-header',
+    messages: 'chat-messages',
+    input: 'chat-input',
+  }}
+/>
+```
+
+---
+
+## Full Example
+
+```tsx
+<CopilotChat
+  // Theme
+  theme={{
+    mode: 'system',
+    primaryColor: '#6366f1',
+  }}
+
+  // Branding
+  header={{
+    title: 'AI Assistant',
+    logo: '/logo.svg',
+  }}
+  welcomeMessage="How can I help you today?"
+  placeholder="Ask anything..."
+
+  // Layout
+  position="bottom-right"
+  width={400}
+
+  // Features
+  attachmentsEnabled={true}
+  voiceEnabled={true}
+  persistHistory={true}
+
+  // Avatars
+  userAvatar="/user.png"
+  assistantAvatar="/ai.png"
+/>
+```
+
+---
+
+## Next Steps
+
+- [Tools](/docs/tools) - Add AI capabilities
+- [Generative UI](/docs/generative-ui) - Custom tool renderers
+- [Smart AI Context](/docs/smart-ai-context) - Context awareness

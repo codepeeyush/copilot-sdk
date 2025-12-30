@@ -1,0 +1,269 @@
+---
+title: Backend Tools
+description: Execute tools securely on the server
+icon: Server
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Backend Tools
+
+Execute tools securely on your backend with access to databases, APIs, and secrets.
+
+---
+
+## Why Backend Tools?
+
+| Frontend Tools | Backend Tools |
+|---------------|---------------|
+| Run in browser | Run on server |
+| User can inspect | Code stays private |
+| No secrets access | Full secrets access |
+| Limited capabilities | Database, APIs, files |
+
+---
+
+## Basic Server Tool
+
+```ts
+// app/api/chat/route.ts
+import { createRuntime, createOpenAI } from '@yourgpt/copilot-sdk-runtime';
+import { z } from 'zod';
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+
+  tools: {
+    get_user_orders: {
+      description: 'Get orders for a user',
+      parameters: z.object({
+        userId: z.string(),
+        limit: z.number().optional().default(10),
+      }),
+      handler: async ({ userId, limit }) => {
+        const orders = await db.orders.findMany({
+          where: { userId },
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+        });
+
+        return { success: true, data: orders };
+      },
+    },
+  },
+});
+```
+
+---
+
+## Database Access
+
+```ts
+tools: {
+  search_products: {
+    description: 'Search products in the catalog',
+    parameters: z.object({
+      query: z.string(),
+      category: z.string().optional(),
+      minPrice: z.number().optional(),
+      maxPrice: z.number().optional(),
+    }),
+    handler: async ({ query, category, minPrice, maxPrice }) => {
+      const products = await prisma.product.findMany({
+        where: {
+          AND: [
+            { name: { contains: query, mode: 'insensitive' } },
+            category ? { category } : {},
+            minPrice ? { price: { gte: minPrice } } : {},
+            maxPrice ? { price: { lte: maxPrice } } : {},
+          ],
+        },
+        take: 20,
+      });
+
+      return {
+        success: true,
+        data: products,
+        _aiContext: `Found ${products.length} products matching "${query}"`,
+      };
+    },
+  },
+}
+```
+
+---
+
+## External API Calls
+
+```ts
+tools: {
+  check_inventory: {
+    description: 'Check real-time inventory from warehouse',
+    parameters: z.object({
+      sku: z.string(),
+    }),
+    handler: async ({ sku }) => {
+      const response = await fetch(
+        `${process.env.WAREHOUSE_API}/inventory/${sku}`,
+        {
+          headers: {
+            Authorization: `Bearer ${process.env.WAREHOUSE_API_KEY}`,
+          },
+        }
+      );
+
+      const data = await response.json();
+
+      return {
+        success: true,
+        data: {
+          sku,
+          quantity: data.available,
+          warehouse: data.location,
+        },
+      };
+    },
+  },
+}
+```
+
+---
+
+## Email & Notifications
+
+```ts
+tools: {
+  send_order_confirmation: {
+    description: 'Send order confirmation email',
+    parameters: z.object({
+      orderId: z.string(),
+      email: z.string().email(),
+    }),
+    handler: async ({ orderId, email }) => {
+      const order = await db.orders.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+
+      await resend.emails.send({
+        from: 'orders@example.com',
+        to: email,
+        subject: `Order Confirmation #${orderId}`,
+        html: renderOrderEmail(order),
+      });
+
+      return {
+        success: true,
+        data: { sent: true, to: email },
+        _aiContext: `Confirmation email sent to ${email}`,
+      };
+    },
+  },
+}
+```
+
+---
+
+## Authentication Context
+
+Access the current user in tools:
+
+```ts
+const runtime = createRuntime({
+  tools: {
+    get_my_profile: {
+      description: 'Get current user profile',
+      parameters: z.object({}),
+      handler: async (_, { request }) => {
+        const token = request.headers.get('authorization');
+        const user = await verifyToken(token);
+
+        if (!user) {
+          return { success: false, error: 'Not authenticated' };
+        }
+
+        const profile = await db.users.findUnique({
+          where: { id: user.id },
+        });
+
+        return { success: true, data: profile };
+      },
+    },
+  },
+});
+```
+
+---
+
+## Error Handling
+
+```ts
+tools: {
+  process_payment: {
+    description: 'Process a payment',
+    parameters: z.object({
+      amount: z.number(),
+      currency: z.string(),
+    }),
+    handler: async ({ amount, currency }) => {
+      try {
+        const result = await stripe.charges.create({
+          amount: Math.round(amount * 100),
+          currency,
+        });
+
+        return { success: true, data: { chargeId: result.id } };
+      } catch (error) {
+        return {
+          success: false,
+          error: 'Payment failed. Please try again.',
+          _aiContext: `Payment error: ${error.message}`,
+        };
+      }
+    },
+  },
+}
+```
+
+<Callout type="info">
+Always return `success: false` with a user-friendly error message. Use `_aiContext` to give the AI more details for debugging.
+</Callout>
+
+---
+
+## Combining Frontend & Backend
+
+```tsx
+// Frontend: UI interactions
+useTools({
+  show_product_modal: {
+    description: 'Show product details modal',
+    parameters: z.object({ productId: z.string() }),
+    handler: async ({ productId }) => {
+      openModal(<ProductModal id={productId} />);
+      return { success: true };
+    },
+  },
+});
+
+// Backend: Data operations
+const runtime = createRuntime({
+  tools: {
+    get_product_details: {
+      description: 'Get product details from database',
+      parameters: z.object({ productId: z.string() }),
+      handler: async ({ productId }) => {
+        return await db.products.findUnique({ where: { id: productId } });
+      },
+    },
+  },
+});
+```
+
+---
+
+## Next Steps
+
+- [Frontend Tools](/docs/tools/frontend-tools) - Client-side tools
+- [Agentic Loop](/docs/tools/agentic-loop) - Multi-step execution

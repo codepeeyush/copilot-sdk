@@ -1,0 +1,54 @@
+---
+title: Built-in Tools
+description: Ready-to-use tools for common AI capabilities
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+# Built-in Tools
+
+Pre-built tools that give AI access to browser context for debugging and assistance.
+
+---
+
+<Cards>
+  <Card title="Screenshot" href="/docs/tools/built-in/screenshot">
+    Capture and analyze the current page visually.
+  </Card>
+  <Card title="Console Logs" href="/docs/tools/built-in/console">
+    Read browser console for debugging.
+  </Card>
+</Cards>
+
+---
+
+## Quick Setup
+
+```tsx
+import { builtinTools } from '@yourgpt/copilot-sdk-core';
+import { useTools } from '@yourgpt/copilot-sdk-react';
+
+function BuiltInTools() {
+  useTools({
+    capture_screenshot: builtinTools.capture_screenshot,
+    capture_console: builtinTools.capture_console,
+  });
+
+  return null;
+}
+```
+
+---
+
+## Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `capture_screenshot` | Takes screenshot of current page for visual analysis |
+| `capture_console` | Captures recent console logs for debugging |
+
+---
+
+## Privacy
+
+All built-in tools require user approval before capturing data. Users see exactly what will be shared with the AI.

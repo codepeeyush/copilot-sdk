@@ -1,10 +1,15 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
 import { BookOpen, Github } from "lucide-react";
+import CopilotSDKLogo from "@/components/logos/copilot-sdk-logo";
 
 export function baseOptions(): BaseLayoutProps {
   return {
     nav: {
-      title: "YourGPT Copilot",
+      title: (
+        <div className="pb-2">
+          <CopilotSDKLogo />
+        </div>
+      ),
     },
     links: [
       {

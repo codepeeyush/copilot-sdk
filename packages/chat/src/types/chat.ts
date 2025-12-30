@@ -1,0 +1,99 @@
+/**
+ * Chat Types
+ *
+ * Configuration and status types for chat functionality.
+ */
+
+import type {
+  LLMConfig,
+  MessageAttachment,
+  ToolDefinition,
+} from "@yourgpt/copilot-sdk-core";
+import type { UIMessage } from "./message";
+
+/**
+ * Chat status
+ */
+export type ChatStatus = "ready" | "submitted" | "streaming" | "error";
+
+/**
+ * Chat configuration
+ */
+export interface ChatConfig {
+  /** Runtime API endpoint */
+  runtimeUrl: string;
+  /** LLM configuration */
+  llm?: Partial<LLMConfig>;
+  /** System prompt */
+  systemPrompt?: string;
+  /** Enable streaming (default: true) */
+  streaming?: boolean;
+  /** Request headers */
+  headers?: Record<string, string>;
+  /** Thread ID for conversation persistence */
+  threadId?: string;
+  /** Debug mode */
+  debug?: boolean;
+  /** Available tools (passed to LLM) */
+  tools?: ToolDefinition[];
+}
+
+/**
+ * Chat request options (per-message)
+ */
+export interface ChatRequestOptions {
+  /** Additional headers */
+  headers?: Record<string, string>;
+  /** Additional body properties */
+  body?: Record<string, unknown>;
+  /** Message metadata */
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Chat callbacks for state updates
+ */
+export interface ChatCallbacks<T extends UIMessage = UIMessage> {
+  /** Called when messages change */
+  onMessagesChange?: (messages: T[]) => void;
+  /** Called when status changes */
+  onStatusChange?: (status: ChatStatus) => void;
+  /** Called when an error occurs */
+  onError?: (error: Error | null) => void;
+  /** Called when a message starts streaming */
+  onMessageStart?: (messageId: string) => void;
+  /** Called when message content is streamed */
+  onMessageDelta?: (messageId: string, delta: string) => void;
+  /** Called when a message finishes */
+  onMessageFinish?: (message: T) => void;
+  /** Called when tool calls are received */
+  onToolCalls?: (toolCalls: T["toolCalls"]) => void;
+  /** Called when generation is complete */
+  onFinish?: (messages: T[]) => void;
+}
+
+/**
+ * Chat initialization options
+ */
+export interface ChatInit<T extends UIMessage = UIMessage> extends ChatConfig {
+  /** Initial messages */
+  initialMessages?: T[];
+  /** State implementation (injected by framework adapter) */
+  state?: import("../interfaces/ChatState").ChatState<T>;
+  /** Transport implementation */
+  transport?: import("../interfaces/ChatTransport").ChatTransport;
+  /** Callbacks */
+  callbacks?: ChatCallbacks<T>;
+}
+
+/**
+ * Send message options
+ */
+export interface SendMessageOptions {
+  /** Message content */
+  content: string;
+  /** Attachments */
+  attachments?: MessageAttachment[];
+  /** Request options */
+  options?: ChatRequestOptions;
+}

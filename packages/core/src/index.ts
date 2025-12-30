@@ -36,6 +36,14 @@ export {
   getPrimaryTool,
   generateSuggestionReason,
   createCustomDetector,
+  // Built-in Tools (pre-configured)
+  screenshotTool,
+  consoleLogsTool,
+  networkRequestsTool,
+  createScreenshotTool,
+  createConsoleLogsTool,
+  createNetworkRequestsTool,
+  builtinTools,
 } from "./tools";
 
 export type {
@@ -132,6 +140,8 @@ export type {
   ToolResponse,
   ToolRenderProps,
   ToolDefinition,
+  ToolConfig,
+  ToolSet,
   UnifiedToolCall,
   UnifiedToolResult,
   ToolExecutionStatus,
@@ -139,6 +149,9 @@ export type {
   ToolExecution,
   AgentLoopConfig,
   AgentLoopState,
+  // AI Response Control types
+  AIResponseMode,
+  AIContent,
   // Permission types (for persistent tool approvals)
   PermissionLevel,
   ToolPermission,
@@ -168,6 +181,7 @@ export {
   getDefaultModel,
   DEFAULT_MODELS,
   // Tool functions
+  tool,
   toolToOpenAIFormat,
   toolToAnthropicFormat,
   createToolResult,
@@ -195,3 +209,21 @@ export {
 // System Prompt
 export { defaultSystemMessage } from "./system-prompt";
 export type { SystemMessageFunction } from "./system-prompt";
+
+// ============================================
+// Services (Cloud Storage, etc.)
+// ============================================
+export {
+  createYourGPTStorage,
+  processFileToAttachment,
+  getAttachmentTypeFromMime,
+  CLOUD_MAX_FILE_SIZE,
+  DEFAULT_YOURGPT_ENDPOINT,
+} from "./services";
+
+export type {
+  StorageService,
+  StorageConfig,
+  UploadResult,
+  UploadOptions,
+} from "./services";

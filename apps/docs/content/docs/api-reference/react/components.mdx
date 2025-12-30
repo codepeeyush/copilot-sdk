@@ -1,0 +1,119 @@
+---
+title: Components
+description: React components and providers
+icon: Component
+---
+
+# React Components
+
+Provider and context components for React.
+
+---
+
+## YourGPTProvider
+
+Root provider that enables AI chat functionality.
+
+```tsx
+import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+
+function App() {
+  return (
+    <YourGPTProvider
+      runtimeUrl="/api/chat"
+      systemPrompt="You are a helpful assistant."
+      threadId="user-123-thread"
+      initialMessages={[]}
+      onMessagesChange={(messages) => console.log(messages)}
+      debug={false}
+    >
+      {children}
+    </YourGPTProvider>
+  );
+}
+```
+
+### Props
+
+| Prop | Type | Required | Description |
+|------|------|----------|-------------|
+| `runtimeUrl` | `string` | Yes | Your API endpoint URL |
+| `systemPrompt` | `string` | No | Override the system prompt |
+| `threadId` | `string` | No | Conversation/thread ID |
+| `initialMessages` | `UIMessage[]` | No | Pre-populate messages |
+| `onMessagesChange` | `(messages: UIMessage[]) => void` | No | Callback on message changes |
+| `debug` | `boolean` | No | Enable debug logging |
+
+---
+
+## Usage Patterns
+
+### Basic Setup
+
+```tsx
+<YourGPTProvider runtimeUrl="/api/chat">
+  <CopilotChat />
+</YourGPTProvider>
+```
+
+### With Tools
+
+```tsx
+<YourGPTProvider runtimeUrl="/api/chat">
+  <MyTools />
+  <CopilotChat />
+</YourGPTProvider>
+
+function MyTools() {
+  useTools({ ... });
+  return null;
+}
+```
+
+### With Context
+
+```tsx
+<YourGPTProvider runtimeUrl="/api/chat">
+  <MyContext />
+  <CopilotChat />
+</YourGPTProvider>
+
+function MyContext() {
+  useAIContext({ key: 'app-state', data: state });
+  return null;
+}
+```
+
+### Multiple Threads
+
+```tsx
+function ChatApp() {
+  const [threadId, setThreadId] = useState('thread-1');
+
+  return (
+    <YourGPTProvider
+      key={threadId}  // Remount on thread change
+      runtimeUrl="/api/chat"
+      threadId={threadId}
+    >
+      <ThreadSwitcher onSelect={setThreadId} />
+      <CopilotChat />
+    </YourGPTProvider>
+  );
+}
+```
+
+### Persistence
+
+```tsx
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  threadId="user-123"
+  onMessagesChange={(messages) => {
+    localStorage.setItem('chat-history', JSON.stringify(messages));
+  }}
+  initialMessages={JSON.parse(localStorage.getItem('chat-history') || '[]')}
+>
+  <CopilotChat />
+</YourGPTProvider>
+```

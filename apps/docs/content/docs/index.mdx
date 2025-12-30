@@ -1,12 +1,21 @@
 ---
-title: YourGPT Copilot SDK
+title: Introduction
 description: Build AI copilots for your app in minutes, not weeks
-icon: Rocket
+icon: Notebook
 ---
 
 import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+<div className="not-prose mb-8 rounded-xl overflow-hidden border bg-gradient-to-br from-primary/5 via-primary/10 to-primary/5">
+  <div className="aspect-[21/9] flex items-center justify-center">
+    <div className="text-center">
+      <div className="text-6xl mb-4">🤖</div>
+      <p className="text-muted-foreground">Hero image / Demo GIF placeholder</p>
+    </div>
+  </div>
+</div>
 
 # Build AI Copilots That Actually *Get* Your App
 
@@ -155,16 +164,19 @@ Now when user says "take me to settings", AI calls `navigate_to_page({ path: '/s
 ## What's Next?
 
 <Cards>
-  <Card title="Installation" href="/docs/installation" icon="📦">
-    Full setup guide with Next.js, Vite, and more
+  <Card title="Why Choose Us" href="/docs/why-choose-us" icon="✨">
+    See what makes YourGPT Copilot different
   </Card>
-  <Card title="React Hooks" href="/docs/react" icon="⚛️">
-    useAIChat, useToolWithSchema, useAIContext, and more
+  <Card title="Copilot Overview" href="/docs/copilot" icon="🤖">
+    The main product - plug & play AI chat
   </Card>
-  <Card title="UI Components" href="/docs/ui" icon="🎨">
-    CopilotChat, DevLogger, and primitives
+  <Card title="Providers" href="/docs/providers" icon="🔌">
+    OpenAI, Anthropic, Google, and more
   </Card>
-  <Card title="Custom Tools" href="/docs/tools" icon="🔧">
-    Build tools that do anything
+  <Card title="React Setup" href="/docs/frameworks/react" icon="⚛️">
+    Quick start with React hooks
+  </Card>
+  <Card title="Smart Tools" href="/docs/features/smart-tools" icon="🛠️">
+    Generative UI and tool execution
   </Card>
 </Cards>

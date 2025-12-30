@@ -1,0 +1,137 @@
+---
+title: Quick Start
+description: Get up and running in 5 minutes
+icon: RocketCustom
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+# Quick Start
+
+Get your AI copilot running in 5 minutes.
+
+<Callout type="info">
+**Prerequisites:** Node 18+, React 18+, an LLM API key (OpenAI, Anthropic, etc.)
+</Callout>
+
+---
+
+## Install
+
+<Tabs items={['pnpm', 'npm', 'yarn']}>
+  <Tab value="pnpm">
+    ```bash
+    pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
+    ```
+  </Tab>
+  <Tab value="yarn">
+    ```bash
+    yarn add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Setup
+
+<Steps>
+  <Step>
+    ### Create API Route (Backend)
+
+    ```ts title="app/api/chat/route.ts"
+    import { createRuntime, createOpenAI } from '@yourgpt/copilot-sdk-runtime';
+
+    const openai = createOpenAI({
+      apiKey: process.env.OPENAI_API_KEY!,
+    });
+
+    const runtime = createRuntime({
+      provider: openai,
+      model: 'gpt-4o-mini',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export async function POST(request: Request) {
+      return runtime.handleRequest(request);
+    }
+    ```
+  </Step>
+
+  <Step>
+    ### Add Provider (Frontend)
+
+    ```tsx title="app/providers.tsx"
+    'use client';
+
+    import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+
+    export function Providers({ children }: { children: React.ReactNode }) {
+      return (
+        <YourGPTProvider runtimeUrl="/api/chat">
+          {children}
+        </YourGPTProvider>
+      );
+    }
+    ```
+
+    ```tsx title="app/layout.tsx"
+    import { Providers } from './providers';
+
+    export default function RootLayout({ children }) {
+      return (
+        <html>
+          <body>
+            <Providers>{children}</Providers>
+          </body>
+        </html>
+      );
+    }
+    ```
+  </Step>
+
+  <Step>
+    ### Add Chat Component
+
+    ```tsx title="app/page.tsx"
+    import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
+
+    export default function Home() {
+      return (
+        <div className="h-screen p-4">
+          <CopilotChat className="h-full rounded-xl border" />
+        </div>
+      );
+    }
+    ```
+  </Step>
+</Steps>
+
+---
+
+## Environment Variables
+
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+```
+
+---
+
+## That's it!
+
+Run `pnpm dev` and you have a working AI chat.
+
+---
+
+## Next Steps
+
+- [Chat Component](/docs/chat) - Customize the chat UI
+- [Tools](/docs/tools) - Add AI capabilities
+- [Providers](/docs/providers) - Use different LLM providers

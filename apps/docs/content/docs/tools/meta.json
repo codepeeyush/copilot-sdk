@@ -1,5 +1,5 @@
 {
-  "title": "Smart Tools",
+  "title": "Tools",
   "icon": "Wrench",
-  "pages": ["index"]
+  "pages": ["built-in", "frontend-tools", "backend-tools", "agentic-loop"]
 }

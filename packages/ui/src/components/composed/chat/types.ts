@@ -4,12 +4,18 @@ import type { PermissionLevel } from "../../ui/permission-confirmation";
 
 /**
  * Message attachment (images, files, etc.)
+ *
+ * Attachments can be stored as:
+ * - Base64 data (free tier, embedded in message)
+ * - URL (premium cloud storage, lighter payload)
  */
 export type MessageAttachment = {
   /** Type of attachment */
   type: "image" | "file" | "audio" | "video";
-  /** Base64 data or URL */
-  data: string;
+  /** Base64 data (for embedded attachments) */
+  data?: string;
+  /** URL for cloud-stored attachments */
+  url?: string;
   /** MIME type */
   mimeType: string;
   /** Optional filename */
@@ -41,12 +47,91 @@ export type ChatMessage = {
 
 export type { ToolApprovalStatus, PermissionLevel };
 
+// ============================================
+// Generative UI - Tool Renderers
+// ============================================
+
+/**
+ * Props passed to custom tool renderer components
+ *
+ * @example
+ * ```tsx
+ * import type { ToolRendererProps } from '@yourgpt/copilot-sdk-ui';
+ *
+ * function WeatherCard({ execution }: ToolRendererProps) {
+ *   if (execution.status !== 'completed') {
+ *     return <div>Loading...</div>;
+ *   }
+ *   const { city, temperature } = execution.result;
+ *   return <div>{city}: {temperature}°</div>;
+ * }
+ * ```
+ */
+export interface ToolRendererProps {
+  execution: {
+    /** Unique execution ID */
+    id: string;
+    /** Tool name (matches key in toolRenderers) */
+    name: string;
+    /** Arguments passed to the tool */
+    args: Record<string, unknown>;
+    /** Current execution status */
+    status:
+      | "pending"
+      | "executing"
+      | "completed"
+      | "error"
+      | "failed"
+      | "rejected";
+    /** Tool result (available when status is 'completed') */
+    result?: unknown;
+    /** Error message (available when status is 'error' or 'failed') */
+    error?: string;
+    /** Approval status for tools requiring confirmation */
+    approvalStatus?: ToolApprovalStatus;
+  };
+}
+
+/**
+ * Map of tool names to their custom renderer components
+ *
+ * @example
+ * ```tsx
+ * const toolRenderers: ToolRenderers = {
+ *   get_weather: WeatherCard,
+ *   get_chart: ChartCard,
+ * };
+ * ```
+ */
+export type ToolRenderers = Record<
+  string,
+  React.ComponentType<ToolRendererProps>
+>;
+
+/**
+ * Pending attachment (file being prepared to send)
+ */
+export type PendingAttachment = {
+  /** Unique ID for this pending attachment */
+  id: string;
+  /** Original file object */
+  file: File;
+  /** Preview URL (blob URL for images) */
+  previewUrl: string;
+  /** Processed attachment data */
+  attachment: MessageAttachment;
+  /** Processing status */
+  status: "processing" | "ready" | "error";
+  /** Error message if status is error */
+  error?: string;
+};
+
 export type ChatProps = {
   // === Core Props ===
   /** Messages to display */
   messages?: ChatMessage[];
-  /** Called when user sends a message */
-  onSendMessage?: (message: string) => void;
+  /** Called when user sends a message (with optional attachments) */
+  onSendMessage?: (message: string, attachments?: MessageAttachment[]) => void;
   /** Called when user stops generation */
   onStop?: () => void;
   /** Whether AI is currently generating */
@@ -86,6 +171,23 @@ export type ChatProps = {
   /** Font size for messages: 'sm' (14px), 'base' (16px), 'lg' (18px) */
   fontSize?: "sm" | "base" | "lg";
 
+  // === Attachments ===
+  /** Maximum file size in bytes (default: 5MB) */
+  maxFileSize?: number;
+  /** Allowed file types (MIME types or wildcards like "image/*") */
+  allowedFileTypes?: string[];
+  /** Whether attachments are supported (shows/hides attach button) */
+  attachmentsEnabled?: boolean;
+  /** Tooltip text when attachments are disabled */
+  attachmentsDisabledTooltip?: string;
+  /**
+   * Custom attachment processor (e.g., for cloud storage upload)
+   * If provided, uses this instead of default base64 conversion.
+   * @param file - The file to process
+   * @returns Promise<MessageAttachment> - The processed attachment (URL-based or base64)
+   */
+  processAttachment?: (file: File) => Promise<MessageAttachment>;
+
   // === Suggestions ===
   /** Quick reply suggestions */
   suggestions?: string[];
@@ -105,18 +207,28 @@ export type ChatProps = {
   followUpButtonClassName?: string;
 
   // === Tool Executions ===
-  /** Global tool executions to display (not per-message) */
-  toolExecutions?: ToolExecutionData[];
-  /** Show tool executions inline with messages */
-  showToolExecutions?: boolean;
-  /** Current loop iteration */
-  loopIteration?: number;
-  /** Maximum loop iterations */
-  loopMaxIterations?: number;
-  /** Whether the loop is running */
-  loopRunning?: boolean;
   /** Whether waiting for server after tool completion (shows "Continuing..." loader) */
   isProcessing?: boolean;
+
+  // === Generative UI ===
+  /**
+   * Custom renderers for tool results (Generative UI)
+   *
+   * Map tool names to React components that render their results.
+   * When a tool execution matches a key, the custom component is rendered
+   * instead of the default ToolSteps display.
+   *
+   * @example
+   * ```tsx
+   * <Chat
+   *   toolRenderers={{
+   *     get_weather: WeatherCard,
+   *     get_chart: ChartCard,
+   *   }}
+   * />
+   * ```
+   */
+  toolRenderers?: ToolRenderers;
 
   // === Tool Approval (Human-in-the-loop) ===
   /** Called when user approves a tool execution */
@@ -153,7 +265,5 @@ export type ChatProps = {
     input?: string;
     suggestions?: string;
     footer?: string;
-    toolExecutions?: string;
-    loopProgress?: string;
   };
 };

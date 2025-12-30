@@ -1,89 +1,65 @@
 ---
-title: Tools & Agentic Loop
-description: Let AI take actions in your app
+title: Tools
+description: Give the AI capabilities in your app
 ---
 
-import { Callout } from 'fumadocs-ui/components/callout';
-import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
 
-# Tools & Agentic Loop
+# Tools
 
-Tools let AI do things. Not just talk about things—actually *do* them.
-
----
-
-## How It Works
-
-```
-User: "Book me a table for 2 at 7pm"
-         ↓
-AI decides to call: search_restaurants({ guests: 2, time: "19:00" })
-         ↓
-Your handler runs → returns available restaurants
-         ↓
-AI decides to call: make_reservation({ restaurant_id: "123", ... })
-         ↓
-Your handler runs → booking confirmed
-         ↓
-AI: "Done! You're booked at Luigi's for 7pm."
-```
-
-The SDK handles the back-and-forth. You just define the tools.
+Tools let the AI take actions in your app - from UI interactions to database queries.
 
 ---
-
-## Tool Registration Methods
 
 <Cards>
-  <Card title="useToolWithSchema" icon="✨">
-    Recommended. Type-safe with Zod schemas.
+  <Card title="Built-in Tools" href="/docs/tools/built-in">
+    Ready-to-use tools for screenshots, console logs, and more.
   </Card>
-  <Card title="useToolsWithSchema" icon="📦">
-    Register multiple Zod-based tools at once.
+  <Card title="Frontend Tools" href="/docs/tools/frontend-tools">
+    Client-side tools with access to DOM, state, and UI.
   </Card>
-  <Card title="useTool" icon="🔧">
-    Basic tool with JSON Schema. Less type-safe.
+  <Card title="Backend Tools" href="/docs/tools/backend-tools">
+    Server-side tools with database and API access.
   </Card>
-  <Card title="useTools" icon="📋">
-    Register multiple basic tools at once.
+  <Card title="Agentic Loop" href="/docs/tools/agentic-loop">
+    Multi-step AI reasoning with continuous tool calls.
   </Card>
 </Cards>
 
 ---
 
-## Define a Tool with Zod
+## How Tools Work
+
+```
+User: "Find products under $50 and add the best one to cart"
+  ↓
+AI calls: search_products({ maxPrice: 50 })
+  ↓
+AI calls: add_to_cart({ productId: "best-match" })
+  ↓
+AI: "I found 12 products and added the top-rated one to your cart."
+```
+
+---
+
+## Quick Example
 
 ```tsx
-import { useToolWithSchema } from '@yourgpt/copilot-sdk-react';
+import { useTools } from '@yourgpt/copilot-sdk-react';
 import { z } from 'zod';
 
-function BookingTools() {
-  useToolWithSchema({
-    name: 'make_reservation',
-    description: 'Book a table at a restaurant',
-    schema: z.object({
-      restaurant_id: z.string(),
-      guests: z.number().min(1).max(20),
-      time: z.string().describe('Time in HH:MM format'),
-      notes: z.string().optional(),
-    }),
-    handler: async ({ restaurant_id, guests, time, notes }) => {
-      const booking = await api.createReservation({
-        restaurant_id,
-        guests,
-        time,
-        notes,
-      });
-
-      return {
-        success: true,
-        message: `Booked for ${guests} at ${time}`,
-        data: {
-          confirmation_id: booking.id,
-          restaurant_name: booking.restaurant.name,
-        },
-      };
+function MyTools() {
+  useTools({
+    search_products: {
+      description: 'Search the product catalog',
+      parameters: z.object({
+        query: z.string(),
+        maxPrice: z.number().optional(),
+      }),
+      handler: async ({ query, maxPrice }) => {
+        return await fetchProducts(query, maxPrice);
+      },
     },
   });
 
@@ -91,481 +67,24 @@ function BookingTools() {
 }
 ```
 
-### Schema Tips
-
-```tsx
-// Good descriptions help the AI
-z.object({
-  query: z.string().describe('Search keywords'),
-  limit: z.number().optional().default(10).describe('Max results'),
-  category: z.enum(['electronics', 'clothing', 'home']).describe('Product category'),
-})
-```
-
 <Callout type="info">
-**Pro tip:** The `describe()` calls become part of the tool's schema that the AI sees. Be specific!
+AI reads the `description` to decide when to use each tool.
 </Callout>
 
 ---
 
-## Multiple Tools with useToolsWithSchema
+## Frontend vs Backend
 
-```tsx
-import { useToolsWithSchema } from '@yourgpt/copilot-sdk-react';
-import { z } from 'zod';
-
-function EcommerceTools() {
-  useToolsWithSchema([
-    {
-      name: 'search_products',
-      description: 'Search product catalog',
-      schema: z.object({ query: z.string() }),
-      handler: async ({ query }) => {
-        const results = await searchProducts(query);
-        return { success: true, data: { products: results } };
-      },
-    },
-    {
-      name: 'add_to_cart',
-      description: 'Add a product to shopping cart',
-      schema: z.object({
-        product_id: z.string(),
-        quantity: z.number().default(1),
-      }),
-      handler: async ({ product_id, quantity }) => {
-        await cart.add(product_id, quantity);
-        return { success: true, message: `Added ${quantity} item(s) to cart` };
-      },
-    },
-    {
-      name: 'get_cart',
-      description: 'Get current shopping cart contents',
-      schema: z.object({}),
-      handler: async () => {
-        const items = await cart.getItems();
-        return {
-          success: true,
-          data: {
-            items,
-            total: items.reduce((sum, i) => sum + i.price * i.quantity, 0),
-          },
-        };
-      },
-    },
-  ]);
-
-  return null;
-}
-```
+| | Frontend Tools | Backend Tools |
+|-|----------------|---------------|
+| **Location** | Browser | Server |
+| **Access** | DOM, state, UI | Database, APIs, secrets |
+| **Use for** | Navigation, modals, UI updates | Data queries, auth, payments |
 
 ---
 
-## Basic Tool with useTool
-
-For simpler cases without Zod:
-
-```tsx
-import { useTool } from '@yourgpt/copilot-sdk-react';
-
-function NavigationTool() {
-  useTool({
-    name: 'navigate',
-    description: 'Navigate to a page in the app',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        path: { type: 'string', description: 'URL path to navigate to' },
-      },
-      required: ['path'],
-    },
-    handler: async ({ path }) => {
-      window.location.href = path;
-      return { success: true, navigatedTo: path };
-    },
-  });
-
-  return null;
-}
-```
-
----
-
-## Built-in Smart Context Tools
-
-Enable these in the provider to let AI capture app context:
-
-```tsx
-<YourGPTProvider
-  runtimeUrl="/api/chat"
-  tools={{
-    screenshot: true,   // Capture viewport
-    console: true,      // Read console logs/errors
-    network: true,      // See failed API requests
-    requireConsent: true,
-  }}
->
-```
-
-### How Consent Works
-
-1. AI detects user might need visual help (keywords like "error", "broken", "see")
-2. Confirmation UI appears asking permission
-3. User can allow once, allow always, or deny
-4. If allowed, context is captured and sent to AI
-
-### Customize Built-in Tools
-
-```tsx
-tools={{
-  screenshot: true,
-  screenshotOptions: {
-    maxWidth: 1920,
-    maxHeight: 1080,
-    quality: 0.8,
-  },
-
-  console: true,
-  consoleOptions: {
-    maxLogs: 50,
-    levels: ['error', 'warn'], // Only capture errors/warnings
-  },
-
-  network: true,
-  networkOptions: {
-    maxRequests: 20,
-    failedOnly: true,
-    captureBody: false,
-  },
-}}
-```
-
----
-
-## Tool Execution Tracking
-
-Use `useToolExecutor` to track and manage tool executions:
-
-```tsx
-import { useToolExecutor } from '@yourgpt/copilot-sdk-react';
-
-function ToolStatusPanel() {
-  const {
-    executions,       // All tool executions
-    pendingCount,     // Waiting for approval
-    runningCount,     // Currently executing
-    completedCount,   // Finished
-    approve,          // Approve a pending tool
-    reject,           // Reject a pending tool
-  } = useToolExecutor();
-
-  return (
-    <div>
-      <h3>Tool Executions</h3>
-      {executions.map(exec => (
-        <div key={exec.id} className="tool-execution">
-          <span>{exec.toolName}</span>
-          <span>{exec.status}</span>
-          {exec.status === 'pending_approval' && (
-            <div>
-              <button onClick={() => approve(exec.id)}>Approve</button>
-              <button onClick={() => reject(exec.id)}>Reject</button>
-            </div>
-          )}
-          {exec.result && (
-            <pre>{JSON.stringify(exec.result, null, 2)}</pre>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-}
-```
-
----
-
-## Permission Storage
-
-Remember user's tool permissions across sessions:
-
-```tsx
-import { createPermissionStorage } from '@yourgpt/copilot-sdk-react';
-
-// Create persistent storage
-const permissionStorage = createPermissionStorage({
-  type: 'localStorage',
-  keyPrefix: 'myapp-copilot',
-});
-
-<YourGPTProvider
-  runtimeUrl="/api/chat"
-  tools={{ screenshot: true, requireConsent: true }}
-  permissionStorage={permissionStorage}
->
-```
-
-Now "Allow always" persists across page reloads.
-
-### Permission Levels
-
-```ts
-type PermissionLevel =
-  | 'allow_once'      // Allow this one time
-  | 'allow_always'    // Remember and always allow
-  | 'deny_once'       // Deny this one time
-  | 'deny_always';    // Remember and always deny
-```
-
----
-
-## Tool Response Shape
-
-What you return from handlers matters:
-
-```ts
-interface ToolResponse {
-  success: boolean;        // Did it work?
-  message?: string;        // Human-readable status
-  data?: any;              // Structured data for AI
-  error?: string;          // Error message if failed
-}
-```
-
-### Good Response Examples
-
-```tsx
-// Success with data
-return {
-  success: true,
-  message: 'Found 5 matching products',
-  data: {
-    products: results,
-    total_count: 5,
-  },
-};
-
-// Failure with context
-return {
-  success: false,
-  error: 'Product not found',
-  data: {
-    searched_id: productId,
-    suggestion: 'Try searching by name instead',
-  },
-};
-```
-
-### Using Helper Functions
-
-```tsx
-import { success, failure } from '@yourgpt/copilot-sdk-core';
-
-// Success helper
-return success({ products: results }, 'Found 5 products');
-
-// Failure helper
-return failure('Product not found', { searched_id: productId });
-```
-
----
-
-## Tool Execution UI
-
-Show users what's happening:
-
-```tsx
-import { ToolSteps, ToolStep, InlineToolSteps } from '@yourgpt/copilot-sdk-ui';
-
-// Detailed view
-<ToolSteps>
-  <ToolStep name="search_products" status="completed" />
-  <ToolStep name="get_pricing" status="running" />
-  <ToolStep name="add_to_cart" status="pending" />
-</ToolSteps>
-
-// Compact inline view
-<InlineToolSteps steps={toolCalls} />
-```
-
-### Tool Execution Message
-
-Display tool executions in the chat:
-
-```tsx
-import { ToolExecutionMessage } from '@yourgpt/copilot-sdk-ui';
-
-<ToolExecutionMessage
-  execution={{
-    id: 'exec-1',
-    toolName: 'search_products',
-    status: 'completed',
-    args: { query: 'headphones' },
-    result: { success: true, products: [...] },
-  }}
-/>
-```
-
----
-
-## System Prompt Tips
-
-Help the AI know when to use tools:
-
-```tsx
-const runtime = createRuntime({
-  adapter: new AnthropicAdapter({ ... }),
-  systemPrompt: `You are a shopping assistant.
-
-Available tools:
-- search_products: Search for items (use when user asks about products)
-- add_to_cart: Add items (use when user wants to buy something)
-- get_cart: Check cart (use when user asks about their cart)
-
-When user asks to find something, use search_products first.
-When they want to buy, add_to_cart.
-Always confirm before checkout.`,
-});
-```
-
----
-
-## Defining Tools with Core Utilities
-
-For advanced use cases, use core utilities:
-
-```tsx
-import { defineTool, defineClientTool, defineServerTool } from '@yourgpt/copilot-sdk-core';
-import { z } from 'zod';
-
-// Generic tool definition
-const searchTool = defineTool({
-  name: 'search',
-  description: 'Search for items',
-  schema: z.object({ query: z.string() }),
-});
-
-// Client-side tool (runs in browser)
-const clientTool = defineClientTool({
-  name: 'scroll_to',
-  description: 'Scroll to an element',
-  schema: z.object({ selector: z.string() }),
-  handler: async ({ selector }) => {
-    document.querySelector(selector)?.scrollIntoView();
-    return { success: true };
-  },
-});
-
-// Server-side tool (runs on server)
-const serverTool = defineServerTool({
-  name: 'query_database',
-  description: 'Query the database',
-  schema: z.object({ sql: z.string() }),
-  // No handler - handled server-side
-});
-```
-
----
-
-## Real-World Example
-
-Full-featured support copilot:
-
-```tsx
-function SupportCopilot() {
-  const { user } = useAuth();
-
-  // Context
-  useAIContext({
-    key: 'user-info',
-    data: { name: user.name, plan: user.subscription, joined: user.createdAt },
-    description: 'Current user information',
-  });
-
-  // Tool: Search help docs
-  useToolWithSchema({
-    name: 'search_help',
-    description: 'Search knowledge base for answers',
-    schema: z.object({ query: z.string() }),
-    handler: async ({ query }) => {
-      const articles = await kb.search(query);
-      return { success: true, data: { articles } };
-    },
-  });
-
-  // Tool: Create ticket
-  useToolWithSchema({
-    name: 'create_ticket',
-    description: 'Create a support ticket',
-    schema: z.object({
-      subject: z.string(),
-      description: z.string(),
-      priority: z.enum(['low', 'medium', 'high']),
-    }),
-    handler: async (data) => {
-      const ticket = await support.createTicket({ ...data, userId: user.id });
-      return {
-        success: true,
-        message: `Ticket #${ticket.id} created`,
-        data: { ticket_id: ticket.id, status: 'open' },
-      };
-    },
-  });
-
-  // Tool: Check ticket status
-  useToolWithSchema({
-    name: 'check_ticket',
-    description: 'Get status of a support ticket',
-    schema: z.object({ ticket_id: z.string() }),
-    handler: async ({ ticket_id }) => {
-      const ticket = await support.getTicket(ticket_id);
-      return { success: true, data: ticket };
-    },
-  });
-
-  return <CopilotChat title="Support" />;
-}
-```
-
-Now users can say things like:
-- "How do I reset my password?" → searches help docs
-- "This is broken, I need help" → creates ticket
-- "What's the status of my ticket?" → checks ticket
-
----
-
-## All Tool-Related Exports
-
-```ts
-// React Hooks
-export {
-  useTool,
-  useTools,
-  useToolWithSchema,
-  useToolsWithSchema,
-  useToolExecutor,
-} from '@yourgpt/copilot-sdk-react';
-
-// Core Utilities
-export {
-  defineTool,
-  defineClientTool,
-  defineServerTool,
-  success,
-  failure,
-  createToolResult,
-  toolToOpenAIFormat,
-  toolToAnthropicFormat,
-  zodToJsonSchema,
-  zodObjectToInputSchema,
-} from '@yourgpt/copilot-sdk-core';
-
-// UI Components
-export {
-  ToolSteps,
-  ToolStep,
-  InlineToolSteps,
-  ToolExecutionMessage,
-  SimpleConfirmation,
-  PermissionConfirmation,
-  CompactPermissionConfirmation,
-} from '@yourgpt/copilot-sdk-ui';
-```
+## Next Steps
+
+- [Built-in Tools](/docs/tools/built-in) - Screenshot, console, network
+- [Frontend Tools](/docs/tools/frontend-tools) - Build client-side tools
+- [Backend Tools](/docs/tools/backend-tools) - Build server-side tools

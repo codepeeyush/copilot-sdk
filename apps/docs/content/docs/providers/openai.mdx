@@ -1,0 +1,142 @@
+---
+title: OpenAI
+description: Use GPT-4o, GPT-4, and GPT-3.5 models
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+<div className="not-prose mb-8 p-6 rounded-xl border bg-gradient-to-br from-emerald-500/5 to-green-500/10">
+  <div className="flex items-center gap-4">
+    <div className="text-5xl">🟢</div>
+    <div>
+      <h2 className="text-2xl font-bold m-0">OpenAI</h2>
+      <p className="text-muted-foreground m-0">GPT-4o, GPT-4, GPT-3.5 Turbo</p>
+    </div>
+  </div>
+</div>
+
+# OpenAI
+
+The most popular LLM provider. Access GPT-4o, GPT-4 Turbo, and GPT-3.5 models.
+
+---
+
+## Setup
+
+### 1. Get API Key
+
+Get your API key from [platform.openai.com](https://platform.openai.com/api-keys)
+
+### 2. Add Environment Variable
+
+```bash
+# .env.local
+OPENAI_API_KEY=sk-...
+```
+
+### 3. Configure Provider
+
+```tsx
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  llm={{
+    provider: 'openai',
+    model: 'gpt-4o',
+  }}
+>
+  <CopilotChat />
+</YourGPTProvider>
+```
+
+---
+
+## Available Models
+
+| Model | Context | Best For |
+|-------|---------|----------|
+| `gpt-4o` | 128K | Latest multimodal, best overall |
+| `gpt-4o-mini` | 128K | Fast & affordable |
+| `gpt-4-turbo` | 128K | Previous flagship |
+| `gpt-4` | 8K | Original GPT-4 |
+| `gpt-3.5-turbo` | 16K | Fast, budget-friendly |
+
+<Callout type="info">
+**Recommended:** Use `gpt-4o` for best quality or `gpt-4o-mini` for cost efficiency.
+</Callout>
+
+---
+
+## Configuration Options
+
+```tsx
+llm={{
+  provider: 'openai',
+  model: 'gpt-4o',
+  temperature: 0.7,        // 0-2, default 1
+  maxTokens: 4096,         // Max response length
+  topP: 1,                 // Nucleus sampling
+  frequencyPenalty: 0,     // -2 to 2
+  presencePenalty: 0,      // -2 to 2
+}}
+```
+
+---
+
+## Vision (Image Input)
+
+GPT-4o supports image analysis:
+
+```tsx
+const { sendMessage } = useYourGPT();
+
+// Send message with image
+sendMessage("What's in this image?", [
+  {
+    type: 'image',
+    data: base64ImageData,
+    mimeType: 'image/png',
+  }
+]);
+```
+
+---
+
+## Tool Calling
+
+OpenAI has excellent tool/function calling support:
+
+```tsx
+useToolWithSchema({
+  name: 'search_products',
+  description: 'Search for products',
+  schema: z.object({
+    query: z.string(),
+    category: z.string().optional(),
+  }),
+  handler: async ({ query, category }) => {
+    // OpenAI reliably extracts structured parameters
+    const results = await searchProducts(query, category);
+    return { success: true, data: results };
+  },
+});
+```
+
+---
+
+## Pricing
+
+| Model | Input | Output |
+|-------|-------|--------|
+| gpt-4o | $2.50/1M tokens | $10/1M tokens |
+| gpt-4o-mini | $0.15/1M tokens | $0.60/1M tokens |
+| gpt-3.5-turbo | $0.50/1M tokens | $1.50/1M tokens |
+
+*Prices as of late 2024. Check [OpenAI pricing](https://openai.com/pricing) for current rates.*
+
+---
+
+## Next Steps
+
+- [Anthropic](/docs/providers/anthropic) - Try Claude models
+- [Custom Tools](/docs/developers/custom-tools) - Build AI tools

@@ -7,49 +7,41 @@
 // Provider
 export {
   YourGPTProvider,
+  useYourGPT,
   type YourGPTProviderProps,
+  type YourGPTContextValue,
 } from "./provider/YourGPTProvider";
 
-// Context
-export {
-  YourGPTContext,
-  useYourGPTContext,
-  type YourGPTContextValue,
-  type ChatState,
-  type CombinedChatState,
-  type ChatActions,
-  type ToolsState,
-  type ToolsActions,
-  type AgentLoopState,
+// Context types from legacy provider (for backward compat)
+export type {
+  ChatState,
+  CombinedChatState,
+  ChatActions,
+  ToolsState,
+  ToolsActions,
+  AgentLoopState,
 } from "./context/YourGPTContext";
-
-export {
-  ThreadsContext,
-  useThreadsContext,
-  type ThreadsContextValue,
-} from "./context/ThreadsContext";
 
 // Hooks
 export {
-  useAIChat,
-  useIsPremium,
-  useAIAction,
-  useAIActions,
-  useAIContext,
-  useAIContexts,
-  useAITools,
-  useSuggestions,
-  useAgent,
-  useThreads,
-  generateSuggestionReason,
-  // Tool hooks (Agentic Loop)
+  // Tool hooks
   useTool,
   useTools,
   useToolWithSchema,
   useToolsWithSchema,
   useToolExecutor,
-  // Note: Screenshot/Console/Network tools are auto-registered via toolsConfig
-  type UseAIChatReturn,
+  // Context hooks
+  useAIAction,
+  useAIActions,
+  useAIContext,
+  useAIContexts,
+  useAITools,
+  // Agent hook
+  useAgent,
+  // Suggestions
+  useSuggestions,
+  generateSuggestionReason,
+  // Types
   type AIContextItem,
   type UseAIToolsOptions,
   type UseAIToolsReturn,
@@ -81,8 +73,49 @@ export {
 } from "./utils/permission-storage";
 
 // DevLogger (Development debugging tool)
-// Use with: import { DevLogger } from "@yourgpt/copilot-sdk-ui";
 export { useDevLogger, type DevLoggerState } from "./hooks/useDevLogger";
+
+// Capabilities Hooks (for multi-provider support)
+export {
+  useCapabilities,
+  useFeatureSupport,
+  useSupportedMediaTypes,
+  type ProviderCapabilities,
+  type CapabilitiesResponse,
+} from "./hooks/useCapabilities";
+
+// Core (Vercel AI SDK pattern)
+// These use useSyncExternalStore for optimal React integration
+export {
+  ReactChat,
+  ReactChatState,
+  createReactChat,
+  createReactChatState,
+  useChat,
+  type ChatStatus,
+  type ReactChatConfig,
+  type UseChatConfig,
+  type UseChatReturn,
+} from "./core";
+
+// Re-export chat types (framework-agnostic core)
+export type {
+  UIMessage,
+  ChatState as CoreChatState,
+  ChatConfig,
+  ChatCallbacks,
+  AgentLoopState as CoreAgentLoopState,
+  AgentLoopCallbacks,
+  AgentLoopActions,
+  ToolExecution as ChatToolExecution,
+  ToolResponse as ChatToolResponse,
+} from "@yourgpt/copilot-sdk-chat";
+
+export {
+  AbstractChat,
+  AbstractAgentLoop,
+  initialAgentLoopState,
+} from "@yourgpt/copilot-sdk-chat";
 
 // Re-export core types for convenience
 export type {

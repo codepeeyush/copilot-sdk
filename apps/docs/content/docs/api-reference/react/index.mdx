@@ -1,0 +1,54 @@
+---
+title: React
+description: React hooks, provider, and components
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+
+# React Package
+
+Full React integration with hooks and components.
+
+```bash
+npm install @yourgpt/copilot-sdk-react
+```
+
+---
+
+<Cards>
+  <Card title="Hooks" href="/docs/api-reference/react/hooks">
+    useYourGPT, useTools, useAIContext
+  </Card>
+  <Card title="Components" href="/docs/api-reference/react/components">
+    YourGPTProvider and context components
+  </Card>
+</Cards>
+
+---
+
+## Quick Start
+
+```tsx
+import { YourGPTProvider, useYourGPT, useTools } from '@yourgpt/copilot-sdk-react';
+import { CopilotChat } from '@yourgpt/copilot-sdk-chat';
+
+function App() {
+  return (
+    <YourGPTProvider runtimeUrl="/api/chat">
+      <MyTools />
+      <CopilotChat />
+    </YourGPTProvider>
+  );
+}
+
+function MyTools() {
+  useTools({
+    search: {
+      description: 'Search products',
+      parameters: z.object({ query: z.string() }),
+      handler: async ({ query }) => searchProducts(query),
+    },
+  });
+  return null;
+}
+```
