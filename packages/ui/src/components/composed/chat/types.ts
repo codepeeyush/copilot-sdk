@@ -146,16 +146,9 @@ export type ChatProps = {
   followUpButtonClassName?: string;
 
   // === Tool Executions ===
-  /** Global tool executions to display (not per-message) */
-  toolExecutions?: ToolExecutionData[];
-  /** Show tool executions inline with messages */
-  showToolExecutions?: boolean;
-  /** Current loop iteration */
-  loopIteration?: number;
-  /** Maximum loop iterations */
-  loopMaxIterations?: number;
-  /** Whether the loop is running */
-  loopRunning?: boolean;
+  // Note: Tool executions are now per-message via message.toolExecutions
+  // No standalone toolExecutions prop needed
+
   /** Whether waiting for server after tool completion (shows "Continuing..." loader) */
   isProcessing?: boolean;
 
@@ -194,7 +187,5 @@ export type ChatProps = {
     input?: string;
     suggestions?: string;
     footer?: string;
-    toolExecutions?: string;
-    loopProgress?: string;
   };
 };

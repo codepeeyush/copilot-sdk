@@ -6,13 +6,25 @@ const openai = createOpenAI({
 
 const runtime = createRuntime({
   provider: openai,
-  model: "gpt-4.1-mini",
+  model: "gpt-4o-mini",
   systemPrompt:
     "You are a helpful assistant powered by OpenAI GPT-4o. Be concise and helpful.",
+  debug: process.env.NODE_ENV === "development",
 });
 
 export async function POST(request: Request) {
-  return runtime.handleRequest(request);
+  console.log("[OpenAI Route] Received request");
+  try {
+    const response = await runtime.handleRequest(request);
+    console.log("[OpenAI Route] Response status:", response.status);
+    return response;
+  } catch (error) {
+    console.error("[OpenAI Route] Error:", error);
+    return Response.json(
+      { error: error instanceof Error ? error.message : "Unknown error" },
+      { status: 500 },
+    );
+  }
 }
 
 export async function GET() {

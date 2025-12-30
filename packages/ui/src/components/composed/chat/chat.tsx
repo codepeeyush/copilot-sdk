@@ -21,8 +21,8 @@ import { StopIcon, PlusIcon, ArrowUpIcon, XIcon } from "../../icons";
 import { ChatHeader } from "./chat-header";
 import { Suggestions } from "./suggestions";
 import { DefaultMessage } from "./default-message";
-import { ToolExecutionMessage } from "./tool-execution-message";
 import type { ChatProps, PendingAttachment } from "./types";
+import type { ToolExecutionData } from "../tools";
 
 // Constants
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
@@ -94,14 +94,9 @@ export function Chat({
   // Suggestions
   suggestions = [],
   onSuggestionClick,
-  // Tool Executions
-  toolExecutions = [],
-  showToolExecutions = false,
-  loopIteration,
-  loopMaxIterations,
-  loopRunning = false,
+  // Tool Executions (per-message via message.toolExecutions)
   isProcessing = false,
-  // Tool Approval
+  // Tool Approval (for per-message approval UI)
   onApproveToolExecution,
   onRejectToolExecution,
   // Follow-up Questions
@@ -366,17 +361,16 @@ export function Chat({
             const isEmptyAssistant =
               message.role === "assistant" && !message.content?.trim();
 
-            // Check if there are pending tool approvals
-            const hasPendingApprovals = toolExecutions.some(
-              (exec) => exec.approvalStatus === "required",
-            );
-
-            // Handle empty assistant messages (ones with tool_calls but no content)
-            // Check if message has tool_calls or toolExecutions - if so, don't hide it
+            // Check if message has tool_calls or toolExecutions
             const hasToolCalls =
               message.tool_calls && message.tool_calls.length > 0;
             const hasToolExecutions =
               message.toolExecutions && message.toolExecutions.length > 0;
+
+            // Check if this message has pending tool approvals
+            const hasPendingApprovals = message.toolExecutions?.some(
+              (exec) => exec.approvalStatus === "required",
+            );
 
             if (isEmptyAssistant) {
               // Don't hide if message has tool_calls or toolExecutions - show them!
@@ -384,15 +378,9 @@ export function Chat({
                 // Continue to render - DefaultMessage will show tool executions
               } else if (isLastMessage && hasPendingApprovals) {
                 // Don't hide if this is the last message and has pending approvals
-                // (need to show approval UI)
                 // Continue to render with tool executions attached
-              } else if (isLastMessage && isLoading) {
-                // If there are tool executions, don't show loader here
-                // The ToolExecutionMessage component will handle displaying tool progress
-                if (toolExecutions.length > 0) {
-                  return null;
-                }
-                // Show loader while streaming (no tool executions)
+              } else if (isLastMessage && isLoading && !isProcessing) {
+                // Show loader while streaming (no tool executions on this message)
                 return (
                   <Message key={message.id} className="flex gap-2">
                     <MessageAvatar
@@ -416,7 +404,7 @@ export function Chat({
             // (connected-chat.tsx already matches executions to their respective messages)
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const savedExecutions = (message as any).metadata
-              ?.toolExecutions as typeof toolExecutions | undefined;
+              ?.toolExecutions as ToolExecutionData[] | undefined;
             const messageToolExecutions =
               message.toolExecutions || savedExecutions;
 
@@ -459,29 +447,6 @@ export function Chat({
             );
           })}
 
-          {/* Standalone Tool Execution Message - shown when tools are running but no content yet */}
-          {toolExecutions.length > 0 &&
-            isLoading &&
-            (() => {
-              // Check if last message has content
-              const lastMessage = messages[messages.length - 1];
-              const lastIsEmptyAssistant =
-                lastMessage?.role === "assistant" &&
-                !lastMessage?.content?.trim();
-              // Show standalone tool message if no messages or last assistant has no content
-              if (messages.length === 0 || lastIsEmptyAssistant) {
-                return (
-                  <ToolExecutionMessage
-                    executions={toolExecutions}
-                    assistantAvatar={assistantAvatar}
-                    onApprove={onApproveToolExecution}
-                    onReject={onRejectToolExecution}
-                  />
-                );
-              }
-              return null;
-            })()}
-
           {/* "Continuing..." loader - shown after tool completion while waiting for server */}
           {isProcessing && (
             <Message className="flex gap-2">
@@ -499,6 +464,30 @@ export function Chat({
               </div>
             </Message>
           )}
+
+          {/* Loading indicator for non-streaming - when last message is user and waiting for response */}
+          {isLoading &&
+            !isProcessing &&
+            (() => {
+              const lastMessage = messages[messages.length - 1];
+              // Show loader if last message is from user (non-streaming doesn't create empty assistant message)
+              if (lastMessage?.role === "user") {
+                return (
+                  <Message className="flex gap-2">
+                    <MessageAvatar
+                      src={assistantAvatar?.src || ""}
+                      alt="Assistant"
+                      fallback={assistantAvatar?.fallback || "AI"}
+                      className="bg-primary text-primary-foreground"
+                    />
+                    <div className="rounded-lg bg-muted px-4 py-2">
+                      <Loader variant={loaderVariant} size="sm" />
+                    </div>
+                  </Message>
+                );
+              }
+              return null;
+            })()}
 
           <ChatContainerScrollAnchor />
         </ChatContainerContent>

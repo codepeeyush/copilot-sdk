@@ -327,6 +327,92 @@ export interface AgentLoopState {
 }
 
 // ============================================
+// ToolSet Type (Vercel AI SDK pattern)
+// ============================================
+
+/**
+ * A set of tools, keyed by tool name
+ *
+ * @example
+ * ```typescript
+ * const myTools: ToolSet = {
+ *   capture_screenshot: screenshotTool,
+ *   get_weather: weatherTool,
+ * };
+ * ```
+ */
+export type ToolSet = Record<string, ToolDefinition>;
+
+// ============================================
+// Tool Helper Function (Vercel AI SDK pattern)
+// ============================================
+
+/**
+ * Configuration for creating a tool
+ */
+export interface ToolConfig<TParams = Record<string, unknown>> {
+  /** Tool description for LLM */
+  description: string;
+  /** Where the tool executes (default: 'client') */
+  location?: ToolLocation;
+  /** JSON Schema for input parameters */
+  inputSchema?: ToolInputSchema;
+  /** Handler function */
+  handler?: (
+    params: TParams,
+    context?: ToolContext,
+  ) => Promise<ToolResponse> | ToolResponse;
+  /** Optional render function for UI */
+  render?: (props: ToolRenderProps<TParams>) => unknown;
+  /** Whether the tool is available */
+  available?: boolean;
+  /** Require user approval before execution */
+  needsApproval?: boolean | ((params: TParams) => boolean | Promise<boolean>);
+  /** Custom message shown in the approval UI */
+  approvalMessage?: string | ((params: TParams) => string);
+}
+
+/**
+ * Create a tool definition (similar to Vercel AI SDK's tool())
+ *
+ * @example
+ * ```typescript
+ * const weatherTool = tool({
+ *   description: 'Get weather for a location',
+ *   inputSchema: {
+ *     type: 'object',
+ *     properties: {
+ *       location: { type: 'string', description: 'City name' },
+ *     },
+ *     required: ['location'],
+ *   },
+ *   handler: async ({ location }) => {
+ *     const weather = await fetchWeather(location);
+ *     return success(weather);
+ *   },
+ * });
+ * ```
+ */
+export function tool<TParams = Record<string, unknown>>(
+  config: ToolConfig<TParams>,
+): Omit<ToolDefinition<TParams>, "name"> {
+  return {
+    description: config.description,
+    location: config.location ?? "client",
+    inputSchema: config.inputSchema ?? {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+    handler: config.handler,
+    render: config.render,
+    available: config.available,
+    needsApproval: config.needsApproval,
+    approvalMessage: config.approvalMessage,
+  };
+}
+
+// ============================================
 // Helper Functions
 // ============================================
 

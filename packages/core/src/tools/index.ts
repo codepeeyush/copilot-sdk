@@ -74,3 +74,17 @@ export {
 } from "./intentDetector";
 
 export type { CustomKeywords } from "./intentDetector";
+
+// Built-in Tools (pre-configured tools for common operations)
+export {
+  // Individual tools
+  screenshotTool,
+  consoleLogsTool,
+  networkRequestsTool,
+  // Factory functions for custom configs
+  createScreenshotTool,
+  createConsoleLogsTool,
+  createNetworkRequestsTool,
+  // All tools as a ToolSet
+  builtinTools,
+} from "./builtin";

@@ -1,8 +1,8 @@
 // @ts-nocheck
-import { default as __fd_glob_11 } from "../content/docs/tools/meta.json?collection=docs";
-import { default as __fd_glob_10 } from "../content/docs/runtime/meta.json?collection=docs";
-import { default as __fd_glob_9 } from "../content/docs/react/meta.json?collection=docs";
-import { default as __fd_glob_8 } from "../content/docs/ui/meta.json?collection=docs";
+import { default as __fd_glob_11 } from "../content/docs/ui/meta.json?collection=docs";
+import { default as __fd_glob_10 } from "../content/docs/tools/meta.json?collection=docs";
+import { default as __fd_glob_9 } from "../content/docs/runtime/meta.json?collection=docs";
+import { default as __fd_glob_8 } from "../content/docs/react/meta.json?collection=docs";
 import { default as __fd_glob_7 } from "../content/docs/meta.json?collection=docs";
 import * as __fd_glob_6 from "../content/docs/ui/index.mdx?collection=docs";
 import * as __fd_glob_5 from "../content/docs/tools/index.mdx?collection=docs";
@@ -26,10 +26,10 @@ export const docs = await create.docs(
   "content/docs",
   {
     "meta.json": __fd_glob_7,
-    "ui/meta.json": __fd_glob_8,
-    "react/meta.json": __fd_glob_9,
-    "runtime/meta.json": __fd_glob_10,
-    "tools/meta.json": __fd_glob_11,
+    "react/meta.json": __fd_glob_8,
+    "runtime/meta.json": __fd_glob_9,
+    "tools/meta.json": __fd_glob_10,
+    "ui/meta.json": __fd_glob_11,
   },
   {
     "index.mdx": __fd_glob_0,

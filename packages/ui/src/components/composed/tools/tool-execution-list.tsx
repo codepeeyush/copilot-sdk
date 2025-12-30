@@ -11,7 +11,9 @@ export type ToolExecutionStatus =
   | "pending"
   | "executing"
   | "completed"
-  | "error";
+  | "error"
+  | "failed"
+  | "rejected";
 
 /**
  * Tool approval status (for human-in-the-loop)
@@ -95,6 +97,8 @@ function StatusIcon({ status }: { status: ToolExecutionStatus }) {
         </div>
       );
     case "error":
+    case "failed":
+    case "rejected":
       return (
         <div className="size-4 rounded-full bg-red-500/20 flex items-center justify-center">
           <svg
@@ -159,13 +163,17 @@ function ToolExecutionItem({
     executing: "Running",
     completed: "Done",
     error: "Failed",
+    failed: "Failed",
+    rejected: "Rejected",
   }[execution.status];
 
   return (
     <div
       className={cn(
         "border rounded-lg overflow-hidden transition-colors",
-        execution.status === "error"
+        execution.status === "error" ||
+          execution.status === "failed" ||
+          execution.status === "rejected"
           ? "border-red-500/30 bg-red-500/5"
           : execution.status === "completed"
             ? "border-green-500/30 bg-green-500/5"

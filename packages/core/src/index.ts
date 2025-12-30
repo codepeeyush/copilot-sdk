@@ -36,6 +36,14 @@ export {
   getPrimaryTool,
   generateSuggestionReason,
   createCustomDetector,
+  // Built-in Tools (pre-configured)
+  screenshotTool,
+  consoleLogsTool,
+  networkRequestsTool,
+  createScreenshotTool,
+  createConsoleLogsTool,
+  createNetworkRequestsTool,
+  builtinTools,
 } from "./tools";
 
 export type {
@@ -132,6 +140,8 @@ export type {
   ToolResponse,
   ToolRenderProps,
   ToolDefinition,
+  ToolConfig,
+  ToolSet,
   UnifiedToolCall,
   UnifiedToolResult,
   ToolExecutionStatus,
@@ -168,6 +178,7 @@ export {
   getDefaultModel,
   DEFAULT_MODELS,
   // Tool functions
+  tool,
   toolToOpenAIFormat,
   toolToAnthropicFormat,
   createToolResult,

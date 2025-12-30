@@ -1,34 +1,33 @@
-// AI Hooks (Tiered API)
-// Free tier - limited API for component users
-export { useAIChat, useIsPremium, type UseAIChatReturn } from "./useAIChat";
+/**
+ * React Hooks for YourGPT Copilot SDK
+ */
 
-// Premium tier - full headless access (requires YourGPT API key)
-export {
-  useAIChatHeadless,
-  useAIChatHeadless_c,
-  YourGPTError,
-  YourGPTErrorCode,
-  type UseAIChatHeadlessReturn,
-} from "./useAIChatHeadless";
-
-// Note: useAIChatInternal is NOT exported (internal implementation only)
-
+// Action hooks
 export { useAIAction, useAIActions } from "./useAIAction";
+
+// Context hooks
 export {
   useAIContext,
   useAIContexts,
   type AIContextItem,
 } from "./useAIContext";
+
+// Smart Context tools hooks
 export {
   useAITools,
   generateSuggestionReason,
   type UseAIToolsOptions,
   type UseAIToolsReturn,
 } from "./useAITools";
-export { useThreads } from "./useThreads";
 
 // Tool Hooks (Agentic Loop)
-export { useTool, useTools, type UseToolConfig } from "./useTool";
+export {
+  useTool,
+  useTools,
+  useToolsArray,
+  type UseToolConfig,
+  type ToolSet,
+} from "./useTool";
 export {
   useToolWithSchema,
   useToolsWithSchema,
@@ -36,25 +35,26 @@ export {
 } from "./useToolWithSchema";
 export { useToolExecutor, type UseToolExecutorReturn } from "./useToolExecutor";
 
-// Other hooks
+// Suggestions
 export {
   useSuggestions,
   type UseSuggestionsOptions,
   type UseSuggestionsReturn,
   type Suggestion,
 } from "./useSuggestions";
+
+// Agent (LangGraph)
 export {
   useAgent,
   type UseAgentOptions,
   type UseAgentReturn,
 } from "./useAgent";
+
+// Knowledge Base
 export {
   useKnowledgeBase,
   type UseKnowledgeBaseConfig,
 } from "./useKnowledgeBase";
-
-// Note: useScreenshotTool is NOT exported - screenshot tool is auto-registered
-// when toolsConfig.screenshot = true in YourGPTProvider
 
 // Capabilities Hooks (for multi-provider support)
 export {
@@ -64,3 +64,6 @@ export {
   type ProviderCapabilities,
   type CapabilitiesResponse,
 } from "./useCapabilities";
+
+// Dev Logger
+export { useDevLogger, type DevLoggerState } from "./useDevLogger";

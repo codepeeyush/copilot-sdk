@@ -7,7 +7,13 @@ import { cn } from "../../lib/utils";
 // Types
 // ============================================
 
-export type ToolStepStatus = "pending" | "executing" | "completed" | "error";
+export type ToolStepStatus =
+  | "pending"
+  | "executing"
+  | "completed"
+  | "error"
+  | "failed"
+  | "rejected";
 
 export interface ToolStepData {
   id: string;
@@ -106,6 +112,8 @@ function StatusIndicator({ status, className }: StatusIndicatorProps) {
       );
 
     case "error":
+    case "failed":
+    case "rejected":
       return (
         <div
           className={cn(
@@ -152,8 +160,35 @@ function formatResult(result: ToolStepData["result"]): string {
   if (!result) return "";
   if (result.message) return result.message;
   if (result.error) return result.error;
-  if (result.data) return JSON.stringify(result.data);
+  if (result.data) {
+    // Don't stringify image data - it's too long
+    const data = result.data as Record<string, unknown>;
+    if (
+      data.image &&
+      typeof data.image === "string" &&
+      (data.image as string).startsWith("data:image")
+    ) {
+      return `Image (${data.width || "?"}x${data.height || "?"})`;
+    }
+    return JSON.stringify(result.data);
+  }
   return result.success ? "Success" : "Failed";
+}
+
+/**
+ * Check if result contains an image
+ */
+function getResultImage(result: ToolStepData["result"]): string | null {
+  if (!result?.data) return null;
+  const data = result.data as Record<string, unknown>;
+  if (
+    data.image &&
+    typeof data.image === "string" &&
+    (data.image as string).startsWith("data:image")
+  ) {
+    return data.image as string;
+  }
+  return null;
 }
 
 /**
@@ -245,6 +280,14 @@ export function ToolStep({
               )}
             >
               → {formatResult(step.result)}
+              {/* Render image if present */}
+              {getResultImage(step.result) && (
+                <img
+                  src={getResultImage(step.result)!}
+                  alt="Screenshot"
+                  className="mt-1.5 rounded border border-border max-w-full max-h-48 object-contain"
+                />
+              )}
             </div>
           )}
 

@@ -1,6 +1,7 @@
 "use client";
 
-import { YourGPTProvider } from "@yourgpt/copilot-sdk-react";
+import { YourGPTProvider, useTools } from "@yourgpt/copilot-sdk-react";
+import { builtinTools } from "@yourgpt/copilot-sdk-core";
 import { CopilotChat, CapabilityList } from "@yourgpt/copilot-sdk-ui";
 
 interface ProviderCardProps {
@@ -57,14 +58,8 @@ export function ProviderCard({
 
       {/* Chat Area */}
       <div className="flex-1 min-h-0">
-        <YourGPTProvider
-          runtimeUrl={endpoint}
-          tools={{
-            screenshot: true,
-            requireConsent: true,
-          }}
-          // streaming={false}
-        >
+        <YourGPTProvider runtimeUrl={endpoint} debug streaming={false}>
+          <ToolsSetup />
           <CopilotChat
             title=""
             placeholder={`Message ${name}...`}
@@ -75,4 +70,15 @@ export function ProviderCard({
       </div>
     </div>
   );
+}
+
+/**
+ * Component to register built-in tools
+ */
+function ToolsSetup() {
+  useTools({
+    capture_screenshot: builtinTools.capture_screenshot,
+    get_console_logs: builtinTools.get_console_logs,
+  });
+  return null;
 }
