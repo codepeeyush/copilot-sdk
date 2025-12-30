@@ -1,0 +1,150 @@
+---
+title: Chat
+description: Pre-built chat component
+icon: MessageSquare
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# Chat Component
+
+Drop-in chat UI with streaming, markdown rendering, and tool execution display.
+
+---
+
+## Basic Usage
+
+```tsx
+import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
+
+function App() {
+  return (
+    <CopilotChat
+      className="h-[600px] border rounded-xl"
+    />
+  );
+}
+```
+
+---
+
+## Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `title` | `string` | Header title |
+| `placeholder` | `string` | Input placeholder text |
+| `suggestions` | `string[]` | Quick suggestion chips |
+| `className` | `string` | Container class |
+| `toolRenderers` | `Record<string, Component>` | Custom tool result renderers |
+
+---
+
+## With Suggestions
+
+```tsx
+<CopilotChat
+  title="AI Assistant"
+  placeholder="Ask me anything..."
+  suggestions={[
+    "What can you help me with?",
+    "Search for products",
+    "Show my recent orders",
+  ]}
+/>
+```
+
+---
+
+## Custom Tool Renderers
+
+Render tool results as custom UI instead of JSON:
+
+```tsx
+// Define a custom renderer
+function WeatherCard({ data }) {
+  return (
+    <div className="p-4 rounded-lg bg-blue-50">
+      <h3>{data.city}</h3>
+      <p className="text-3xl">{data.temperature}°</p>
+      <p>{data.conditions}</p>
+    </div>
+  );
+}
+
+// Use it
+<CopilotChat
+  toolRenderers={{
+    get_weather: WeatherCard,
+  }}
+/>
+```
+
+<Callout type="info">
+Tool renderers receive the tool result `data` as props. Return any React component.
+</Callout>
+
+---
+
+## Build Your Own Chat
+
+Use hooks for full control:
+
+```tsx
+import { useYourGPT } from '@yourgpt/copilot-sdk-react';
+
+function CustomChat() {
+  const {
+    messages,
+    isLoading,
+    sendMessage,
+    toolExecutions,
+  } = useYourGPT();
+
+  return (
+    <div>
+      {messages.map(msg => (
+        <div key={msg.id}>
+          <strong>{msg.role}:</strong> {msg.content}
+        </div>
+      ))}
+
+      <input
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            sendMessage(e.currentTarget.value);
+            e.currentTarget.value = '';
+          }
+        }}
+        placeholder="Type a message..."
+      />
+    </div>
+  );
+}
+```
+
+---
+
+## Styling
+
+The chat component uses Tailwind CSS. Override styles with className:
+
+```tsx
+<CopilotChat
+  className="
+    h-full
+    rounded-xl
+    border-2
+    border-primary
+    bg-background
+  "
+/>
+```
+
+---
+
+## Next Steps
+
+- [Tools](/docs/tools) - Add AI capabilities
+- [Custom Tools](/docs/custom-tools) - Build your own tools

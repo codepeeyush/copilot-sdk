@@ -1,0 +1,162 @@
+---
+title: Hooks
+description: React hooks for chat state and tools
+icon: Anchor
+---
+
+# React Hooks
+
+Core hooks for building AI chat experiences.
+
+---
+
+## useYourGPT
+
+Main hook for chat state and actions.
+
+```tsx
+import { useYourGPT } from '@yourgpt/copilot-sdk-react';
+
+function Chat() {
+  const {
+    // State
+    messages,
+    isLoading,
+    error,
+    status,
+
+    // Actions
+    sendMessage,
+    stop,
+    clearMessages,
+    regenerate,
+
+    // Tools
+    toolExecutions,
+    pendingApprovals,
+    approveToolExecution,
+    rejectToolExecution,
+    registeredTools,
+  } = useYourGPT();
+}
+```
+
+### Return Values
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `messages` | `UIMessage[]` | All chat messages |
+| `isLoading` | `boolean` | Whether AI is responding |
+| `error` | `Error \| null` | Current error state |
+| `status` | `'ready' \| 'streaming' \| 'submitted' \| 'error'` | Current status |
+| `sendMessage` | `(content: string, attachments?: Attachment[]) => Promise` | Send a message |
+| `stop` | `() => void` | Stop current generation |
+| `clearMessages` | `() => void` | Clear all messages |
+| `regenerate` | `(messageId?: string) => Promise` | Regenerate response |
+| `toolExecutions` | `ToolExecution[]` | All tool executions |
+| `pendingApprovals` | `ToolExecution[]` | Tools awaiting approval |
+| `approveToolExecution` | `(id: string) => void` | Approve a tool |
+| `rejectToolExecution` | `(id: string, reason?: string) => void` | Reject a tool |
+| `registeredTools` | `ToolDefinition[]` | All registered tools |
+
+---
+
+## useTools
+
+Register tools with the AI.
+
+```tsx
+import { useTools } from '@yourgpt/copilot-sdk-react';
+import { z } from 'zod';
+
+function MyTools() {
+  useTools({
+    search_products: {
+      description: 'Search the product catalog',
+      parameters: z.object({
+        query: z.string().describe('Search query'),
+        limit: z.number().optional().default(10),
+      }),
+      handler: async ({ query, limit }) => {
+        const results = await searchAPI(query, limit);
+        return { products: results };
+      },
+    },
+
+    add_to_cart: {
+      description: 'Add product to cart',
+      parameters: z.object({
+        productId: z.string(),
+        quantity: z.number().default(1),
+      }),
+      requiresApproval: true,
+      handler: async ({ productId, quantity }) => {
+        await cart.add(productId, quantity);
+        return { success: true };
+      },
+    },
+  });
+
+  return null;
+}
+```
+
+### Tool Definition
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `description` | `string` | Yes | What the tool does (AI reads this) |
+| `parameters` | `ZodSchema` | Yes | Input validation schema |
+| `handler` | `(params) => Promise<any>` | Yes | Async function to execute |
+| `requiresApproval` | `boolean` | No | Require user approval |
+
+---
+
+## useAIContext
+
+Share app state with the AI.
+
+```tsx
+import { useAIContext } from '@yourgpt/copilot-sdk-react';
+
+function ProductPage({ product }) {
+  useAIContext({
+    key: 'current-product',
+    data: {
+      name: product.name,
+      price: product.price,
+      stock: product.stock,
+    },
+    description: 'The product the user is currently viewing',
+  });
+
+  return <ProductDetails product={product} />;
+}
+```
+
+### Options
+
+| Property | Type | Required | Description |
+|----------|------|----------|-------------|
+| `key` | `string` | Yes | Unique identifier |
+| `data` | `object` | Yes | Data to share with AI |
+| `description` | `string` | No | Describe the context for AI |
+| `parentId` | `string` | No | Parent context for nesting |
+
+---
+
+## useAIContexts
+
+Register multiple contexts at once.
+
+```tsx
+import { useAIContexts } from '@yourgpt/copilot-sdk-react';
+
+function Dashboard() {
+  useAIContexts([
+    { key: 'user', data: user, description: 'Current user info' },
+    { key: 'cart', data: cart, description: 'Shopping cart contents' },
+    { key: 'settings', data: settings, description: 'User preferences' },
+  ]);
+}
+```

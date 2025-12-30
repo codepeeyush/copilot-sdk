@@ -1,0 +1,239 @@
+---
+title: Console Logs
+description: Give AI access to console output for debugging
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Console Logs Tool
+
+Let the AI read browser console logs to help debug issues.
+
+---
+
+## Overview
+
+When users report errors, AI can read the console to understand what went wrong:
+
+```
+User: "My app keeps crashing"
+AI: [Requests console access]
+User: [Approves]
+AI: "I see a TypeError in your console: 'Cannot read property 'map'
+     of undefined' at ProductList.js:42. This means..."
+```
+
+---
+
+## Setup
+
+```tsx
+import { builtinTools } from '@yourgpt/copilot-sdk-core';
+import { useTools } from '@yourgpt/copilot-sdk-react';
+
+function ConsoleLogTool() {
+  useTools({
+    capture_console: builtinTools.capture_console,
+  });
+
+  return null;
+}
+```
+
+---
+
+## What Gets Captured
+
+| Type | Captured | Example |
+|------|----------|---------|
+| `console.log()` | Yes | Debug messages |
+| `console.warn()` | Yes | Warnings |
+| `console.error()` | Yes | Errors with stack traces |
+| `console.info()` | Yes | Info messages |
+| `console.debug()` | Yes | Debug output |
+
+<Callout type="info">
+Only logs from the current browser session are captured. Historical browser logs are not accessible.
+</Callout>
+
+---
+
+## Privacy & Consent
+
+Console logs may contain sensitive data. The tool:
+
+- **Always requires user approval** before capturing
+- **Only captures current session** logs
+- **Does not persist** logs anywhere
+- **Lets users review** what's being shared
+
+```tsx
+// The tool automatically prompts for consent
+useTools({
+  capture_console: {
+    ...builtinTools.capture_console,
+    requiresApproval: true,  // Default - always ask
+  },
+});
+```
+
+---
+
+## How It Works
+
+1. Tool intercepts `console.*` calls when activated
+2. Stores recent logs in memory (limited buffer)
+3. When AI requests logs, user sees approval prompt
+4. On approval, logs are sent to AI for analysis
+5. AI can identify errors, warnings, and patterns
+
+---
+
+## Use Cases
+
+### Bug Reports
+
+```
+User: "Something's not working right"
+AI: "Let me check the console for any errors..."
+    [Requests console access]
+    [User approves]
+AI: "I found the issue! There's a CORS error when fetching
+     from api.example.com. Your server needs to add the
+     Access-Control-Allow-Origin header."
+```
+
+### Performance Issues
+
+```
+User: "The app feels slow"
+AI: "I'll check for any warnings or performance issues..."
+    [Analyzes console]
+AI: "I see repeated 'Warning: Each child in a list should
+     have a unique key prop' messages. This is causing
+     unnecessary re-renders. Let me explain how to fix it..."
+```
+
+### Understanding Errors
+
+```
+User: "I'm getting a weird error"
+AI: [Reads console]
+AI: "The error 'ReferenceError: userData is not defined'
+     at line 156 means the userData variable doesn't exist
+     when the function runs. This usually happens when..."
+```
+
+---
+
+## Configuration
+
+### Limit Log Count
+
+```tsx
+useTools({
+  capture_console: {
+    ...builtinTools.capture_console,
+    maxLogs: 50,  // Keep last 50 logs
+  },
+});
+```
+
+### Filter Log Types
+
+```tsx
+useTools({
+  capture_console: {
+    ...builtinTools.capture_console,
+    logTypes: ['error', 'warn'],  // Only errors and warnings
+  },
+});
+```
+
+---
+
+## Custom Implementation
+
+Build your own console capture:
+
+```tsx
+useTools({
+  get_console_logs: {
+    description: 'Get recent console logs for debugging',
+    parameters: z.object({
+      types: z.array(z.enum(['log', 'warn', 'error'])).optional(),
+      limit: z.number().optional(),
+    }),
+    requiresApproval: true,
+    handler: async ({ types = ['error', 'warn'], limit = 20 }) => {
+      // Your console capture implementation
+      const logs = getStoredConsoleLogs()
+        .filter(log => types.includes(log.type))
+        .slice(-limit);
+
+      return {
+        success: true,
+        data: {
+          logs,
+          count: logs.length,
+        },
+        _aiContext: `Captured ${logs.length} console ${types.join('/')} entries`,
+      };
+    },
+  },
+});
+```
+
+---
+
+## Best Practices
+
+1. **Always require approval** - Console may contain sensitive data
+2. **Limit buffer size** - Don't store unlimited logs
+3. **Filter by type** - Often only errors/warnings matter
+4. **Clear after use** - Don't persist logs unnecessarily
+5. **Inform users** - Explain what will be shared
+
+---
+
+## Example: Debug Helper
+
+```tsx
+function DebugTools() {
+  useTools({
+    capture_console: {
+      ...builtinTools.capture_console,
+      maxLogs: 30,
+      requiresApproval: true,
+    },
+
+    // Companion tool for more context
+    get_error_context: {
+      description: 'Get additional context about recent errors',
+      parameters: z.object({}),
+      requiresApproval: true,
+      handler: async () => {
+        return {
+          success: true,
+          data: {
+            url: window.location.href,
+            userAgent: navigator.userAgent,
+            timestamp: new Date().toISOString(),
+            localStorage: Object.keys(localStorage).length + ' items',
+          },
+        };
+      },
+    },
+  });
+
+  return null;
+}
+```
+
+---
+
+## Next Steps
+
+- [Screenshot Tool](/docs/tools/screenshot) - Capture visual context
+- [Tool Approval](/docs/tool-approval) - Approval flow details
+- [Custom Tools](/docs/custom-tools) - Build more debugging tools

@@ -1,0 +1,112 @@
+---
+title: Overview
+description: What is YourGPT Copilot SDK
+icon: Robot
+---
+
+import { Cards, Card } from 'fumadocs-ui/components/card';
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Copilot Overview
+
+YourGPT Copilot SDK lets you add AI chat to any React app. Tools execute on the frontend, giving the AI real capabilities in your app.
+
+---
+
+## How It Works
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  Your App                                                       │
+│  ┌─────────────────────────────────────────────────────────┐   │
+│  │  YourGPTProvider                                         │   │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │   │
+│  │  │  CopilotChat │  │    Tools     │  │   Context    │   │   │
+│  │  │              │  │  (Frontend)  │  │   (State)    │   │   │
+│  │  └──────────────┘  └──────────────┘  └──────────────┘   │   │
+│  └─────────────────────────────────────────────────────────┘   │
+│                              ↕                                  │
+│                       /api/chat (Backend)                       │
+│                              ↕                                  │
+│                      LLM Provider (OpenAI, etc)                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Key Concepts
+
+<Cards>
+  <Card title="Chat" href="/docs/chat">
+    Pre-built chat UI component with streaming, markdown, and code highlighting.
+  </Card>
+  <Card title="Tools" href="/docs/tools">
+    Give the AI abilities - search, navigate, fetch data, show UI.
+  </Card>
+  <Card title="Providers" href="/docs/providers">
+    Use OpenAI, Anthropic, Google, Groq, or run locally with Ollama.
+  </Card>
+</Cards>
+
+---
+
+## Why Frontend Tools?
+
+Unlike server-side tool execution, frontend tools can:
+
+- **Access browser APIs** - DOM, localStorage, navigation
+- **Show rich UI** - Render React components as tool results
+- **Use app state** - Read/write your React state directly
+- **Real-time updates** - Stream results as they happen
+
+<Callout type="info">
+Tools run in the browser where your app lives. The AI decides what to call, your code executes it.
+</Callout>
+
+---
+
+## Quick Example
+
+```tsx
+// Register a tool
+useTools({
+  search_products: {
+    description: 'Search product catalog',
+    parameters: z.object({ query: z.string() }),
+    handler: async ({ query }) => {
+      const results = await searchAPI(query);
+      return { products: results };
+    },
+  },
+});
+
+// That's it - AI can now search your products
+```
+
+User says: *"Find wireless headphones under $100"*
+
+AI calls `search_products({ query: "wireless headphones" })` → Shows results.
+
+---
+
+## Features
+
+| Feature | Description |
+|---------|-------------|
+| [**Chat UI**](/docs/chat) | Pre-built chat with streaming, markdown, code blocks |
+| [**Custom Tools**](/docs/custom-tools) | Give AI abilities in your app |
+| [**Generative UI**](/docs/generative-ui) | Render React components as tool results |
+| [**Context Awareness**](/docs/context-awareness) | AI understands your app state |
+| [**Agentic Loop**](/docs/agentic-loop) | Multi-step reasoning and tool chains |
+| [**Multimodal**](/docs/multimodal) | Images, PDFs, and files in chat |
+| [**7+ Providers**](/docs/providers) | OpenAI, Anthropic, Google, Groq, Ollama... |
+| [**Server Actions**](/docs/runtime/server-actions) | Secure backend tool execution |
+| [**Knowledge Base**](/docs/runtime/knowledge-base) | RAG with your documents |
+
+---
+
+## Next Steps
+
+- [Quick Start](/docs/quickstart) - 5 minute setup
+- [Chat](/docs/chat) - Chat component docs
+- [Custom Tools](/docs/custom-tools) - Build AI capabilities

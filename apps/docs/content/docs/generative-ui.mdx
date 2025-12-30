@@ -1,0 +1,327 @@
+---
+title: Generative UI
+description: Render custom React components from tool results
+icon: Blocks
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Generative UI
+
+Transform tool results into rich, interactive React components instead of plain text.
+
+---
+
+## Overview
+
+When AI calls a tool, instead of showing raw JSON, you can render custom UI:
+
+```
+User: "What's the weather in Miami?"
+     ↓
+AI calls: get_weather({ city: "Miami" })
+     ↓
+Tool returns: { temp: 82, conditions: "Sunny" }
+     ↓
+UI renders: [Beautiful weather card component]
+```
+
+---
+
+## Basic Setup
+
+### 1. Define Tool Renderers
+
+```tsx
+import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
+
+// Custom component for weather results
+function WeatherCard({ data, status }) {
+  if (status === 'executing') {
+    return <div className="animate-pulse">Loading weather...</div>;
+  }
+
+  return (
+    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-400 to-blue-600 text-white">
+      <h3 className="text-xl font-bold">{data.city}</h3>
+      <p className="text-4xl">{data.temp}°F</p>
+      <p>{data.conditions}</p>
+    </div>
+  );
+}
+
+// Pass to CopilotChat
+<CopilotChat
+  toolRenderers={{
+    get_weather: WeatherCard,
+  }}
+/>
+```
+
+### 2. Register the Tool
+
+```tsx
+useTools({
+  get_weather: {
+    description: 'Get current weather for a city',
+    parameters: z.object({
+      city: z.string(),
+    }),
+    handler: async ({ city }) => {
+      const weather = await fetchWeather(city);
+      return {
+        success: true,
+        data: {
+          city,
+          temp: weather.temperature,
+          conditions: weather.conditions,
+        },
+      };
+    },
+  },
+});
+```
+
+---
+
+## ToolRendererProps
+
+Every tool renderer receives these props:
+
+```typescript
+interface ToolRendererProps {
+  // Current execution status
+  status: 'pending' | 'executing' | 'completed' | 'error' | 'failed' | 'rejected';
+
+  // Arguments passed to the tool
+  args: Record<string, unknown>;
+
+  // Result data (when completed)
+  data?: unknown;
+
+  // Error message (when failed)
+  error?: string;
+
+  // Unique execution ID
+  executionId: string;
+
+  // Tool name
+  toolName: string;
+}
+```
+
+---
+
+## Handling All States
+
+```tsx
+function ChartCard({ status, data, error, args }: ToolRendererProps) {
+  // Loading state
+  if (status === 'pending' || status === 'executing') {
+    return (
+      <div className="p-4 border rounded-lg">
+        <div className="animate-spin h-6 w-6 border-2 border-primary rounded-full border-t-transparent" />
+        <p className="text-sm text-muted-foreground mt-2">
+          Generating {args.metric} chart...
+        </p>
+      </div>
+    );
+  }
+
+  // Error state
+  if (status === 'error' || status === 'failed') {
+    return (
+      <div className="p-4 border border-destructive rounded-lg">
+        <p className="text-destructive">Failed to load chart</p>
+        <p className="text-sm text-muted-foreground">{error}</p>
+      </div>
+    );
+  }
+
+  // Rejected (user denied approval)
+  if (status === 'rejected') {
+    return (
+      <div className="p-4 border rounded-lg bg-muted">
+        <p className="text-muted-foreground">Chart request was declined</p>
+      </div>
+    );
+  }
+
+  // Success state
+  return (
+    <div className="p-4 border rounded-lg">
+      <h3 className="font-semibold mb-4">{data.title}</h3>
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data.chartData}>
+          <XAxis dataKey="date" />
+          <YAxis />
+          <Line type="monotone" dataKey="value" stroke="#8884d8" />
+        </LineChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
+```
+
+---
+
+## Multiple Tool Renderers
+
+```tsx
+<CopilotChat
+  toolRenderers={{
+    get_weather: WeatherCard,
+    get_chart: ChartCard,
+    get_stats: StatsCard,
+    search_products: ProductGrid,
+    create_task: TaskConfirmation,
+  }}
+/>
+```
+
+---
+
+## Interactive Components
+
+Tool renderers can be fully interactive:
+
+```tsx
+function ProductCard({ data }: ToolRendererProps) {
+  const [quantity, setQuantity] = useState(1);
+  const { sendMessage } = useYourGPT();
+
+  const handleAddToCart = () => {
+    // Trigger AI to call add_to_cart tool
+    sendMessage(`Add ${quantity} of ${data.name} to my cart`);
+  };
+
+  return (
+    <div className="p-4 border rounded-lg">
+      <img src={data.image} alt={data.name} />
+      <h3>{data.name}</h3>
+      <p>${data.price}</p>
+
+      <div className="flex items-center gap-2 mt-4">
+        <input
+          type="number"
+          value={quantity}
+          onChange={(e) => setQuantity(Number(e.target.value))}
+          className="w-16 border rounded px-2 py-1"
+        />
+        <button onClick={handleAddToCart} className="btn-primary">
+          Add to Cart
+        </button>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## With AI Response Control
+
+Combine with `_aiResponseMode` to control AI behavior:
+
+```tsx
+useTools({
+  show_dashboard: {
+    description: 'Display analytics dashboard',
+    parameters: z.object({ timeRange: z.string() }),
+    handler: async ({ timeRange }) => {
+      const data = await fetchDashboardData(timeRange);
+      return {
+        success: true,
+        data,
+        // Tell AI to be brief - UI speaks for itself
+        _aiResponseMode: 'brief',
+        _aiContext: `Dashboard displayed for ${timeRange}`,
+      };
+    },
+  },
+});
+```
+
+<Callout type="info">
+Use `_aiResponseMode: 'brief'` when your UI component is self-explanatory. The AI will give a short acknowledgment instead of describing the data.
+</Callout>
+
+---
+
+## Best Practices
+
+1. **Handle all states** - Show loading, error, and success states
+2. **Keep it focused** - One component per tool, single responsibility
+3. **Make it responsive** - Components appear inline with chat messages
+4. **Use AI Response Control** - Prevent AI from redundantly describing visual data
+5. **Add interactivity** - Let users take actions directly from the UI
+
+---
+
+## Example: Complete Weather Tool
+
+```tsx
+// Tool definition
+useTools({
+  get_weather: {
+    description: 'Get current weather for any city',
+    parameters: z.object({
+      city: z.string().describe('City name'),
+      units: z.enum(['celsius', 'fahrenheit']).optional(),
+    }),
+    handler: async ({ city, units = 'fahrenheit' }) => {
+      const weather = await fetchWeatherAPI(city, units);
+      return {
+        success: true,
+        data: {
+          city,
+          temp: weather.temperature,
+          conditions: weather.conditions,
+          humidity: weather.humidity,
+          wind: weather.wind,
+          units,
+        },
+        _aiResponseMode: 'brief',
+        _aiContext: `Weather: ${weather.temperature}° ${weather.conditions} in ${city}`,
+      };
+    },
+  },
+});
+
+// Renderer component
+function WeatherCard({ data, status }: ToolRendererProps) {
+  if (status !== 'completed') {
+    return <WeatherSkeleton />;
+  }
+
+  const { city, temp, conditions, humidity, wind, units } = data;
+  const tempUnit = units === 'celsius' ? '°C' : '°F';
+
+  return (
+    <div className="w-72 p-6 rounded-xl bg-gradient-to-br from-sky-400 to-blue-600 text-white shadow-lg">
+      <div className="flex justify-between items-start">
+        <div>
+          <h3 className="text-lg font-medium opacity-90">{city}</h3>
+          <p className="text-5xl font-bold mt-2">{temp}{tempUnit}</p>
+        </div>
+        <WeatherIcon conditions={conditions} className="w-16 h-16" />
+      </div>
+
+      <p className="text-lg mt-4">{conditions}</p>
+
+      <div className="flex gap-4 mt-4 text-sm opacity-80">
+        <span>💧 {humidity}%</span>
+        <span>💨 {wind} mph</span>
+      </div>
+    </div>
+  );
+}
+```
+
+---
+
+## Next Steps
+
+- [Custom Tools](/docs/custom-tools) - Build more tools
+- [AI Response Control](/docs/ai-response-control) - Control AI behavior
+- [Tool Approval](/docs/tool-approval) - Add user confirmation

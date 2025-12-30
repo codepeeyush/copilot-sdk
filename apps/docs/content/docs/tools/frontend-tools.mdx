@@ -1,0 +1,178 @@
+---
+title: Frontend Tools
+description: Build client-side tools that run in the browser
+icon: MonitorSmartphone
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Frontend Tools
+
+Create tools that run in the browser with access to DOM, state, and UI.
+
+---
+
+## Why Frontend Tools?
+
+- **Access browser APIs** - DOM, localStorage, navigation
+- **Use React state** - Read/write app state directly
+- **Show rich UI** - Render components as results
+- **Real-time updates** - Stream results as they happen
+
+---
+
+## Basic Tool
+
+```tsx
+import { useTools } from '@yourgpt/copilot-sdk-react';
+import { z } from 'zod';
+
+function MyTools() {
+  useTools({
+    search_products: {
+      description: 'Search the product catalog',
+      parameters: z.object({
+        query: z.string().describe('Search query'),
+        limit: z.number().optional().default(10),
+      }),
+      handler: async ({ query, limit }) => {
+        const results = await fetch(`/api/search?q=${query}&limit=${limit}`);
+        return results.json();
+      },
+    },
+  });
+
+  return null;
+}
+```
+
+---
+
+## Tool Structure
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `description` | Yes | What the tool does (AI reads this) |
+| `parameters` | Yes | Zod schema for inputs |
+| `handler` | Yes | Async function that runs |
+| `requiresApproval` | No | Ask user before running |
+
+---
+
+## Multiple Tools
+
+```tsx
+useTools({
+  get_weather: {
+    description: 'Get weather for a city',
+    parameters: z.object({ city: z.string() }),
+    handler: async ({ city }) => fetchWeather(city),
+  },
+
+  add_to_cart: {
+    description: 'Add product to cart',
+    parameters: z.object({
+      productId: z.string(),
+      quantity: z.number().default(1),
+    }),
+    handler: async ({ productId, quantity }) => {
+      await cart.add(productId, quantity);
+      return { success: true };
+    },
+  },
+
+  navigate: {
+    description: 'Go to a page in the app',
+    parameters: z.object({ path: z.string() }),
+    handler: async ({ path }) => {
+      router.push(path);
+      return { navigated: path };
+    },
+  },
+});
+```
+
+---
+
+## With Approval
+
+Require user confirmation before running:
+
+```tsx
+useTools({
+  delete_account: {
+    description: 'Permanently delete user account',
+    parameters: z.object({}),
+    requiresApproval: true,
+    handler: async () => {
+      await deleteAccount();
+      return { deleted: true };
+    },
+  },
+});
+```
+
+<Callout type="warning">
+Use `requiresApproval: true` for destructive or sensitive actions.
+</Callout>
+
+---
+
+## AI Response Control
+
+Control how the AI responds after tool execution:
+
+```tsx
+handler: async ({ query }) => {
+  const results = await search(query);
+
+  return {
+    data: results,
+    _aiResponseMode: 'brief',      // 'verbose' | 'brief' | 'silent'
+    _aiContext: `Found ${results.length} results`,
+    _aiContent: 'Here are the results:',
+  };
+}
+```
+
+| Mode | Behavior |
+|------|----------|
+| `verbose` | AI explains results in detail |
+| `brief` | AI gives short summary |
+| `silent` | No AI response, just show tool result |
+
+---
+
+## Error Handling
+
+```tsx
+handler: async ({ query }) => {
+  try {
+    const results = await search(query);
+    return { success: true, data: results };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+    };
+  }
+}
+```
+
+---
+
+## Best Practices
+
+1. **Clear descriptions** - AI uses this to decide when to call the tool
+2. **Validate with Zod** - Type safety and clear parameter docs
+3. **Return structured data** - AI understands JSON better than strings
+4. **Handle errors** - Return error info instead of throwing
+5. **Use approval for destructive actions** - Delete, purchase, send
+
+---
+
+## Next Steps
+
+- [Backend Tools](/docs/tools/backend-tools) - Server-side tools
+- [Generative UI](/docs/generative-ui) - Custom tool renderers
+- [Agentic Loop](/docs/tools/agentic-loop) - Multi-step execution

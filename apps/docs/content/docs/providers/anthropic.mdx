@@ -1,0 +1,156 @@
+---
+title: Anthropic
+description: Use Claude 3.5 Sonnet, Claude 3 Opus, and more
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+<div className="not-prose mb-8 p-6 rounded-xl border bg-gradient-to-br from-orange-500/5 to-amber-500/10">
+  <div className="flex items-center gap-4">
+    <div className="text-5xl">🟠</div>
+    <div>
+      <h2 className="text-2xl font-bold m-0">Anthropic</h2>
+      <p className="text-muted-foreground m-0">Claude 3.5 Sonnet, Claude 3 Opus</p>
+    </div>
+  </div>
+</div>
+
+# Anthropic
+
+Claude models from Anthropic. Known for safety, long context, and excellent reasoning.
+
+---
+
+## Setup
+
+### 1. Get API Key
+
+Get your API key from [console.anthropic.com](https://console.anthropic.com/)
+
+### 2. Add Environment Variable
+
+```bash
+# .env.local
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+### 3. Configure Provider
+
+```tsx
+<YourGPTProvider
+  runtimeUrl="/api/chat"
+  llm={{
+    provider: 'anthropic',
+    model: 'claude-3-5-sonnet-20241022',
+  }}
+>
+  <CopilotChat />
+</YourGPTProvider>
+```
+
+---
+
+## Available Models
+
+| Model | Context | Best For |
+|-------|---------|----------|
+| `claude-3-5-sonnet-20241022` | 200K | Best balance of speed & quality |
+| `claude-3-opus-20240229` | 200K | Most capable, complex tasks |
+| `claude-3-sonnet-20240229` | 200K | Balanced performance |
+| `claude-3-haiku-20240307` | 200K | Fastest, most affordable |
+
+<Callout type="info">
+**Recommended:** Use `claude-3-5-sonnet-20241022` for most use cases.
+</Callout>
+
+---
+
+## Configuration Options
+
+```tsx
+llm={{
+  provider: 'anthropic',
+  model: 'claude-3-5-sonnet-20241022',
+  temperature: 0.7,        // 0-1
+  maxTokens: 4096,         // Max response length
+  topP: 1,                 // Nucleus sampling
+  topK: 40,                // Top-k sampling
+}}
+```
+
+---
+
+## Vision (Image Input)
+
+Claude 3 models support image analysis:
+
+```tsx
+const { sendMessage } = useYourGPT();
+
+sendMessage("Analyze this screenshot", [
+  {
+    type: 'image',
+    data: base64ImageData,
+    mimeType: 'image/png',
+  }
+]);
+```
+
+---
+
+## Long Context
+
+Claude excels at long documents (200K context):
+
+```tsx
+// System prompt can include extensive documentation
+<YourGPTProvider
+  systemPrompt={`You are a support agent. Here is our full documentation:
+
+  ${fullDocumentation}  // Can be 100K+ tokens
+
+  Answer questions based on this documentation.`}
+>
+```
+
+---
+
+## Tool Calling
+
+Claude has robust tool support:
+
+```tsx
+useToolWithSchema({
+  name: 'analyze_document',
+  description: 'Analyze a document for key insights',
+  schema: z.object({
+    documentId: z.string(),
+    analysisType: z.enum(['summary', 'sentiment', 'entities']),
+  }),
+  handler: async ({ documentId, analysisType }) => {
+    // Claude is excellent at analysis tasks
+    const result = await analyzeDocument(documentId, analysisType);
+    return { success: true, data: result };
+  },
+});
+```
+
+---
+
+## Pricing
+
+| Model | Input | Output |
+|-------|-------|--------|
+| claude-3-5-sonnet | $3/1M tokens | $15/1M tokens |
+| claude-3-opus | $15/1M tokens | $75/1M tokens |
+| claude-3-haiku | $0.25/1M tokens | $1.25/1M tokens |
+
+*Check [Anthropic pricing](https://anthropic.com/pricing) for current rates.*
+
+---
+
+## Next Steps
+
+- [Google](/docs/providers/google) - Try Gemini models
+- [Smart Tools](/docs/features/smart-tools) - Build Generative UI

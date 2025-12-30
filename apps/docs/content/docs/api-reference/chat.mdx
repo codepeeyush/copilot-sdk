@@ -1,0 +1,103 @@
+---
+title: Chat
+description: Chat UI component and customization
+icon: MessageSquare
+---
+
+# Chat Package
+
+Pre-built chat UI component with full customization support.
+
+```bash
+npm install @yourgpt/copilot-sdk-chat
+```
+
+---
+
+## CopilotChat
+
+The main chat component.
+
+```tsx
+import { CopilotChat } from '@yourgpt/copilot-sdk-chat';
+
+<CopilotChat
+  title="AI Assistant"
+  placeholder="Ask anything..."
+  suggestions={['Help me', 'Search']}
+  className="h-full"
+/>
+```
+
+### Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `string` | `"AI Assistant"` | Header title |
+| `placeholder` | `string` | `"Type a message..."` | Input placeholder |
+| `suggestions` | `string[]` | `[]` | Quick action buttons |
+| `className` | `string` | - | Additional CSS classes |
+| `toolRenderers` | `Record<string, Component>` | `{}` | Custom tool result renderers |
+| `attachmentsEnabled` | `boolean` | `false` | Enable file attachments |
+| `voiceEnabled` | `boolean` | `false` | Enable voice input |
+
+---
+
+## toolRenderers
+
+Render custom UI for tool results:
+
+```tsx
+<CopilotChat
+  toolRenderers={{
+    weather: ({ result, status }) => (
+      <WeatherCard data={result} loading={status === 'executing'} />
+    ),
+    chart: ({ result }) => (
+      <BarChart data={result.data} />
+    ),
+  }}
+/>
+```
+
+### ToolRendererProps
+
+```tsx
+interface ToolRendererProps<T = unknown> {
+  name: string;
+  args: Record<string, unknown>;
+  result: T;
+  status: 'pending' | 'executing' | 'completed' | 'error';
+  error?: string;
+}
+```
+
+---
+
+## Theming
+
+```tsx
+<CopilotChat
+  theme={{
+    mode: 'dark',
+    primaryColor: '#6366f1',
+    backgroundColor: '#1f2937',
+    borderRadius: '12px',
+  }}
+/>
+```
+
+---
+
+## Custom Styling
+
+```tsx
+<CopilotChat
+  classNames={{
+    container: 'my-container',
+    header: 'my-header',
+    messages: 'my-messages',
+    input: 'my-input',
+  }}
+/>
+```

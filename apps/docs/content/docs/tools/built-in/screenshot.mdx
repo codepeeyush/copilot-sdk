@@ -1,0 +1,79 @@
+---
+title: Screenshot
+description: Capture viewport for visual context
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+# Screenshot Tool
+
+Capture the current viewport so the AI can see what the user sees.
+
+---
+
+## Setup
+
+```tsx
+import { builtinTools } from '@yourgpt/copilot-sdk-core';
+import { useTools } from '@yourgpt/copilot-sdk-react';
+
+function ScreenshotTool() {
+  useTools({
+    capture_screenshot: builtinTools.capture_screenshot,
+  });
+
+  return null;
+}
+```
+
+---
+
+## How It Works
+
+When AI calls `capture_screenshot`:
+
+1. User sees consent prompt
+2. On approval, viewport is captured as image
+3. Image sent to AI as base64
+4. AI can analyze the visual content
+
+<Callout type="info">
+Screenshots always require user consent for privacy.
+</Callout>
+
+---
+
+## Use Cases
+
+- **Bug reports**: "I'm seeing an error" → AI sees the actual error
+- **UI help**: "How do I use this?" → AI sees the current screen
+- **Accessibility**: AI can describe visual elements
+
+---
+
+## Example Conversation
+
+```
+User: "There's an error on screen, help me fix it"
+
+AI: [Requests screenshot permission]
+
+User: [Approves]
+
+AI: "I can see a TypeError in the console overlay.
+     The issue is that `user.name` is undefined.
+     Try adding a null check: user?.name"
+```
+
+---
+
+## Configuration
+
+```tsx
+useTools({
+  capture_screenshot: {
+    ...builtinTools.capture_screenshot,
+    requiresApproval: true, // Always ask (default)
+  },
+});
+```
