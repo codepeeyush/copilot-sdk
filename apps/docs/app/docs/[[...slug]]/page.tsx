@@ -51,21 +51,29 @@ export async function generateMetadata(props: PageProps): Promise<Metadata> {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const ogImage = getPageImage(page);
+  // Only use dynamic OG for pages with slugs, not index
+  if (params.slug && params.slug.length > 0) {
+    const ogImage = getPageImage(page);
+    return {
+      title: page.data.title,
+      description: page.data.description,
+      openGraph: {
+        title: page.data.title,
+        description: page.data.description,
+        images: [ogImage.url],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: page.data.title,
+        description: page.data.description,
+        images: [ogImage.url],
+      },
+    };
+  }
 
+  // For index page, use static opengraph-image.png (inherited from layout)
   return {
     title: page.data.title,
     description: page.data.description,
-    openGraph: {
-      title: page.data.title,
-      description: page.data.description,
-      images: [ogImage.url],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title: page.data.title,
-      description: page.data.description,
-      images: [ogImage.url],
-    },
   };
 }
