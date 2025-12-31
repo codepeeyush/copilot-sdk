@@ -1,11 +1,11 @@
 "use client";
 
-import { CopilotProvider, useTools } from "@yourgpt/copilot-sdk-react";
-import { CopilotChat } from "@yourgpt/copilot-sdk-ui";
+import { CopilotProvider, useTools } from "@yourgpt/copilot-sdk/react";
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
 import { weatherTool, analyticsChartTool, statsTool } from "@/lib/tools";
 import { WeatherCard, ChartCard, StatsCard } from "@/components/tools";
 import Link from "next/link";
-import { builtinTools } from "@yourgpt/copilot-sdk-core";
+import { builtinTools } from "@yourgpt/copilot-sdk/core";
 
 /**
  * Inner component that registers tools and renders chat

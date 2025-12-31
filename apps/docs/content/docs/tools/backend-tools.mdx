@@ -75,7 +75,7 @@ For better organization and type safety, use the `defineServerTool` helper:
 
 ```ts
 // tools/orders.ts
-import { defineServerTool, success, failure } from '@yourgpt/copilot-sdk-core';
+import { defineServerTool, success, failure } from '@yourgpt/copilot-sdk/core';
 import { z } from 'zod';
 
 export const getOrdersTool = defineServerTool({
@@ -237,7 +237,7 @@ export const inventoryService = {
   <Tab value="Tool Definition">
 ```ts
 // tools/inventory.ts
-import { defineServerTool, success, failure } from '@yourgpt/copilot-sdk-core';
+import { defineServerTool, success, failure } from '@yourgpt/copilot-sdk/core';
 import { z } from 'zod';
 import { inventoryService } from '@/lib/services/inventory-service';
 
@@ -285,7 +285,7 @@ export const updateInventoryTool = defineServerTool({
   <Tab value="Complete Example">
 ```ts
 // tools/user-service.ts
-import { defineServerTool, success, failure } from '@yourgpt/copilot-sdk-core';
+import { defineServerTool, success, failure } from '@yourgpt/copilot-sdk/core';
 import { z } from 'zod';
 
 // Service configuration

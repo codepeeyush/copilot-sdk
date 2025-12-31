@@ -1,8 +1,8 @@
 "use client";
 
-import { CopilotProvider, useTools } from "@yourgpt/copilot-sdk-react";
-import { builtinTools } from "@yourgpt/copilot-sdk-core";
-import { CopilotChat, CapabilityList } from "@yourgpt/copilot-sdk-ui";
+import { CopilotProvider, useTools } from "@yourgpt/copilot-sdk/react";
+import { builtinTools } from "@yourgpt/copilot-sdk/core";
+import { CopilotChat, CapabilityList } from "@yourgpt/copilot-sdk/ui";
 
 interface ProviderCardProps {
   name: string;

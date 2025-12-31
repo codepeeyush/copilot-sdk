@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "@yourgpt/copilot-sdk-core";
+import type { ToolDefinition } from "@yourgpt/copilot-sdk/core";
 
 /**
  * Chart data point

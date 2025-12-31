@@ -1,41 +1,10 @@
 /**
  * @yourgpt/copilot-sdk-knowledge
  *
- * Knowledge base extension for Copilot SDK
+ * Knowledge Base integration for YourGPT Copilot SDK
  *
- * Connects your app to the knowledge base for RAG capabilities.
+ * Coming Soon!
  */
 
-// Client
-export {
-  KnowledgeBase,
-  createKnowledgeBaseClient,
-  type KnowledgeBaseConfig,
-  type SearchOptions,
-  type ChatWithKBOptions,
-  type SearchResult,
-} from "./client/yourgpt-api";
-
-// Hook
-export {
-  useKnowledgeBase,
-  type UseKnowledgeBaseOptions,
-  type UseKnowledgeBaseReturn,
-} from "./hooks/useKnowledgeBase";
-
-// Extension
-export {
-  KnowledgeBaseExtension,
-  hasKnowledgeBaseExtension,
-  getKnowledgeBaseConfig,
-  type KnowledgeBaseExtensionConfig,
-} from "./extension";
-
-// Components
-export {
-  SourcesPanel,
-  type SourcesPanelProps,
-} from "./components/SourcesPanel";
-
-// Re-export Source type for convenience
-export type { Source } from "@yourgpt/copilot-sdk-core";
+export const VERSION = "0.1.0";
+export const STATUS = "coming-soon";

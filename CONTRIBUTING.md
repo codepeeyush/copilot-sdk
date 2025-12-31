@@ -31,11 +31,14 @@ pnpm dev
 ```
 yourgpt-copilot/
 ├── packages/
-│   ├── core/          # @yourgpt/copilot-sdk-core - Types & utilities
-│   ├── react/         # @yourgpt/copilot-sdk-react - React hooks
-│   ├── ui/            # @yourgpt/copilot-sdk-ui - UI components
-│   ├── runtime/       # @yourgpt/llm-sdk - Multi-provider LLM integration
-│   └── knowledge/     # @yourgpt/copilot-sdk-knowledge - KB integration (Coming Soon)
+│   ├── copilot-sdk/   # @yourgpt/copilot-sdk - Unified frontend SDK
+│   │   └── src/
+│   │       ├── core/    # /core - Types & utilities
+│   │       ├── react/   # /react - React hooks
+│   │       ├── ui/      # /ui - UI components
+│   │       └── chat/    # Internal chat logic
+│   ├── llm-sdk/       # @yourgpt/llm-sdk - Multi-provider LLM integration
+│   └── knowledge/     # @yourgpt/copilot-sdk-knowledge - KB (Coming Soon)
 ├── apps/
 │   └── docs/          # Documentation site
 ├── examples/          # Example applications
@@ -49,7 +52,7 @@ yourgpt-copilot/
 pnpm build
 
 # Build specific packages
-pnpm build --filter=@yourgpt/copilot-sdk-react
+pnpm build --filter=@yourgpt/copilot-sdk/react
 
 # Development mode (watches for changes)
 pnpm dev

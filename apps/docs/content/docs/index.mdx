@@ -49,8 +49,8 @@ Your AI assistant shouldn't be clueless about what's happening on screen. **Copi
 ## The Gist
 
 ```tsx
-import { CopilotProvider } from '@yourgpt/copilot-sdk-react';
-import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
 
 function App() {
   return (
@@ -80,10 +80,10 @@ Done. The SDK handles consent UI, captures context, sends it to the AI.
 
 | Package | What it does |
 |---------|--------------|
-| `@yourgpt/copilot-sdk-react` | Hooks + Provider. The brain. |
-| `@yourgpt/copilot-sdk-ui` | Chat components. The face. |
+| `@yourgpt/copilot-sdk/react` | Hooks + Provider. The brain. |
+| `@yourgpt/copilot-sdk/ui` | Chat components. The face. |
 | `@yourgpt/llm-sdk` | Multi-provider LLM integration + streaming. The backend. |
-| `@yourgpt/copilot-sdk-core` | Types, utils, smart context tools. The foundation. |
+| `@yourgpt/copilot-sdk/core` | Types, utils, smart context tools. The foundation. |
 | `@yourgpt/copilot-sdk-knowledge` | Knowledge base integration for RAG. (Coming Soon) |
 
 ---
@@ -93,17 +93,17 @@ Done. The SDK handles consent UI, captures context, sends it to the AI.
 <Tabs items={['npm', 'pnpm', 'bun']}>
   <Tab value="npm">
     ```bash
-    npm install @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/llm-sdk
+    npm install @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk
     ```
   </Tab>
   <Tab value="pnpm">
     ```bash
-    pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/llm-sdk
+    pnpm add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/llm-sdk
+    bun add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk
     ```
   </Tab>
 </Tabs>
@@ -135,7 +135,7 @@ All of this is handled. You just define tools and build UI.
 ## Real Example: Navigation Tool
 
 ```tsx
-import { useToolWithSchema } from '@yourgpt/copilot-sdk-react';
+import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
 import { z } from 'zod';
 
 function NavigationTool() {

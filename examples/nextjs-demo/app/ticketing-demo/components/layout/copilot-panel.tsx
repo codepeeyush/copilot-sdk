@@ -1,7 +1,7 @@
 "use client";
 
 import { Sparkles } from "lucide-react";
-import { CopilotChat } from "@yourgpt/copilot-sdk-ui";
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
 import { useDashboard } from "../context/dashboard-context";
 import { currentTicket } from "../data/mock-data";
 import type {

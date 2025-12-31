@@ -96,4 +96,4 @@ export interface DashboardContextType extends DashboardState {
 }
 
 // Re-export ToolRendererProps from SDK for convenience
-export type { ToolRendererProps } from "@yourgpt/copilot-sdk-ui";
+export type { ToolRendererProps } from "@yourgpt/copilot-sdk/ui";

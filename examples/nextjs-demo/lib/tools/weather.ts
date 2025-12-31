@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "@yourgpt/copilot-sdk-core";
+import type { ToolDefinition } from "@yourgpt/copilot-sdk/core";
 
 /**
  * Weather data returned by the tool

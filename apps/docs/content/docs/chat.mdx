@@ -16,7 +16,7 @@ Drop-in chat UI with streaming, markdown rendering, and tool execution display.
 ## Basic Usage
 
 ```tsx
-import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
+import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
 
 function App() {
   return (
@@ -92,7 +92,7 @@ Tool renderers receive the tool result `data` as props. Return any React compone
 Use hooks for full control:
 
 ```tsx
-import { useCopilot } from '@yourgpt/copilot-sdk-react';
+import { useCopilot } from '@yourgpt/copilot-sdk/react';
 
 function CustomChat() {
   const {

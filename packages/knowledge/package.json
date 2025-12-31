@@ -2,15 +2,15 @@
   "name": "@yourgpt/copilot-sdk-knowledge",
   "version": "0.1.0",
   "private": true,
-  "description": "Knowledge base extension for YourGPT Copilot SDK (Coming Soon)",
+  "description": "Knowledge Base integration for YourGPT Copilot SDK (Coming Soon)",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/index.js"
     }
   },
   "files": [
@@ -19,23 +19,9 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "clean": "rm -rf dist",
-    "lint": "eslint src/",
-    "typecheck": "tsc --noEmit"
-  },
-  "dependencies": {
-    "@yourgpt/copilot-sdk-core": "workspace:*",
-    "@yourgpt/copilot-sdk-react": "workspace:*"
-  },
-  "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
+    "clean": "rm -rf dist"
   },
   "devDependencies": {
-    "@types/react": "^18.2.0",
-    "@types/react-dom": "^18.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
     "tsup": "^8.0.2",
     "typescript": "^5.4.0"
   },
@@ -48,10 +34,9 @@
   "keywords": [
     "yourgpt",
     "copilot",
-    "ai",
-    "chatbot",
     "knowledge-base",
-    "rag"
+    "rag",
+    "coming-soon"
   ],
   "sideEffects": false
 }

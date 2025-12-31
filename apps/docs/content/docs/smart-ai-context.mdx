@@ -42,7 +42,7 @@ AI: "Yes! The Wireless Headphones are in stock with 42 units available at $79.99
 Register a single context:
 
 ```tsx
-import { useAIContext } from '@yourgpt/copilot-sdk-react';
+import { useAIContext } from '@yourgpt/copilot-sdk/react';
 
 function ProductPage({ product }) {
   useAIContext({
@@ -82,7 +82,7 @@ Returns a context ID string that can be used as `parentId` for nested contexts.
 Register multiple contexts at once:
 
 ```tsx
-import { useAIContexts } from '@yourgpt/copilot-sdk-react';
+import { useAIContexts } from '@yourgpt/copilot-sdk/react';
 
 function AppContext() {
   useAIContexts([

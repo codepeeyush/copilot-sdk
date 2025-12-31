@@ -1,7 +1,7 @@
 "use client";
 
-import { useTools, useAIContext } from "@yourgpt/copilot-sdk-react";
-import { tool, success } from "@yourgpt/copilot-sdk-core";
+import { useTools, useAIContext } from "@yourgpt/copilot-sdk/react";
+import { tool, success } from "@yourgpt/copilot-sdk/core";
 import { useDashboard } from "./context/dashboard-context";
 import { currentTicket } from "./data/mock-data";
 import type { CustomerRisk, Sentiment, CustomerContext } from "./types";

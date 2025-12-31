@@ -3,9 +3,8 @@
 
 @plugin "@tailwindcss/typography";
 
-/* Include SDK package classes - use direct paths (pnpm symlinks don't resolve with @source) */
-@source "../../../packages/ui/src/**/*.{ts,tsx}";
-@source "../../../packages/react/src/**/*.{ts,tsx}";
+/* Include SDK package for Tailwind class detection */
+@source "../node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
 
 /* Safelist utility classes from SDK that might not be detected */
 /* @source inline("hidden sr-only size-9 size-5 size-4 size-3"); */

@@ -1,6 +1,6 @@
 "use client";
 
-import { CopilotProvider } from "@yourgpt/copilot-sdk-react";
+import { CopilotProvider } from "@yourgpt/copilot-sdk/react";
 import { DashboardProvider } from "./components/context/dashboard-context";
 import { TicketingTools } from "./components/ticketing-tools";
 import {
