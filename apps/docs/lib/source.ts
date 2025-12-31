@@ -37,6 +37,7 @@ import {
   RobotIcon,
   NotebookIcon,
   RocketIcon,
+  MessageQuestionIcon,
 } from "@/components/icons";
 
 const icons: Record<string, React.ComponentType> = {
@@ -73,6 +74,7 @@ const icons: Record<string, React.ComponentType> = {
   Robot: RobotIcon,
   Notebook: NotebookIcon,
   RocketCustom: RocketIcon,
+  MessageQuestion: MessageQuestionIcon,
 };
 
 export const source = loader({
