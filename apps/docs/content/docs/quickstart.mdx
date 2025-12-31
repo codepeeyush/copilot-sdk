@@ -23,17 +23,17 @@ Get your AI copilot running in 5 minutes.
 <Tabs items={['pnpm', 'npm', 'yarn']}>
   <Tab value="pnpm">
     ```bash
-    pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
+    pnpm add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk zod
     ```
   </Tab>
   <Tab value="npm">
     ```bash
-    npm install @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
+    npm install @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk zod
     ```
   </Tab>
   <Tab value="yarn">
     ```bash
-    yarn add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui @yourgpt/copilot-sdk-runtime zod
+    yarn add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk zod
     ```
   </Tab>
 </Tabs>
@@ -47,7 +47,7 @@ Get your AI copilot running in 5 minutes.
     ### Create API Route (Backend)
 
     ```ts title="app/api/chat/route.ts"
-    import { createRuntime, createOpenAI } from '@yourgpt/copilot-sdk-runtime';
+    import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
 
     const openai = createOpenAI({
       apiKey: process.env.OPENAI_API_KEY!,
@@ -71,13 +71,13 @@ Get your AI copilot running in 5 minutes.
     ```tsx title="app/providers.tsx"
     'use client';
 
-    import { YourGPTProvider } from '@yourgpt/copilot-sdk-react';
+    import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
 
     export function Providers({ children }: { children: React.ReactNode }) {
       return (
-        <YourGPTProvider runtimeUrl="/api/chat">
+        <CopilotProvider runtimeUrl="/api/chat">
           {children}
-        </YourGPTProvider>
+        </CopilotProvider>
       );
     }
     ```
@@ -101,7 +101,7 @@ Get your AI copilot running in 5 minutes.
     ### Add Chat Component
 
     ```tsx title="app/page.tsx"
-    import { CopilotChat } from '@yourgpt/copilot-sdk-ui';
+    import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
 
     export default function Home() {
       return (
@@ -113,6 +113,25 @@ Get your AI copilot running in 5 minutes.
     ```
   </Step>
 </Steps>
+
+---
+
+## Styling (Tailwind CSS v4)
+
+The UI components use Tailwind CSS with [shadcn/ui](https://ui.shadcn.com) theming.
+
+```css title="app/globals.css"
+@import "tailwindcss";
+
+/* Include SDK package for Tailwind class detection */
+@source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+```
+
+<Callout type="info">
+For theming and CSS variables, follow the [shadcn/ui theming guide](https://ui.shadcn.com/docs/theming).
+</Callout>
 
 ---
 

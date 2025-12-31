@@ -1,4 +1,4 @@
-import type { ToolDefinition } from "@yourgpt/copilot-sdk-core";
+import type { ToolDefinition } from "@yourgpt/copilot-sdk/core";
 
 /**
  * Weather data returned by the tool
@@ -52,7 +52,8 @@ export const weatherTool: ToolDefinition = {
     },
     required: ["city"],
   },
-  handler: async ({ city }: { city: string }) => {
+  handler: async (params) => {
+    const city = params.city as string;
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 

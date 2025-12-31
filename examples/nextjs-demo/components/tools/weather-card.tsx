@@ -1,6 +1,6 @@
 "use client";
 
-import type { ToolRendererProps } from "@yourgpt/copilot-sdk-ui";
+import type { ToolRendererProps } from "@yourgpt/copilot-sdk/ui";
 import type { WeatherData } from "@/lib/tools/weather";
 
 /**

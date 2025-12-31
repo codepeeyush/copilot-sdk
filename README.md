@@ -7,7 +7,7 @@ Open-source SDK for building AI assistants with **App Context Awareness**.
 ## Installation
 
 ```bash
-pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui
+pnpm add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui
 ```
 
 ## Quick Start
@@ -15,9 +15,9 @@ pnpm add @yourgpt/copilot-sdk-react @yourgpt/copilot-sdk-ui
 ### Frontend
 
 ```tsx
-import { YourGPTProvider } from "@yourgpt/copilot-sdk-react";
-import { Chat } from "@yourgpt/copilot-sdk-ui";
-import "@yourgpt/copilot-sdk-ui/styles.css";
+import { YourGPTProvider } from "@yourgpt/copilot-sdk/react";
+import { Chat } from "@yourgpt/copilot-sdk/ui";
+import "@yourgpt/copilot-sdk/ui/styles.css";
 
 function App() {
   return (
@@ -35,32 +35,35 @@ function App() {
 
 ```ts
 // app/api/chat/route.ts
-import { createRuntime } from "@yourgpt/copilot-sdk-runtime";
-import { OpenAIAdapter } from "@yourgpt/copilot-sdk-runtime/adapters";
+import { createRuntime, createOpenAI } from "@yourgpt/llm-sdk";
 
-const runtime = createRuntime({
-  adapter: new OpenAIAdapter({
-    apiKey: process.env.OPENAI_API_KEY!,
-    model: "gpt-4o",
-  }),
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
 });
 
-export const POST = runtime.handler;
+const runtime = createRuntime({
+  provider: openai,
+  model: "gpt-4o",
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
 ```
 
 ## Packages
 
-| Package                          | Description                     |
-| -------------------------------- | ------------------------------- |
-| `@yourgpt/copilot-sdk-core`      | Types, utilities, capture tools |
-| `@yourgpt/copilot-sdk-react`     | React hooks and provider        |
-| `@yourgpt/copilot-sdk-ui`        | Pre-built chat components       |
-| `@yourgpt/copilot-sdk-runtime`   | Server-side LLM adapters        |
-| `@yourgpt/copilot-sdk-knowledge` | Knowledge base integration      |
+| Package                          | Description                              |
+| -------------------------------- | ---------------------------------------- |
+| `@yourgpt/copilot-sdk/core`      | Types, utilities, capture tools          |
+| `@yourgpt/copilot-sdk/react`     | React hooks and provider                 |
+| `@yourgpt/copilot-sdk/ui`        | Pre-built chat components                |
+| `@yourgpt/llm-sdk`               | Multi-provider LLM integration           |
+| `@yourgpt/copilot-sdk-knowledge` | Knowledge base integration (Coming Soon) |
 
 ## Documentation
 
-Visit [yourgpt-copilot.vercel.app](https://yourgpt-copilot.vercel.app)
+Visit [copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)
 
 ## Contributing
 

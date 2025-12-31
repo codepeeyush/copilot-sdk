@@ -10,12 +10,12 @@ Core hooks for building AI chat experiences.
 
 ---
 
-## useYourGPT
+## useCopilot
 
 Main hook for chat state and actions.
 
 ```tsx
-import { useYourGPT } from '@yourgpt/copilot-sdk-react';
+import { useCopilot } from '@yourgpt/copilot-sdk/react';
 
 function Chat() {
   const {
@@ -37,7 +37,7 @@ function Chat() {
     approveToolExecution,
     rejectToolExecution,
     registeredTools,
-  } = useYourGPT();
+  } = useCopilot();
 }
 ```
 
@@ -66,7 +66,7 @@ function Chat() {
 Register tools with the AI.
 
 ```tsx
-import { useTools } from '@yourgpt/copilot-sdk-react';
+import { useTools } from '@yourgpt/copilot-sdk/react';
 import { z } from 'zod';
 
 function MyTools() {
@@ -117,7 +117,7 @@ function MyTools() {
 Share app state with the AI.
 
 ```tsx
-import { useAIContext } from '@yourgpt/copilot-sdk-react';
+import { useAIContext } from '@yourgpt/copilot-sdk/react';
 
 function ProductPage({ product }) {
   useAIContext({
@@ -150,7 +150,7 @@ function ProductPage({ product }) {
 Register multiple contexts at once.
 
 ```tsx
-import { useAIContexts } from '@yourgpt/copilot-sdk-react';
+import { useAIContexts } from '@yourgpt/copilot-sdk/react';
 
 function Dashboard() {
   useAIContexts([
