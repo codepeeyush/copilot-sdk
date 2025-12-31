@@ -6,66 +6,95 @@ description: Connect to any LLM provider
 import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
 
-Copilot SDK supports multiple LLM providers out of the box. **Switch providers without changing your frontend code.**
+Copilot SDK supports multiple LLM providers through `@yourgpt/llm-sdk`. **Switch providers without changing your frontend code.**
 
 <Callout type="info">
-All providers use the same API. Change one line in your config to switch from OpenAI to Anthropic.
+All providers use the same API. Change one line in your backend to switch from OpenAI to Anthropic.
 </Callout>
 
 <ProviderCards />
 
 ---
 
-## Quick Start
+## How It Works
 
-### 1. Choose Your Provider
+Provider configuration is done on the **backend** using `@yourgpt/llm-sdk`. The frontend just connects to your API route.
 
-```tsx
-<CopilotProvider
-  runtimeUrl="/api/chat"
-  llm={{
-    provider: 'openai',    // or 'anthropic', 'google', 'groq', etc.
-    model: 'gpt-4o',
-  }}
->
-  <CopilotChat />
-</CopilotProvider>
+### Backend Setup
+
+```ts title="app/api/chat/route.ts"
+import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const runtime = createRuntime({
+  provider: openai,
+  model: 'gpt-4o-mini',
+  systemPrompt: 'You are a helpful assistant.',
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
 ```
 
-### 2. Add API Key
+### Frontend Setup
 
-```bash
-# .env.local
-OPENAI_API_KEY=sk-...
+```tsx title="app/providers.tsx"
+'use client';
+
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      {children}
+    </CopilotProvider>
+  );
+}
 ```
-
-### 3. That's It!
-
-The runtime automatically detects and uses the correct provider.
 
 ---
 
 ## Switching Providers
 
-Change one line - everything else stays the same:
+Change the provider factory on the backend - frontend stays the same:
 
-```tsx
+```ts title="app/api/chat/route.ts"
+import {
+  createRuntime,
+  createOpenAI,
+  createAnthropic
+} from '@yourgpt/llm-sdk';
+
 // OpenAI
-llm={{ provider: 'openai', model: 'gpt-4o' }}
+const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! });
+const runtime = createRuntime({ provider: openai, model: 'gpt-4o' });
 
-// Anthropic
-llm={{ provider: 'anthropic', model: 'claude-3-5-sonnet-20241022' }}
-
-// Google
-llm={{ provider: 'google', model: 'gemini-1.5-pro' }}
-
-// Groq (fastest)
-llm={{ provider: 'groq', model: 'llama-3.1-70b-versatile' }}
+// Or Anthropic
+const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
+const runtime = createRuntime({ provider: anthropic, model: 'claude-sonnet-4-20250514' });
 ```
 
 <Callout type="info">
 Your tools, UI, and all frontend code remain unchanged. The SDK normalizes responses across providers.
 </Callout>
+
+---
+
+## Available Providers
+
+| Provider | Status | Factory Function |
+|----------|--------|------------------|
+| OpenAI | Ready | `createOpenAI()` |
+| Anthropic | Ready | `createAnthropic()` |
+| Google | Coming Soon | `createGoogle()` |
+| Groq | Coming Soon | `createGroq()` |
+| Mistral | Coming Soon | - |
+| Azure OpenAI | Coming Soon | `createAzure()` |
+| Ollama | Coming Soon | `createOllama()` |
 
 ---
 
@@ -77,15 +106,4 @@ Your tools, UI, and all frontend code remain unchanged. The SDK normalizes respo
 | Anthropic | Medium | Excellent | $$ | Long context, safety |
 | Google | Fast | Very Good | $ | Multimodal |
 | Groq | Ultra Fast | Good | $ | Speed-critical apps |
-| Mistral | Fast | Very Good | $ | European compliance |
 | Ollama | Varies | Varies | Free | Local/private |
-
----
-
-## Need a Custom Provider?
-
-<Cards>
-  <Card title="Custom Provider Guide" href="/docs/providers/custom-provider" icon="🔧">
-    Build an adapter for any LLM API
-  </Card>
-</Cards>

@@ -5,6 +5,10 @@ description: European AI with Mistral Large, Medium, and Small models
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
+<Callout type="warn">
+**Coming Soon.** Mistral integration is under active development.
+</Callout>
+
 <ProviderHeader
   provider="mistral"
   name="Mistral AI"
@@ -15,136 +19,6 @@ French AI company with excellent models. Good for European data residency requir
 
 ---
 
-## Setup
-
-### 1. Get API Key
+## Get API Key
 
 Get your API key from [console.mistral.ai](https://console.mistral.ai/)
-
-### 2. Add Environment Variable
-
-```bash
-# .env.local
-MISTRAL_API_KEY=...
-```
-
-### 3. Configure Provider
-
-```tsx
-<CopilotProvider
-  runtimeUrl="/api/chat"
-  llm={{
-    provider: 'mistral',
-    model: 'mistral-large-latest',
-  }}
->
-  <CopilotChat />
-</CopilotProvider>
-```
-
----
-
-## Available Models
-
-| Model | Context | Best For |
-|-------|---------|----------|
-| `mistral-large-latest` | 128K | Complex reasoning |
-| `mistral-medium-latest` | 32K | Balanced |
-| `mistral-small-latest` | 32K | Fast, efficient |
-| `codestral-latest` | 32K | Code generation |
-| `open-mixtral-8x22b` | 64K | Open-weight flagship |
-
-<Callout type="info">
-**Recommended:** `mistral-large-latest` for quality, `mistral-small-latest` for cost efficiency.
-</Callout>
-
----
-
-## Configuration Options
-
-```tsx
-llm={{
-  provider: 'mistral',
-  model: 'mistral-large-latest',
-  temperature: 0.7,
-  maxTokens: 4096,
-  topP: 1,
-}}
-```
-
----
-
-## European Data Residency
-
-Mistral is based in France and offers European data processing:
-
-```tsx
-// Good for GDPR compliance
-<CopilotProvider
-  llm={{
-    provider: 'mistral',
-    model: 'mistral-large-latest',
-  }}
-  // Data stays in Europe
->
-```
-
-<Callout type="info">
-If you need European data residency for compliance, Mistral is an excellent choice.
-</Callout>
-
----
-
-## Code Generation (Codestral)
-
-Mistral's code-specialized model:
-
-```tsx
-<CopilotProvider
-  llm={{
-    provider: 'mistral',
-    model: 'codestral-latest',
-  }}
-  systemPrompt="You are a coding assistant. Help users write and debug code."
->
-```
-
----
-
-## Tool Calling
-
-```tsx
-useToolWithSchema({
-  name: 'translate_text',
-  description: 'Translate text between languages',
-  schema: z.object({
-    text: z.string(),
-    from: z.string(),
-    to: z.string(),
-  }),
-  handler: async ({ text, from, to }) => {
-    // Mistral handles European languages very well
-    const translated = await translate(text, from, to);
-    return { success: true, data: { translated } };
-  },
-});
-```
-
----
-
-## Pricing
-
-| Model | Input | Output |
-|-------|-------|--------|
-| mistral-large | $2/1M tokens | $6/1M tokens |
-| mistral-small | $0.2/1M tokens | $0.6/1M tokens |
-| codestral | $0.2/1M tokens | $0.6/1M tokens |
-
-*Check [Mistral pricing](https://mistral.ai/pricing/) for current rates.*
-
----
-
-## Next Steps
-
-- [Azure](/docs/providers/azure) - Enterprise OpenAI
-- [Custom Provider](/docs/providers/custom-provider) - Build your own

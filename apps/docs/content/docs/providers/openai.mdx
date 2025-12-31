@@ -24,55 +24,58 @@ Get your API key from [platform.openai.com](https://platform.openai.com/api-keys
 
 ### 2. Add Environment Variable
 
-```bash
-# .env.local
+```bash title=".env.local"
 OPENAI_API_KEY=sk-...
 ```
 
-### 3. Configure Provider
+### 3. Create API Route (Backend)
 
-```tsx
-<CopilotProvider
-  runtimeUrl="/api/chat"
-  llm={{
-    provider: 'openai',
-    model: 'gpt-4o',
-  }}
->
-  <CopilotChat />
-</CopilotProvider>
+```ts title="app/api/chat/route.ts"
+import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+
+const openai = createOpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
+
+const runtime = createRuntime({
+  provider: openai,
+  model: 'gpt-4o-mini',
+  systemPrompt: 'You are a helpful assistant.',
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
 ```
 
----
+### 4. Add Provider (Frontend)
 
-## Available Models
+```tsx title="app/providers.tsx"
+'use client';
 
-| Model | Context | Best For |
-|-------|---------|----------|
-| `gpt-4o` | 128K | Latest multimodal, best overall |
-| `gpt-4o-mini` | 128K | Fast & affordable |
-| `gpt-4-turbo` | 128K | Previous flagship |
-| `gpt-4` | 8K | Original GPT-4 |
-| `gpt-3.5-turbo` | 16K | Fast, budget-friendly |
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
 
-<Callout type="info">
-**Recommended:** Use `gpt-4o` for best quality or `gpt-4o-mini` for cost efficiency.
-</Callout>
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      {children}
+    </CopilotProvider>
+  );
+}
+```
 
 ---
 
 ## Configuration Options
 
-```tsx
-llm={{
-  provider: 'openai',
+```ts title="app/api/chat/route.ts"
+const runtime = createRuntime({
+  provider: openai,
   model: 'gpt-4o',
+  systemPrompt: 'You are a helpful assistant.',
   temperature: 0.7,        // 0-2, default 1
   maxTokens: 4096,         // Max response length
-  topP: 1,                 // Nucleus sampling
-  frequencyPenalty: 0,     // -2 to 2
-  presencePenalty: 0,      // -2 to 2
-}}
+});
 ```
 
 ---
@@ -82,16 +85,20 @@ llm={{
 GPT-4o supports image analysis:
 
 ```tsx
+import { useCopilot } from '@yourgpt/copilot-sdk/react';
+
 const { sendMessage } = useCopilot();
 
 // Send message with image
-sendMessage("What's in this image?", [
-  {
-    type: 'image',
-    data: base64ImageData,
-    mimeType: 'image/png',
-  }
-]);
+sendMessage("What's in this image?", {
+  attachments: [
+    {
+      type: 'image',
+      data: base64ImageData,
+      mimeType: 'image/png',
+    }
+  ]
+});
 ```
 
 ---
@@ -101,19 +108,25 @@ sendMessage("What's in this image?", [
 OpenAI has excellent tool/function calling support:
 
 ```tsx
-useToolWithSchema({
-  name: 'search_products',
-  description: 'Search for products',
-  schema: z.object({
-    query: z.string(),
-    category: z.string().optional(),
-  }),
-  handler: async ({ query, category }) => {
-    // OpenAI reliably extracts structured parameters
-    const results = await searchProducts(query, category);
-    return { success: true, data: results };
-  },
-});
+import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
+import { z } from 'zod';
+
+function SearchTool() {
+  useToolWithSchema({
+    name: 'search_products',
+    description: 'Search for products',
+    schema: z.object({
+      query: z.string(),
+      category: z.string().optional(),
+    }),
+    handler: async ({ query, category }) => {
+      const results = await searchProducts(query, category);
+      return { success: true, data: results };
+    },
+  });
+
+  return null;
+}
 ```
 
 ---
@@ -133,4 +146,4 @@ useToolWithSchema({
 ## Next Steps
 
 - [Anthropic](/docs/providers/anthropic) - Try Claude models
-- [Custom Tools](/docs/developers/custom-tools) - Build AI tools
+- [Tools](/docs/tools) - Build AI tools
