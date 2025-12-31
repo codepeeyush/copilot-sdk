@@ -5,6 +5,10 @@ description: Enterprise OpenAI deployment on Azure
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
+<Callout type="warn">
+**Coming Soon.** Azure OpenAI integration is under active development.
+</Callout>
+
 <ProviderHeader
   provider="azure"
   name="Azure OpenAI"
@@ -13,143 +17,8 @@ import { Callout } from 'fumadocs-ui/components/callout';
 
 Run OpenAI models through Azure for enterprise features: SLAs, compliance, and regional deployment.
 
-<Callout type="info">
-Azure OpenAI provides the same models as OpenAI but with enterprise features and Azure integration.
-</Callout>
-
 ---
 
-## Setup
+## Get Started
 
-### 1. Create Azure OpenAI Resource
-
-1. Go to [Azure Portal](https://portal.azure.com/)
-2. Create an "Azure OpenAI" resource
-3. Deploy a model (e.g., gpt-4o)
-4. Note your endpoint and key
-
-### 2. Add Environment Variables
-
-```bash
-# .env.local
-AZURE_OPENAI_API_KEY=...
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com
-```
-
-### 3. Configure Provider
-
-```tsx
-<CopilotProvider
-  runtimeUrl="/api/chat"
-  llm={{
-    provider: 'azure',
-    model: 'your-deployment-name',  // Your deployment name, not model name
-    resourceName: 'your-resource',
-  }}
->
-  <CopilotChat />
-</CopilotProvider>
-```
-
----
-
-## Configuration
-
-```tsx
-llm={{
-  provider: 'azure',
-  model: 'gpt-4o-deployment',      // Your deployment name
-  resourceName: 'my-openai',        // Azure resource name
-  apiVersion: '2024-02-15-preview', // API version
-  temperature: 0.7,
-  maxTokens: 4096,
-}}
-```
-
----
-
-## Available Models
-
-Deploy any OpenAI model to your Azure resource:
-
-| Model | Deployment Name | Notes |
-|-------|-----------------|-------|
-| GPT-4o | `gpt-4o` | Latest multimodal |
-| GPT-4 Turbo | `gpt-4-turbo` | 128K context |
-| GPT-3.5 Turbo | `gpt-35-turbo` | Fast, affordable |
-
-<Callout type="warning">
-The `model` parameter should be your **deployment name**, not the model name.
-</Callout>
-
----
-
-## Enterprise Features
-
-### Regional Deployment
-
-Deploy in your preferred Azure region:
-- US East, West
-- Europe (UK, France, Germany)
-- Asia (Japan, Australia)
-
-### Compliance
-
-- SOC 2, ISO 27001 compliant
-- HIPAA eligible
-- GDPR ready
-
-### SLA
-
-- 99.9% uptime SLA
-- Enterprise support
-
----
-
-## Runtime Configuration
-
-```ts
-// app/api/chat/route.ts
-import { createRuntime } from '@yourgpt/llm-sdk';
-
-const runtime = createRuntime({
-  providers: {
-    azure: {
-      apiKey: process.env.AZURE_OPENAI_API_KEY,
-      endpoint: process.env.AZURE_OPENAI_ENDPOINT,
-      apiVersion: '2024-02-15-preview',
-    },
-  },
-});
-```
-
----
-
-## Private Endpoints
-
-For maximum security, use Azure Private Link:
-
-```tsx
-// Traffic stays within Azure network
-llm={{
-  provider: 'azure',
-  model: 'gpt-4o-deployment',
-  resourceName: 'my-openai',
-  // Uses private endpoint configured in Azure
-}}
-```
-
----
-
-## Pricing
-
-Azure OpenAI uses pay-as-you-go pricing similar to OpenAI, plus Azure infrastructure costs.
-
-Check [Azure OpenAI pricing](https://azure.microsoft.com/en-us/pricing/details/cognitive-services/openai-service/) for current rates.
-
----
-
-## Next Steps
-
-- [Ollama](/docs/providers/ollama) - Run locally
-- [Runtime Setup](/docs/developers/runtime) - Server configuration
+Set up Azure OpenAI through [Azure Portal](https://portal.azure.com/)

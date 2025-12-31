@@ -5,6 +5,10 @@ description: Use Gemini 1.5 Pro, Gemini Flash models
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
+<Callout type="warn">
+**Coming Soon.** Google Gemini integration is under active development.
+</Callout>
+
 <ProviderHeader
   provider="google"
   name="Google Generative AI"
@@ -19,56 +23,62 @@ Google's Gemini models. Excellent for multimodal tasks with massive context wind
 
 ### 1. Get API Key
 
-Get your API key from [Google AI Studio](https://makersuite.google.com/app/apikey)
+Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)
 
 ### 2. Add Environment Variable
 
-```bash
-# .env.local
+```bash title=".env.local"
 GOOGLE_API_KEY=...
 ```
 
-### 3. Configure Provider
+### 3. Create API Route (Backend)
 
-```tsx
-<CopilotProvider
-  runtimeUrl="/api/chat"
-  llm={{
-    provider: 'google',
-    model: 'gemini-1.5-pro',
-  }}
->
-  <CopilotChat />
-</CopilotProvider>
+```ts title="app/api/chat/route.ts"
+import { createRuntime, createGoogle } from '@yourgpt/llm-sdk';
+
+const google = createGoogle({
+  apiKey: process.env.GOOGLE_API_KEY!,
+});
+
+const runtime = createRuntime({
+  provider: google,
+  model: 'gemini-1.5-pro',
+  systemPrompt: 'You are a helpful assistant.',
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
 ```
 
----
+### 4. Add Provider (Frontend)
 
-## Available Models
+```tsx title="app/providers.tsx"
+'use client';
 
-| Model | Context | Best For |
-|-------|---------|----------|
-| `gemini-1.5-pro` | 1M+ | Complex tasks, huge context |
-| `gemini-1.5-flash` | 1M+ | Fast, efficient |
-| `gemini-1.0-pro` | 32K | Previous generation |
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
 
-<Callout type="info">
-**Recommended:** Use `gemini-1.5-flash` for speed or `gemini-1.5-pro` for complex tasks.
-</Callout>
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      {children}
+    </CopilotProvider>
+  );
+}
+```
 
 ---
 
 ## Configuration Options
 
-```tsx
-llm={{
-  provider: 'google',
+```ts title="app/api/chat/route.ts"
+const runtime = createRuntime({
+  provider: google,
   model: 'gemini-1.5-pro',
+  systemPrompt: 'You are a helpful assistant.',
   temperature: 0.7,        // 0-1
   maxTokens: 8192,         // Max response length
-  topP: 0.95,              // Nucleus sampling
-  topK: 40,                // Top-k sampling
-}}
+});
 ```
 
 ---
@@ -77,15 +87,16 @@ llm={{
 
 Gemini supports 1M+ token context:
 
-```tsx
-// Process entire codebases or books
-<CopilotProvider
-  systemPrompt={`Here is the entire codebase:
+```ts title="app/api/chat/route.ts"
+const runtime = createRuntime({
+  provider: google,
+  model: 'gemini-1.5-pro',
+  systemPrompt: `Here is the entire codebase:
 
   ${entireCodebase}  // Can be 500K+ tokens!
 
-  Help users understand and modify this code.`}
->
+  Help users understand and modify this code.`,
+});
 ```
 
 ---
@@ -95,17 +106,16 @@ Gemini supports 1M+ token context:
 Gemini excels at multimodal understanding:
 
 ```tsx
+import { useCopilot } from '@yourgpt/copilot-sdk/react';
+
 const { sendMessage } = useCopilot();
 
 // Image analysis
-sendMessage("What's in this image?", [
-  { type: 'image', data: imageBase64, mimeType: 'image/png' }
-]);
-
-// Video analysis (if supported)
-sendMessage("Summarize this video", [
-  { type: 'video', data: videoBase64, mimeType: 'video/mp4' }
-]);
+sendMessage("What's in this image?", {
+  attachments: [
+    { type: 'image', data: imageBase64, mimeType: 'image/png' }
+  ]
+});
 ```
 
 ---
@@ -113,21 +123,28 @@ sendMessage("Summarize this video", [
 ## Tool Calling
 
 ```tsx
-useToolWithSchema({
-  name: 'search_knowledge',
-  description: 'Search internal knowledge base',
-  schema: z.object({
-    query: z.string(),
-    filters: z.object({
-      category: z.string().optional(),
-      dateRange: z.string().optional(),
-    }).optional(),
-  }),
-  handler: async ({ query, filters }) => {
-    const results = await searchKnowledge(query, filters);
-    return { success: true, data: results };
-  },
-});
+import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
+import { z } from 'zod';
+
+function SearchTool() {
+  useToolWithSchema({
+    name: 'search_knowledge',
+    description: 'Search internal knowledge base',
+    schema: z.object({
+      query: z.string(),
+      filters: z.object({
+        category: z.string().optional(),
+        dateRange: z.string().optional(),
+      }).optional(),
+    }),
+    handler: async ({ query, filters }) => {
+      const results = await searchKnowledge(query, filters);
+      return { success: true, data: results };
+    },
+  });
+
+  return null;
+}
 ```
 
 ---
@@ -146,4 +163,4 @@ useToolWithSchema({
 ## Next Steps
 
 - [Groq](/docs/providers/groq) - Ultra-fast inference
-- [Features](/docs/features) - Explore SDK features
+- [Tools](/docs/tools) - Build AI tools
