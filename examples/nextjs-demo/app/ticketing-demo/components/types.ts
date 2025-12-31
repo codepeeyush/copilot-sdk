@@ -41,8 +41,12 @@ export interface TicketMessage {
   timestamp: string;
   sender?: string;
   avatar?: string;
-  channel?: string;
+  channel?: "Chat" | "Email" | "WhatsApp";
   hasEmoji?: boolean;
+  // Email-specific fields
+  emailSubject?: string;
+  // User status
+  isOnline?: boolean;
 }
 
 // Ticket status
@@ -72,7 +76,11 @@ export interface DashboardState {
 export interface DashboardContextType extends DashboardState {
   // Message management
   addMessage: (message: Omit<TicketMessage, "id">) => void;
-  sendAgentMessage: (content: string) => void;
+  sendAgentMessage: (
+    content: string,
+    channel?: "Chat" | "Email",
+    emailSubject?: string,
+  ) => void;
   // Ticket status
   setTicketStatus: (status: TicketStatus) => void;
   // Compose

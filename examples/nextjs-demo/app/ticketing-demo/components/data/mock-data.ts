@@ -67,17 +67,18 @@ export const mockMessages = [
     type: "customer" as const,
     sender: "Sarah Chen",
     avatar: avatars.customer,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:14 PM",
     content:
       "Hi, I'd like to downgrade my account from Pro to Basic plan please.",
+    isOnline: false,
   },
   {
     id: 3,
     type: "agent" as const,
     sender: "Marcus Johnson",
     avatar: avatars.agent,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:15 PM",
     content:
       "Hi Sarah! Thanks for reaching out. I can definitely help you with that. Before I process the change, would you mind sharing what's prompting the switch? I want to make sure you're getting the best value.",
@@ -87,17 +88,18 @@ export const mockMessages = [
     type: "customer" as const,
     sender: "Sarah Chen",
     avatar: avatars.customer,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:16 PM",
     content:
       "To be honest, we've been looking at costs across all our tools. I saw that Notion is offering similar features for less, and my manager is asking me to cut our software budget by 20%.",
+    isOnline: false,
   },
   {
     id: 5,
     type: "agent" as const,
     sender: "Marcus Johnson",
     avatar: avatars.agent,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:17 PM",
     content:
       "I completely understand - budget reviews are important. You've been with us for almost 5 years, which is amazing! Can I ask which Pro features your team uses most? I want to see if there's a way to keep what you need while hitting that budget target.",
@@ -107,27 +109,29 @@ export const mockMessages = [
     type: "customer" as const,
     sender: "Sarah Chen",
     avatar: avatars.customer,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:18 PM",
     content:
       "Honestly? We mainly use the analytics dashboard and the API for our internal tools. The priority support is nice but we've only used it twice. The rest of the Pro features we barely touch.",
+    isOnline: false,
   },
   {
     id: 7,
     type: "customer" as const,
     sender: "Sarah Chen",
     avatar: avatars.customer,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:19 PM",
     content:
       "I checked and Basic doesn't include API access which we need. So I'm kind of stuck between paying $49 for features I don't use, or losing something essential. It's frustrating.",
+    isOnline: false,
   },
   {
     id: 8,
     type: "agent" as const,
     sender: "Marcus Johnson",
     avatar: avatars.agent,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:20 PM",
     content:
       "That's really helpful context, Sarah. I hear you - paying for unused features doesn't feel great. Let me look into some options that might work better for your situation. Give me just a moment.",
@@ -143,17 +147,18 @@ export const mockMessages = [
     type: "customer" as const,
     sender: "Sarah Chen",
     avatar: avatars.customer,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:22 PM",
     content:
       "Sure, take your time. I'm not in a huge rush - our renewal isn't until the 15th. But I do need to give my manager an answer by end of week.",
+    isOnline: false,
   },
   {
     id: 11,
     type: "agent" as const,
     sender: "Marcus Johnson",
     avatar: avatars.agent,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:23 PM",
     content:
       "Thanks for your patience! I see you're using about 12GB of storage and around 2,300 API calls monthly. That's well within our limits. I'm checking what options I can offer you - I want to find something that works for both your budget and your needs.",
@@ -163,10 +168,11 @@ export const mockMessages = [
     type: "customer" as const,
     sender: "Sarah Chen",
     avatar: avatars.customer,
-    channel: "Chat",
+    channel: "Chat" as const,
     timestamp: "2:24 PM",
     content:
       "I appreciate that. Look, I really like the product - we've built some of our workflows around it. I just need to show my manager we're being cost-conscious. If there's any flexibility on pricing, I'm all ears.",
+    isOnline: false,
   },
 ];
 

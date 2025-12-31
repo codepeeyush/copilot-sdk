@@ -15,7 +15,9 @@ export function ProductExchangeCard({
     <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
         <ArrowRightLeft className="w-5 h-5 text-primary" />
-        <span className="font-semibold text-foreground">Product Exchange</span>
+        <span className="text-sm font-semibold text-foreground">
+          Product Exchange
+        </span>
       </div>
       <div className="flex items-center justify-between text-sm">
         <div className="text-center">

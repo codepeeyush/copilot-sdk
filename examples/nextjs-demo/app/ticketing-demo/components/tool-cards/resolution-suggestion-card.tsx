@@ -18,6 +18,7 @@ export function ResolutionSuggestionCard({
 }: ResolutionSuggestionCardProps) {
   const [applied, setApplied] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [editing, setEditing] = useState(false);
 
   const handleApply = () => {
     onApply();
@@ -31,12 +32,17 @@ export function ResolutionSuggestionCard({
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleEdit = () => {
+    setEditing(true);
+    setTimeout(() => setEditing(false), 2000);
+  };
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Lightbulb className="w-5 h-5 text-yellow-500" />
-          <span className="font-semibold text-foreground">
+          <span className="text-sm font-semibold text-foreground">
             AI Recommendation
           </span>
         </div>
@@ -106,10 +112,16 @@ export function ResolutionSuggestionCard({
           )}
         </button>
         <button
-          className="px-3 py-2 border border-border text-foreground rounded-lg hover:bg-accent transition-colors text-sm"
+          onClick={handleEdit}
+          disabled={editing}
+          className="px-3 py-2 border border-border text-foreground rounded-lg hover:bg-accent transition-colors text-sm disabled:opacity-50"
           title="Edit steps"
         >
-          <Edit3 className="w-4 h-4" />
+          {editing ? (
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+          ) : (
+            <Edit3 className="w-4 h-4" />
+          )}
         </button>
       </div>
     </div>

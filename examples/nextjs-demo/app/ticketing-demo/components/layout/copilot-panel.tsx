@@ -74,6 +74,9 @@ export function CopilotPanel() {
           onUseReply={() => {
             dashboard.setComposeText(data.body);
           }}
+          onSendEmail={(subject, body) => {
+            dashboard.sendAgentMessage(body, "Email", subject);
+          }}
         />
       );
     },
@@ -221,6 +224,7 @@ export function CopilotPanel() {
           date={execution.args.date as string}
           time={execution.args.time as string}
           phone={currentTicket.customer.phone}
+          customerName={currentTicket.customer.name}
         />
       );
     },
@@ -230,11 +234,11 @@ export function CopilotPanel() {
       if (execution.status !== "completed") return null;
       return (
         <EscalationCard
-          supervisor={
-            (execution.args.supervisor as string) || "Senior Support Lead"
-          }
           reason={execution.args.reason as string}
           priority={execution.args.priority as string}
+          onAssign={(supervisor) => {
+            dashboard.setEscalatedTo(`${supervisor.name} (${supervisor.role})`);
+          }}
         />
       );
     },
@@ -243,16 +247,16 @@ export function CopilotPanel() {
   return (
     <div className="w-[440px] border-l border-border flex flex-col bg-muted shrink-0">
       {/* Header */}
-      <div className="p-4 border-b border-border bg-card">
+      <div className="p-2 px-4 border-b border-border bg-card">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center">
+          <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center">
             <Sparkles className="w-5 h-5 text-primary-foreground" />
           </div>
-          <div>
-            <h3 className="font-semibold text-foreground">AI Copilot</h3>
-            <p className="text-xs text-muted-foreground">
-              Powered by Copilot SDK
-            </p>
+          <div className="flex gap-2 items-center">
+            <h3 className="font-semibold text-foreground ">AI Copilot</h3>
+            <span className="text-xs bg-primary/10 text-primary rounded-md p-1 px-2 font-medium">
+              Copilot SDK
+            </span>
           </div>
         </div>
       </div>

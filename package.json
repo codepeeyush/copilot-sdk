@@ -24,6 +24,7 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "turbo build && changeset publish",
+    "publish:sdk": "./scripts/publish.sh",
     "prepare": "husky"
   },
   "devDependencies": {

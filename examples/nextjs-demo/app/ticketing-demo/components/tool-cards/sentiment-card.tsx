@@ -7,8 +7,19 @@ interface SentimentCardProps {
   sentiment: Sentiment;
 }
 
+// Suggested tones based on sentiment
+const suggestedTones: Record<string, string> = {
+  positive: "Keep the positive momentum! Use an upbeat, appreciative tone.",
+  neutral: "Stay professional and helpful. Address concerns directly.",
+  negative: "Use empathetic language. Acknowledge frustration first.",
+  frustrated: "Lead with empathy. Apologize and focus on solutions.",
+  "neutral-concerned":
+    "Be understanding and reassuring. Show you care about their concerns.",
+};
+
 export function SentimentCard({ sentiment }: SentimentCardProps) {
   const [copied, setCopied] = useState(false);
+  const [showTone, setShowTone] = useState(false);
 
   const colors: Record<string, string> = {
     positive: "text-green-500",
@@ -30,37 +41,40 @@ export function SentimentCard({ sentiment }: SentimentCardProps) {
 ${sentiment.emoji} ${sentiment.label}
 
 Indicators:
-${sentiment.reasons.map((r, i) => `• ${r}`).join("\n")}`;
+${sentiment.reasons.map((r) => `• ${r}`).join("\n")}`;
     navigator.clipboard.writeText(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const suggestedTone =
+    suggestedTones[sentiment.label.toLowerCase()] || suggestedTones["neutral"];
+
   return (
     <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
+      <div className="">
+        <div className="flex items-center gap-2 mb-2">
           <Brain className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-foreground">
+          <span className="text-sm font-semibold text-foreground">
             Sentiment Analysis
           </span>
         </div>
-        <div
+        <span
           className={cn(
-            "flex items-center gap-2 px-2 py-1 rounded-full",
+            "inline-flex items-center gap-2 px-4 py-0.5 rounded-full",
             bgColors[sentiment.label.toLowerCase()] || "bg-muted",
           )}
         >
           <span className="text-lg">{sentiment.emoji}</span>
           <span
             className={cn(
-              "text-sm font-medium capitalize",
+              "text-xs font-medium capitalize",
               colors[sentiment.label.toLowerCase()] || "text-foreground",
             )}
           >
             {sentiment.label}
           </span>
-        </div>
+        </span>
       </div>
       <div className="space-y-1">
         <div className="text-xs font-medium text-muted-foreground uppercase">
@@ -78,10 +92,23 @@ ${sentiment.reasons.map((r, i) => `• ${r}`).join("\n")}`;
           ))}
         </ul>
       </div>
+      {showTone && (
+        <div className="p-2 bg-primary/10 rounded text-xs text-primary border border-primary/20">
+          <span className="font-medium">Suggested Tone:</span> {suggestedTone}
+        </div>
+      )}
       <div className="flex items-center gap-2 pt-2 border-t border-border">
-        <button className="flex items-center gap-1 px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors">
+        <button
+          onClick={() => setShowTone(!showTone)}
+          className={cn(
+            "flex items-center gap-1 px-3 py-1.5 text-xs rounded transition-colors",
+            showTone
+              ? "bg-primary/20 text-primary"
+              : "bg-primary text-primary-foreground hover:bg-primary/90",
+          )}
+        >
           <MessageSquare className="w-3 h-3" />
-          Suggested Tone
+          {showTone ? "Hide Tone" : "Suggested Tone"}
         </button>
         <button
           onClick={handleCopy}

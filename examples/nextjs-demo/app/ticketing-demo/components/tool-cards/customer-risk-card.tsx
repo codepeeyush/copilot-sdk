@@ -59,7 +59,7 @@ ${risk.reasons.map((r, i) => `${i + 1}. ${r}`).join("\n")}`;
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Shield className={cn("w-5 h-5", c.text)} />
-          <span className="font-semibold text-foreground">
+          <span className="text-sm font-semibold text-foreground">
             Churn Risk Analysis
           </span>
         </div>

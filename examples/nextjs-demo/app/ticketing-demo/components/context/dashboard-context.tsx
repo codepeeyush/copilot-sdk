@@ -56,25 +56,33 @@ export function DashboardProvider({ children }: { children: React.ReactNode }) {
     }));
   }, []);
 
-  const sendAgentMessage = useCallback((content: string) => {
-    if (!content.trim()) return;
-    setState((prev) => ({
-      ...prev,
-      messages: [
-        ...prev.messages,
-        {
-          id: Date.now(),
-          type: "agent" as const,
-          sender: "Marcus Johnson",
-          avatar: avatars.agent,
-          channel: "Chat",
-          timestamp: getCurrentTime(),
-          content,
-        },
-      ],
-      composeText: "", // Clear compose after sending
-    }));
-  }, []);
+  const sendAgentMessage = useCallback(
+    (
+      content: string,
+      channel: "Chat" | "Email" = "Chat",
+      emailSubject?: string,
+    ) => {
+      if (!content.trim()) return;
+      setState((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          {
+            id: Date.now(),
+            type: "agent" as const,
+            sender: "Marcus Johnson",
+            avatar: avatars.agent,
+            channel,
+            timestamp: getCurrentTime(),
+            content,
+            ...(channel === "Email" && emailSubject ? { emailSubject } : {}),
+          },
+        ],
+        composeText: "", // Clear compose after sending
+      }));
+    },
+    [],
+  );
 
   // Ticket status
   const setTicketStatus = useCallback((status: TicketStatus) => {

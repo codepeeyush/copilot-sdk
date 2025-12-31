@@ -44,7 +44,7 @@ export function SimilarTicketsCard({
     <div className="bg-card border border-border rounded-xl p-4 space-y-3">
       <div className="flex items-center gap-2">
         <Target className="w-5 h-5 text-primary" />
-        <span className="font-semibold text-foreground">
+        <span className="text-sm font-semibold text-foreground">
           Similar Tickets Found
         </span>
         <span className="ml-auto text-xs px-2 py-1 bg-muted text-muted-foreground rounded-full">

@@ -19,7 +19,9 @@ export function OrderDetailsCard({ order }: OrderDetailsCardProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Package className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-foreground">Order Details</span>
+          <span className="text-sm font-semibold text-foreground">
+            Order Details
+          </span>
         </div>
         <span className="text-xs px-2 py-1 bg-yellow-500/10 text-yellow-600 rounded-full font-medium">
           {order.status}

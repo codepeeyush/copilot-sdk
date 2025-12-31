@@ -26,7 +26,9 @@ export function TicketSummaryCard({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <FileText className="w-5 h-5 text-primary" />
-          <span className="font-semibold text-foreground">Ticket Summary</span>
+          <span className="text-sm font-semibold text-foreground">
+            Ticket Summary
+          </span>
         </div>
         <div className="flex items-center gap-1">
           <button

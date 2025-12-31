@@ -124,6 +124,9 @@ Marcus`;
             onUseReply={() => {
               dashboard.setComposeText(result.body);
             }}
+            onSendEmail={(subject, body) => {
+              dashboard.sendAgentMessage(body, "Email", subject);
+            }}
           />
         );
       },
@@ -655,48 +658,54 @@ Marcus`;
           date={props.args.date as string}
           time={props.args.time as string}
           phone={currentTicket.customer.phone}
+          customerName={currentTicket.customer.name}
         />
       ),
     }),
 
     escalate_ticket: tool({
       title: (args) => `Escalate (${args.priority || "High"})`,
-      executingTitle: "Escalating ticket...",
-      completedTitle: (args) =>
-        `Escalated to ${args.supervisor || "supervisor"}`,
-      description: "Escalate ticket to supervisor.",
+      executingTitle: "Preparing escalation...",
+      completedTitle: () => {
+        // Dynamic title based on escalation state
+        const escalatedTo = dashboard.escalatedTo;
+        return escalatedTo ? `Escalated to ${escalatedTo}` : "Escalation ready";
+      },
+      description:
+        "Escalate ticket to supervisor. Shows a selection card for user to choose supervisor.",
       location: "client",
       aiResponseMode: "none",
-      aiContext: (result, args) =>
-        `[UI Card Displayed: Escalated to ${args.supervisor || "supervisor"} (${args.priority}). User sees confirmation. Acknowledge briefly.]`,
+      aiContext: () => {
+        // AI context reads from dashboard state to know if assigned
+        const escalatedTo = dashboard.escalatedTo;
+        if (escalatedTo) {
+          return `[Escalation COMPLETED: Ticket has been escalated to ${escalatedTo}. The supervisor has been notified and will take over this case. Acknowledge the escalation to the user.]`;
+        }
+        return `[Escalation card shown to user - waiting for them to select supervisor and confirm. Do not proceed until user completes the escalation.]`;
+      },
       inputSchema: {
         type: "object",
         properties: {
-          reason: { type: "string", description: "Reason" },
+          reason: { type: "string", description: "Reason for escalation" },
           priority: {
             type: "string",
-            description: "Priority",
+            description: "Priority level",
             enum: ["High", "Critical"],
           },
-          supervisor: { type: "string", description: "Supervisor name" },
         },
         required: ["reason", "priority"],
       },
-      needsApproval: true,
-      approvalMessage: "Escalate this ticket?",
-      handler: async (params) => {
-        dashboard.setEscalatedTo(
-          (params.supervisor as string) || "Senior Support Lead",
-        );
-        return success({ escalated: true });
+      handler: async () => {
+        // Handler just returns - the actual assignment happens in the card's onAssign
+        return success({ pending: true });
       },
       render: (props) => (
         <EscalationCard
-          supervisor={
-            (props.args.supervisor as string) || "Senior Support Lead"
-          }
           reason={props.args.reason as string}
           priority={props.args.priority as string}
+          onAssign={(supervisor) => {
+            dashboard.setEscalatedTo(`${supervisor.name} (${supervisor.role})`);
+          }}
         />
       ),
     }),

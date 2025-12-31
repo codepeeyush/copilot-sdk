@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   },
   description:
     "Open-source SDK for building AI-powered chat interfaces in React",
-  metadataBase: new URL("https://copilot.yourgpt.ai"),
+  metadataBase: new URL("https://copilot-sdk.yourgpt.ai"),
   openGraph: {
     title: "Copilot SDK - AI SDK for React",
     description:
