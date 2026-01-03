@@ -83,9 +83,9 @@ const providers: ProviderCardData[] = [
     ],
   },
   {
-    id: "groq",
-    name: "Groq",
-    href: "/docs/providers/groq",
+    id: "xai",
+    name: "xAI",
+    href: "/docs/providers/xai",
     features: [
       "image-input",
       "object-generation",

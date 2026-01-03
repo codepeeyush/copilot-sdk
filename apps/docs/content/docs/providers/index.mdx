@@ -18,25 +18,24 @@ All providers use the same API. Change one line in your backend to switch from O
 
 ## How It Works
 
-Provider configuration is done on the **backend** using `@yourgpt/llm-sdk`. The frontend just connects to your API route.
+Import providers from subpaths for optimal tree-shaking. Each provider returns a model instance that works with `generateText()` and `streamText()`.
 
 ### Backend Setup
 
 ```ts title="app/api/chat/route.ts"
-import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+import { streamText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
 
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+export async function POST(req: Request) {
+  const { messages } = await req.json();
 
-const runtime = createRuntime({
-  provider: openai,
-  model: 'gpt-4o-mini',
-  systemPrompt: 'You are a helpful assistant.',
-});
+  const result = await streamText({
+    model: openai('gpt-4o-mini'),
+    system: 'You are a helpful assistant.',
+    messages,
+  });
 
-export async function POST(request: Request) {
-  return runtime.handleRequest(request);
+  return result.toTextStreamResponse();
 }
 ```
 
@@ -60,22 +59,32 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 ## Switching Providers
 
-Change the provider factory on the backend - frontend stays the same:
+Change the import and model - frontend stays the same:
 
 ```ts title="app/api/chat/route.ts"
-import {
-  createRuntime,
-  createOpenAI,
-  createAnthropic
-} from '@yourgpt/llm-sdk';
+import { streamText } from '@yourgpt/llm-sdk';
 
 // OpenAI
-const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY! });
-const runtime = createRuntime({ provider: openai, model: 'gpt-4o' });
+import { openai } from '@yourgpt/llm-sdk/openai';
+const model = openai('gpt-4o');
 
-// Or Anthropic
-const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY! });
-const runtime = createRuntime({ provider: anthropic, model: 'claude-sonnet-4-20250514' });
+// Anthropic
+import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+const model = anthropic('claude-3-5-sonnet-20241022');
+
+// Google
+import { google } from '@yourgpt/llm-sdk/google';
+const model = google('gemini-2.0-flash');
+
+// xAI
+import { xai } from '@yourgpt/llm-sdk/xai';
+const model = xai('grok-3-fast-beta');
+
+// Use any model
+const result = await streamText({
+  model,
+  messages,
+});
 ```
 
 <Callout type="info">
@@ -86,15 +95,12 @@ Your tools, UI, and all frontend code remain unchanged. The SDK normalizes respo
 
 ## Available Providers
 
-| Provider | Status | Factory Function |
-|----------|--------|------------------|
-| OpenAI | Ready | `createOpenAI()` |
-| Anthropic | Ready | `createAnthropic()` |
-| Google | Coming Soon | `createGoogle()` |
-| Groq | Coming Soon | `createGroq()` |
-| Mistral | Coming Soon | - |
-| Azure OpenAI | Coming Soon | `createAzure()` |
-| Ollama | Coming Soon | `createOllama()` |
+| Provider | Import | Example |
+|----------|--------|---------|
+| OpenAI | `@yourgpt/llm-sdk/openai` | `openai('gpt-4o')` |
+| Anthropic | `@yourgpt/llm-sdk/anthropic` | `anthropic('claude-3-5-sonnet-20241022')` |
+| Google | `@yourgpt/llm-sdk/google` | `google('gemini-2.0-flash')` |
+| xAI | `@yourgpt/llm-sdk/xai` | `xai('grok-3-fast-beta')` |
 
 ---
 
@@ -105,5 +111,4 @@ Your tools, UI, and all frontend code remain unchanged. The SDK normalizes respo
 | OpenAI | Fast | Excellent | $$ | General use |
 | Anthropic | Medium | Excellent | $$ | Long context, safety |
 | Google | Fast | Very Good | $ | Multimodal |
-| Groq | Ultra Fast | Good | $ | Speed-critical apps |
-| Ollama | Varies | Varies | Free | Local/private |
+| xAI | Ultra Fast | Excellent | $ | Speed-critical apps |

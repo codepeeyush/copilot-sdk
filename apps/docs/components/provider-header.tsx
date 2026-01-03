@@ -15,7 +15,7 @@ const defaultGradients: Record<Provider, string> = {
   anthropic: "from-orange-500/5 to-amber-500/10",
   google: "from-blue-500/5 to-indigo-500/10",
   gemini: "from-blue-500/5 to-indigo-500/10",
-  groq: "from-red-500/5 to-orange-500/10",
+  xai: "from-zinc-500/5 to-slate-500/10",
   mistral: "from-orange-500/5 to-yellow-500/10",
   azure: "from-blue-500/5 to-cyan-500/10",
   ollama: "from-zinc-500/5 to-slate-500/10",

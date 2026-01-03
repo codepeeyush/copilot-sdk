@@ -1,0 +1,4 @@
+{
+  "title": "LLM SDK",
+  "pages": ["index", "generate-text", "stream-text", "tools"]
+}

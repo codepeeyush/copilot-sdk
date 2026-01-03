@@ -10,7 +10,7 @@ import { AnthropicBlack } from "@/components/ui/svgs/anthropicBlack";
 import { AnthropicWhite } from "@/components/ui/svgs/anthropicWhite";
 import { Gemini } from "@/components/ui/svgs/gemini";
 import { MistralAiLogo } from "@/components/ui/svgs/mistralAiLogo";
-import { Groq } from "@/components/ui/svgs/groq";
+import { XAI } from "@/components/ui/svgs/xai";
 import { Azure } from "@/components/ui/svgs/azure";
 import { OllamaLight } from "@/components/ui/svgs/ollamaLight";
 import { OllamaDark } from "@/components/ui/svgs/ollamaDark";
@@ -20,7 +20,7 @@ export type Provider =
   | "anthropic"
   | "google"
   | "gemini"
-  | "groq"
+  | "xai"
   | "mistral"
   | "azure"
   | "ollama";
@@ -77,8 +77,8 @@ export function ProviderLogo({
     case "mistral":
       return <MistralAiLogo className={baseClass} {...props} />;
 
-    case "groq":
-      return <Groq className={cn(baseClass, "rounded")} {...props} />;
+    case "xai":
+      return <XAI className={cn(baseClass, "rounded")} {...props} />;
 
     case "azure":
       return <Azure className={baseClass} {...props} />;
@@ -107,7 +107,7 @@ export {
   AnthropicWhite,
   Gemini,
   MistralAiLogo,
-  Groq,
+  XAI,
   Azure,
   OllamaLight,
   OllamaDark,

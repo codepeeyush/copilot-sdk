@@ -11,6 +11,36 @@
       "import": "./dist/index.mjs",
       "require": "./dist/index.js"
     },
+    "./openai": {
+      "types": "./dist/providers/openai/index.d.mts",
+      "import": "./dist/providers/openai/index.mjs",
+      "require": "./dist/providers/openai/index.js"
+    },
+    "./anthropic": {
+      "types": "./dist/providers/anthropic/index.d.mts",
+      "import": "./dist/providers/anthropic/index.mjs",
+      "require": "./dist/providers/anthropic/index.js"
+    },
+    "./google": {
+      "types": "./dist/providers/google/index.d.mts",
+      "import": "./dist/providers/google/index.mjs",
+      "require": "./dist/providers/google/index.js"
+    },
+    "./ollama": {
+      "types": "./dist/providers/ollama/index.d.mts",
+      "import": "./dist/providers/ollama/index.mjs",
+      "require": "./dist/providers/ollama/index.js"
+    },
+    "./xai": {
+      "types": "./dist/providers/xai/index.d.mts",
+      "import": "./dist/providers/xai/index.mjs",
+      "require": "./dist/providers/xai/index.js"
+    },
+    "./azure": {
+      "types": "./dist/providers/azure/index.d.mts",
+      "import": "./dist/providers/azure/index.mjs",
+      "require": "./dist/providers/azure/index.js"
+    },
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
       "import": "./dist/adapters/index.mjs",
@@ -71,7 +101,8 @@
     "openai",
     "anthropic",
     "gemini",
-    "groq",
+    "xai",
+    "grok",
     "ollama",
     "multi-provider",
     "streaming"

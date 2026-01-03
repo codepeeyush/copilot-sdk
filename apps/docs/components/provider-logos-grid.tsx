@@ -8,7 +8,7 @@ const providers: { id: Provider; name: string }[] = [
   { id: "anthropic", name: "Anthropic" },
   { id: "google", name: "Google" },
   { id: "mistral", name: "Mistral" },
-  { id: "groq", name: "Groq" },
+  { id: "xai", name: "xAI" },
   { id: "azure", name: "Azure" },
   { id: "ollama", name: "Ollama" },
 ];

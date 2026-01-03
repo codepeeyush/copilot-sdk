@@ -18,7 +18,6 @@ import type { LLMAdapter, ChatCompletionRequest } from "../adapters";
 import {
   createOpenAIAdapter,
   createAnthropicAdapter,
-  createGroqAdapter,
   createOllamaAdapter,
 } from "../adapters";
 import type { RuntimeConfig, ChatRequest } from "./types";
@@ -220,14 +219,6 @@ export class Runtime {
 
       case "anthropic":
         return createAnthropicAdapter({
-          apiKey: llm.apiKey,
-          model: llm.model,
-          temperature: llm.temperature,
-          maxTokens: llm.maxTokens,
-        });
-
-      case "groq":
-        return createGroqAdapter({
           apiKey: llm.apiKey,
           model: llm.model,
           temperature: llm.temperature,

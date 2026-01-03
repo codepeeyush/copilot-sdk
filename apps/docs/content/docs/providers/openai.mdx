@@ -28,27 +28,132 @@ Get your API key from [platform.openai.com](https://platform.openai.com/api-keys
 OPENAI_API_KEY=sk-...
 ```
 
-### 3. Create API Route (Backend)
+### 3. Usage
+
+```ts
+import { generateText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Explain quantum computing simply.',
+});
+
+console.log(result.text);
+```
+
+### 4. Streaming (API Route)
 
 ```ts title="app/api/chat/route.ts"
-import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+import { streamText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
 
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
-});
+export async function POST(req: Request) {
+  const { messages } = await req.json();
 
-const runtime = createRuntime({
-  provider: openai,
-  model: 'gpt-4o-mini',
-  systemPrompt: 'You are a helpful assistant.',
-});
+  const result = await streamText({
+    model: openai('gpt-4o'),
+    system: 'You are a helpful assistant.',
+    messages,
+  });
 
-export async function POST(request: Request) {
-  return runtime.handleRequest(request);
+  return result.toTextStreamResponse();
 }
 ```
 
-### 4. Add Provider (Frontend)
+---
+
+## Available Models
+
+```ts
+// Latest and best
+openai('gpt-4o')              // Fastest GPT-4 class
+openai('gpt-4o-mini')         // Cost-effective, very capable
+
+// GPT-4 Turbo
+openai('gpt-4-turbo')         // 128K context
+
+// GPT-3.5
+openai('gpt-3.5-turbo')       // Fast and cheap
+```
+
+---
+
+## Configuration Options
+
+```ts
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+// Custom API key
+const model = openai('gpt-4o', {
+  apiKey: 'sk-custom-key',
+});
+
+// With generation options
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Hello',
+  temperature: 0.7,        // 0-2, default 1
+  maxTokens: 4096,         // Max response length
+});
+```
+
+---
+
+## Tool Calling
+
+OpenAI has excellent tool/function calling support:
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'What is the weather in Tokyo?',
+  tools: {
+    getWeather: tool({
+      description: 'Get weather for a city',
+      parameters: z.object({
+        city: z.string().describe('City name'),
+      }),
+      execute: async ({ city }) => {
+        // Your weather API call
+        return { temperature: 22, condition: 'sunny' };
+      },
+    }),
+  },
+  maxSteps: 5, // Allow multiple tool calls
+});
+```
+
+---
+
+## Vision (Image Input)
+
+GPT-4o supports image analysis. Send images in your messages:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: "What's in this image?" },
+        { type: 'image', image: base64ImageData },
+      ],
+    },
+  ],
+});
+```
+
+---
+
+## With Copilot UI
+
+Use with the Copilot React components:
 
 ```tsx title="app/providers.tsx"
 'use client';
@@ -61,71 +166,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
       {children}
     </CopilotProvider>
   );
-}
-```
-
----
-
-## Configuration Options
-
-```ts title="app/api/chat/route.ts"
-const runtime = createRuntime({
-  provider: openai,
-  model: 'gpt-4o',
-  systemPrompt: 'You are a helpful assistant.',
-  temperature: 0.7,        // 0-2, default 1
-  maxTokens: 4096,         // Max response length
-});
-```
-
----
-
-## Vision (Image Input)
-
-GPT-4o supports image analysis:
-
-```tsx
-import { useCopilot } from '@yourgpt/copilot-sdk/react';
-
-const { sendMessage } = useCopilot();
-
-// Send message with image
-sendMessage("What's in this image?", {
-  attachments: [
-    {
-      type: 'image',
-      data: base64ImageData,
-      mimeType: 'image/png',
-    }
-  ]
-});
-```
-
----
-
-## Tool Calling
-
-OpenAI has excellent tool/function calling support:
-
-```tsx
-import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
-import { z } from 'zod';
-
-function SearchTool() {
-  useToolWithSchema({
-    name: 'search_products',
-    description: 'Search for products',
-    schema: z.object({
-      query: z.string(),
-      category: z.string().optional(),
-    }),
-    handler: async ({ query, category }) => {
-      const results = await searchProducts(query, category);
-      return { success: true, data: results };
-    },
-  });
-
-  return null;
 }
 ```
 
@@ -146,4 +186,5 @@ function SearchTool() {
 ## Next Steps
 
 - [Anthropic](/docs/providers/anthropic) - Try Claude models
-- [Tools](/docs/tools) - Build AI tools
+- [generateText()](/docs/llm-sdk/generate-text) - Full API reference
+- [tool()](/docs/llm-sdk/tools) - Define tools with Zod

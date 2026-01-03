@@ -1,0 +1,292 @@
+---
+title: generateText()
+description: Generate text with a single function call
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+# generateText()
+
+Generate complete text responses from any language model. Supports tools, multi-step reasoning, and full conversation context.
+
+---
+
+## Basic Usage
+
+```ts
+import { generateText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Write a haiku about TypeScript.',
+});
+
+console.log(result.text);
+// "Types guard our code paths
+//  Compile-time peace of mind flows
+//  Runtime errors fade"
+```
+
+---
+
+## Parameters
+
+```ts
+const result = await generateText({
+  // Required
+  model: openai('gpt-4o'),           // Language model instance
+
+  // Content (one of these)
+  prompt: 'Hello',                    // Simple prompt (becomes user message)
+  // OR
+  messages: [                         // Full conversation
+    { role: 'user', content: 'Hello' }
+  ],
+
+  // Optional
+  system: 'You are helpful.',         // System prompt
+  tools: { ... },                     // Available tools
+  maxSteps: 1,                        // Max tool call iterations (default: 1)
+  temperature: 0.7,                   // Randomness (0-2)
+  maxTokens: 4096,                    // Max response length
+  signal: abortController.signal,     // Cancellation
+});
+```
+
+---
+
+## Response Object
+
+```ts
+const result = await generateText({ ... });
+
+result.text           // Final generated text
+result.usage          // { promptTokens, completionTokens, totalTokens }
+result.finishReason   // 'stop' | 'length' | 'tool-calls' | 'error'
+result.steps          // All generation steps (for agentic workflows)
+result.toolCalls      // All tool calls made
+result.toolResults    // All tool results
+result.response       // { messages: CoreMessage[] }
+```
+
+---
+
+## With System Prompt
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  system: 'You are a helpful coding assistant. Be concise.',
+  prompt: 'How do I read a file in Node.js?',
+});
+```
+
+---
+
+## With Messages
+
+For multi-turn conversations, pass the full message history:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  messages: [
+    { role: 'user', content: 'My name is Alice.' },
+    { role: 'assistant', content: 'Nice to meet you, Alice!' },
+    { role: 'user', content: 'What is my name?' },
+  ],
+});
+
+console.log(result.text);
+// "Your name is Alice."
+```
+
+---
+
+## With Tools
+
+Let the AI call functions in your application:
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'What is 25 * 48?',
+  tools: {
+    calculate: tool({
+      description: 'Perform a calculation',
+      parameters: z.object({
+        expression: z.string().describe('Math expression to evaluate'),
+      }),
+      execute: async ({ expression }) => {
+        return { result: eval(expression) };
+      },
+    }),
+  },
+});
+
+console.log(result.text);
+// "25 * 48 = 1200"
+
+console.log(result.toolCalls);
+// [{ id: '...', name: 'calculate', args: { expression: '25 * 48' } }]
+```
+
+---
+
+## Agentic Workflows (maxSteps)
+
+Allow the AI to make multiple tool calls in sequence:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Find the weather in Tokyo, then convert the temperature to Fahrenheit.',
+  tools: {
+    getWeather: tool({
+      description: 'Get weather for a city',
+      parameters: z.object({ city: z.string() }),
+      execute: async ({ city }) => ({ celsius: 22 }),
+    }),
+    convertTemp: tool({
+      description: 'Convert Celsius to Fahrenheit',
+      parameters: z.object({ celsius: z.number() }),
+      execute: async ({ celsius }) => ({ fahrenheit: celsius * 9/5 + 32 }),
+    }),
+  },
+  maxSteps: 5, // Allow up to 5 LLM calls
+});
+
+// AI will:
+// 1. Call getWeather({ city: 'Tokyo' }) -> { celsius: 22 }
+// 2. Call convertTemp({ celsius: 22 }) -> { fahrenheit: 71.6 }
+// 3. Generate final response with both results
+```
+
+<Callout type="info">
+**maxSteps** controls how many times the AI can loop back to call tools. Set higher for complex multi-step tasks.
+</Callout>
+
+---
+
+## Accessing Steps
+
+For debugging or logging agentic workflows:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Complex task...',
+  tools: { ... },
+  maxSteps: 10,
+});
+
+for (const step of result.steps) {
+  console.log('Step:', step.text);
+  console.log('Tool calls:', step.toolCalls);
+  console.log('Tool results:', step.toolResults);
+  console.log('Finish reason:', step.finishReason);
+}
+```
+
+---
+
+## Cancellation
+
+Use an AbortController to cancel generation:
+
+```ts
+const controller = new AbortController();
+
+// Cancel after 5 seconds
+setTimeout(() => controller.abort(), 5000);
+
+try {
+  const result = await generateText({
+    model: openai('gpt-4o'),
+    prompt: 'Write a very long essay...',
+    signal: controller.signal,
+  });
+} catch (error) {
+  if (error.name === 'AbortError') {
+    console.log('Generation cancelled');
+  }
+}
+```
+
+---
+
+## Different Providers
+
+Same API works with any provider:
+
+<Tabs items={['OpenAI', 'Anthropic', 'Google', 'xAI']}>
+  <Tab value="OpenAI">
+    ```ts
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const result = await generateText({
+      model: openai('gpt-4o'),
+      prompt: 'Hello!',
+    });
+    ```
+  </Tab>
+  <Tab value="Anthropic">
+    ```ts
+    import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+
+    const result = await generateText({
+      model: anthropic('claude-3-5-sonnet-20241022'),
+      prompt: 'Hello!',
+    });
+    ```
+  </Tab>
+  <Tab value="Google">
+    ```ts
+    import { google } from '@yourgpt/llm-sdk/google';
+
+    const result = await generateText({
+      model: google('gemini-2.0-flash'),
+      prompt: 'Hello!',
+    });
+    ```
+  </Tab>
+  <Tab value="xAI">
+    ```ts
+    import { xai } from '@yourgpt/llm-sdk/xai';
+
+    const result = await generateText({
+      model: xai('grok-3-fast-beta'),
+      prompt: 'Hello!',
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## TypeScript Types
+
+```ts
+import type {
+  GenerateTextParams,
+  GenerateTextResult,
+  CoreMessage,
+  Tool,
+  ToolCall,
+  ToolResult,
+} from '@yourgpt/llm-sdk';
+```
+
+---
+
+## Next Steps
+
+- [streamText()](/docs/llm-sdk/stream-text) - Stream responses in real-time
+- [tool()](/docs/llm-sdk/tools) - Define tools with Zod schemas
+- [Providers](/docs/providers) - Configure model providers

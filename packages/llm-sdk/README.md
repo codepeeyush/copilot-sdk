@@ -36,9 +36,8 @@ export async function POST(request: Request) {
 | OpenAI        | `createOpenAI()`    |
 | Anthropic     | `createAnthropic()` |
 | Google Gemini | `createGoogle()`    |
-| Groq          | `createGroq()`      |
-| Ollama        | `createOllama()`    |
 | xAI (Grok)    | `createXAI()`       |
+| Ollama        | `createOllama()`    |
 | Azure OpenAI  | `createAzure()`     |
 
 ## Framework Integrations

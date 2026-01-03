@@ -5,6 +5,9 @@
     "index",
     "quickstart",
     "why-copilot-sdk",
+    "---LLM SDK---",
+    "llm-sdk",
+    "providers",
     "---Copilot---",
     "overview",
     "chat",
@@ -13,8 +16,6 @@
     "customizations",
     "generative-ui",
     "multimodal",
-    "---",
-    "providers",
     "---API Reference---",
     "api-reference"
   ]

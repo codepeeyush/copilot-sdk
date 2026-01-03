@@ -1,0 +1,51 @@
+{
+  "name": "create-ai-copilot",
+  "version": "0.1.1",
+  "description": "CLI to scaffold AI Copilot projects with @yourgpt/copilot-sdk",
+  "type": "module",
+  "bin": {
+    "create-ai-copilot": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "templates"
+  ],
+  "scripts": {
+    "build": "tsup && chmod +x dist/index.js",
+    "dev": "tsup --watch",
+    "prepublishOnly": "pnpm build"
+  },
+  "engines": {
+    "node": ">=18.17.0"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "fs-extra": "^11.2.0",
+    "picocolors": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "keywords": [
+    "cli",
+    "copilot",
+    "ai",
+    "scaffolding",
+    "create-app",
+    "llm",
+    "openai",
+    "anthropic"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AiCopilotHub/yourgpt-copilot",
+    "directory": "packages/create-ai-copilot"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "license": "MIT"
+}

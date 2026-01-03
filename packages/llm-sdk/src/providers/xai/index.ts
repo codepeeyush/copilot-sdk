@@ -1,15 +1,20 @@
 /**
  * xAI Provider
  *
- * Wraps the XAIAdapter with provider interface.
  * xAI's Grok models are cutting-edge AI models with vision and tool support.
  *
  * Features:
  * - Vision (images)
  * - Tools/Function calling
  * - Real-time information (trained on X/Twitter data)
+ * - Ultra-fast inference
  */
 
+// NEW: Modern pattern - xai() function
+export { xai, createXAI as createXAIModel } from "./provider";
+export type { XAIProviderOptions } from "./provider";
+
+// LEGACY: Keep existing createXAI for backward compatibility
 import { createXAIAdapter } from "../../adapters/xai";
 import type {
   AIProvider,
@@ -29,7 +34,83 @@ interface ModelCapabilities {
 }
 
 const XAI_MODELS: Record<string, ModelCapabilities> = {
-  // Grok 2 series (latest)
+  // Grok 4.1 Fast (Latest - December 2025)
+  "grok-4-1-fast-reasoning": {
+    vision: false,
+    tools: true,
+    maxTokens: 2000000,
+    outputTokens: 16384,
+  },
+  "grok-4-1-fast-non-reasoning": {
+    vision: false,
+    tools: true,
+    maxTokens: 2000000,
+    outputTokens: 16384,
+  },
+
+  // Grok 4 Fast (September 2025)
+  "grok-4-fast-reasoning": {
+    vision: false,
+    tools: true,
+    maxTokens: 2000000,
+    outputTokens: 16384,
+  },
+  "grok-4-fast-non-reasoning": {
+    vision: false,
+    tools: true,
+    maxTokens: 2000000,
+    outputTokens: 16384,
+  },
+
+  // Grok 4 (July 2025)
+  "grok-4": {
+    vision: true,
+    tools: true,
+    maxTokens: 256000,
+    outputTokens: 16384,
+  },
+  "grok-4-0709": {
+    vision: true,
+    tools: true,
+    maxTokens: 256000,
+    outputTokens: 16384,
+  },
+
+  // Grok 3 (February 2025) - Stable
+  "grok-3-beta": {
+    vision: true,
+    tools: true,
+    maxTokens: 131072,
+    outputTokens: 8192,
+  },
+  "grok-3-fast-beta": {
+    vision: false,
+    tools: true,
+    maxTokens: 131072,
+    outputTokens: 8192,
+  },
+  "grok-3-mini-beta": {
+    vision: false,
+    tools: true,
+    maxTokens: 32768,
+    outputTokens: 8192,
+  },
+  "grok-3-mini-fast-beta": {
+    vision: false,
+    tools: true,
+    maxTokens: 32768,
+    outputTokens: 8192,
+  },
+
+  // Grok Code Fast (August 2025)
+  "grok-code-fast-1": {
+    vision: false,
+    tools: true,
+    maxTokens: 256000,
+    outputTokens: 16384,
+  },
+
+  // Grok 2 (Legacy - for backward compatibility)
   "grok-2": {
     vision: true,
     tools: true,
@@ -46,40 +127,6 @@ const XAI_MODELS: Record<string, ModelCapabilities> = {
     vision: false,
     tools: true,
     maxTokens: 131072,
-    outputTokens: 4096,
-  },
-  "grok-2-mini-latest": {
-    vision: false,
-    tools: true,
-    maxTokens: 131072,
-    outputTokens: 4096,
-  },
-
-  // Grok Vision
-  "grok-2-vision": {
-    vision: true,
-    tools: true,
-    maxTokens: 32768,
-    outputTokens: 4096,
-  },
-  "grok-2-vision-latest": {
-    vision: true,
-    tools: true,
-    maxTokens: 32768,
-    outputTokens: 4096,
-  },
-
-  // Grok Beta (legacy)
-  "grok-beta": {
-    vision: false,
-    tools: true,
-    maxTokens: 131072,
-    outputTokens: 4096,
-  },
-  "grok-vision-beta": {
-    vision: true,
-    tools: true,
-    maxTokens: 8192,
     outputTokens: 4096,
   },
 };
@@ -116,7 +163,7 @@ export function createXAI(config: XAIProviderConfig = {}): AIProvider {
     },
 
     getCapabilities(modelId: string): ProviderCapabilities {
-      const model = XAI_MODELS[modelId] ?? XAI_MODELS["grok-2"];
+      const model = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast-beta"];
 
       return {
         supportsVision: model.vision,
