@@ -3,8 +3,8 @@
   "pages": [
     "---Getting Started---",
     "index",
-    "quickstart",
     "why-copilot-sdk",
+    "quickstart",
     "examples",
     "---Copilot---",
     "overview",
