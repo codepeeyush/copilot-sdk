@@ -7,10 +7,7 @@ const providers: { id: Provider; name: string }[] = [
   { id: "openai", name: "OpenAI" },
   { id: "anthropic", name: "Anthropic" },
   { id: "google", name: "Google" },
-  { id: "mistral", name: "Mistral" },
   { id: "xai", name: "xAI" },
-  { id: "azure", name: "Azure" },
-  { id: "ollama", name: "Ollama" },
 ];
 
 interface ProviderLogosGridProps {

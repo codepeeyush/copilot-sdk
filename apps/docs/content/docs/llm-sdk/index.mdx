@@ -1,50 +1,147 @@
 ---
-title: LLM SDK
-description: Core functions for AI text generation
-icon: Sparkles
+title: Overview
+description: Unified API for any LLM provider
 ---
 
-import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
-# LLM SDK
-
-The `@yourgpt/llm-sdk` package provides core functions for working with large language models. Use any provider with a unified, type-safe API.
-
----
-
-## Quick Example
+One API, any provider. Switch between OpenAI, Anthropic, Google, and more with a single line change.
 
 ```ts
-import { generateText } from '@yourgpt/llm-sdk';
+import { streamText } from '@yourgpt/llm-sdk';
 import { openai } from '@yourgpt/llm-sdk/openai';
 
-const result = await generateText({
+const result = await streamText({
   model: openai('gpt-4o'),
-  prompt: 'Explain quantum computing in simple terms.',
+  prompt: 'Hello!',
 });
-
-console.log(result.text);
 ```
 
 ---
 
-## Installation
+## Switch Providers Instantly
 
-<Tabs items={['pnpm', 'npm', 'yarn']}>
-  <Tab value="pnpm">
-    ```bash
-    pnpm add @yourgpt/llm-sdk zod
+Same code, different provider. No refactoring needed.
+
+<Tabs items={['OpenAI', 'Anthropic', 'Google', 'xAI']}>
+  <Tab value="OpenAI">
+    ```ts
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const model = openai('gpt-4o');
     ```
   </Tab>
-  <Tab value="npm">
-    ```bash
-    npm install @yourgpt/llm-sdk zod
+  <Tab value="Anthropic">
+    ```ts
+    import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+
+    const model = anthropic('claude-sonnet-4-20250514');
     ```
   </Tab>
-  <Tab value="yarn">
-    ```bash
-    yarn add @yourgpt/llm-sdk zod
+  <Tab value="Google">
+    ```ts
+    import { google } from '@yourgpt/llm-sdk/google';
+
+    const model = google('gemini-2.0-flash');
+    ```
+  </Tab>
+  <Tab value="xAI">
+    ```ts
+    import { xai } from '@yourgpt/llm-sdk/xai';
+
+    const model = xai('grok-3-fast-beta');
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Framework Examples
+
+Works with any HTTP framework. Returns standard Web `Response` objects.
+
+<Tabs items={['Next.js', 'Express', 'Hono', 'Fastify']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="server.ts"
+    import express from 'express';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(express.json());
+
+    app.post('/api/chat', async (req, res) => {
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages: req.body.messages,
+      });
+
+      const response = result.toTextStreamResponse();
+      res.set(Object.fromEntries(response.headers));
+      response.body?.pipeTo(new WritableStream({
+        write(chunk) { res.write(chunk); },
+        close() { res.end(); }
+      }));
+    });
+    ```
+  </Tab>
+  <Tab value="Hono">
+    ```ts title="src/index.ts"
+    import { Hono } from 'hono';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = new Hono();
+
+    app.post('/api/chat', async (c) => {
+      const { messages } = await c.req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    });
+
+    export default app;
+    ```
+  </Tab>
+  <Tab value="Fastify">
+    ```ts title="server.ts"
+    import Fastify from 'fastify';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = Fastify();
+
+    app.post('/api/chat', async (req, reply) => {
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages: req.body.messages,
+      });
+
+      const response = result.toTextStreamResponse();
+      reply.headers(Object.fromEntries(response.headers));
+      return reply.send(response.body);
+    });
     ```
   </Tab>
 </Tabs>
@@ -53,122 +150,17 @@ console.log(result.text);
 
 ## Core Functions
 
-<Cards>
-  <Card title="generateText()" href="/docs/llm-sdk/generate-text">
-    Generate text with a single function call. Supports tools and multi-step agentic workflows.
-  </Card>
-  <Card title="streamText()" href="/docs/llm-sdk/stream-text">
-    Stream text responses for real-time output. Perfect for chat interfaces and API routes.
-  </Card>
-  <Card title="tool()" href="/docs/llm-sdk/tools">
-    Define type-safe tools with Zod schemas. Let AI call functions in your application.
-  </Card>
-</Cards>
+| Function | Description |
+|----------|-------------|
+| [`streamText()`](/docs/llm-sdk/stream-text) | Stream responses in real-time |
+| [`generateText()`](/docs/llm-sdk/generate-text) | Generate complete responses |
+| [`tool()`](/docs/llm-sdk/tools) | Define AI-callable functions |
 
 ---
 
-## Providers
+## Why Unified?
 
-Import providers from subpaths for optimal tree-shaking:
-
-```ts
-import { openai } from '@yourgpt/llm-sdk/openai';
-import { anthropic } from '@yourgpt/llm-sdk/anthropic';
-import { google } from '@yourgpt/llm-sdk/google';
-import { xai } from '@yourgpt/llm-sdk/xai';
-```
-
-Each provider function returns a model instance:
-
-```ts
-const gpt4 = openai('gpt-4o');
-const claude = anthropic('claude-3-5-sonnet-20241022');
-const gemini = google('gemini-2.0-flash');
-const grok = xai('grok-3-fast-beta');
-```
-
-See [Providers](/docs/providers) for full configuration options.
-
----
-
-## Streaming in API Routes
-
-The most common pattern - create a streaming chat endpoint:
-
-```ts title="app/api/chat/route.ts"
-import { streamText } from '@yourgpt/llm-sdk';
-import { openai } from '@yourgpt/llm-sdk/openai';
-
-export async function POST(req: Request) {
-  const { messages } = await req.json();
-
-  const result = await streamText({
-    model: openai('gpt-4o'),
-    system: 'You are a helpful assistant.',
-    messages,
-  });
-
-  return result.toTextStreamResponse();
-}
-```
-
----
-
-## With Tools
-
-Add AI-callable functions to your application:
-
-```ts
-import { generateText, tool } from '@yourgpt/llm-sdk';
-import { openai } from '@yourgpt/llm-sdk/openai';
-import { z } from 'zod';
-
-const result = await generateText({
-  model: openai('gpt-4o'),
-  prompt: 'What is the weather in Tokyo and Paris?',
-  tools: {
-    getWeather: tool({
-      description: 'Get current weather for a city',
-      parameters: z.object({
-        city: z.string().describe('City name'),
-      }),
-      execute: async ({ city }) => {
-        // Your weather API call here
-        return { temperature: 22, condition: 'sunny' };
-      },
-    }),
-  },
-  maxSteps: 5, // Allow multiple tool calls
-});
-
-console.log(result.text);
-// "The weather in Tokyo is 22°C and sunny. In Paris..."
-```
-
----
-
-## Key Concepts
-
-| Concept | Description |
-|---------|-------------|
-| **Model** | Provider + model ID, e.g., `openai('gpt-4o')` |
-| **Messages** | Conversation history with roles (user, assistant, system) |
-| **Tools** | Functions the AI can call during generation |
-| **maxSteps** | Maximum agentic iterations (tool call loops) |
-| **Streaming** | Real-time text output via async iterables |
-
----
-
-## Next Steps
-
-<Cards>
-  <Card title="generateText()" href="/docs/llm-sdk/generate-text">
-    Full API reference for text generation
-  </Card>
-  <Card title="Providers" href="/docs/providers">
-    Configure OpenAI, Anthropic, Google, and more
-  </Card>
-  <Card title="Copilot UI" href="/docs/chat">
-    Build complete chat interfaces with React
-  </Card>
-</Cards>
+- **One API** - Learn once, use everywhere
+- **Swap providers** - Change one import, keep all your code
+- **Type-safe** - Full TypeScript support across all providers
+- **Standard responses** - Web `Response` objects work anywhere

@@ -7,40 +7,31 @@ icon: Notebook
 import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Zap, Brain, Wrench, Bot, Plug, Code } from 'lucide-react';
 import { MessageQuestionIcon } from '@/components/icons/message-question';
+import { AiChat } from '@/components/icons/ai-chat';
 
-<div className="not-prose mb-8 rounded-xl overflow-hidden border">
-  <img
-    src="/images/copilot-sdk-main.png"
-    alt="Copilot SDK - Build AI copilots for your app"
-    className="w-full h-auto"
-  />
-</div>
-
-# Build AI Copilots That Actually *Get* Your App
-
-Your AI assistant shouldn't be clueless about what's happening on screen. **Copilot SDK** gives your AI eyes, context, and the ability to take action.
-
-<Callout type="info">
-**3 lines of code. That's it.** Wrap your app, drop in the chat component, done.
-</Callout>
-
----
+<DocsHero
+  title="Build AI Copilots for Your App"
+  description="Pick any LLM, drop in prebuilt chat UI, and ship AI-powered features in minutes. Full tool execution and agentic loops included."
+  badge="3 lines of code"
+  video="/videos/copilot-sdk-demo-1-sm.mp4"
+/>
 
 ## What Makes This Different?
 
 <Cards>
-  <Card title="Context Aware" icon="👁️">
-    AI can see screenshots, read console errors, and inspect network failures. It actually understands what went wrong.
+  <Card title="Prebuilt Copilot UI" icon={<AiChat className="size-full" />}>
+    Production-ready chat components. Streaming, markdown, code highlighting, and file attachments included.
   </Card>
-  <Card title="Tool Execution" icon="🛠️">
+  <Card title="Tool Execution" icon={<Wrench className="size-full" />}>
     Define tools with Zod schemas. AI calls them, you handle the result. Full agentic loop support.
   </Card>
-  <Card title="Stupid Simple" icon="⚡">
-    No complex setup. No state management headaches. Just React hooks that work.
+  <Card title="Plug & Play" icon={<Zap className="size-full" />}>
+    Works out of the box. No configuration headaches. Just React hooks.
   </Card>
-  <Card title="Multi-LLM" icon="🧠">
-    OpenAI, Anthropic, Google, xAI, Ollama. Swap providers without changing your code.
+  <Card title="Multi-LLM" icon={<Brain className="size-full" />}>
+    OpenAI, Anthropic, Google, xAI, and more. Swap providers without changing your code.
   </Card>
 </Cards>
 
@@ -167,16 +158,16 @@ Now when user says "take me to settings", AI calls `navigate_to_page({ path: '/s
   <Card title="Why Copilot SDK" href="/docs/why-copilot-sdk" icon={<MessageQuestionIcon className="size-full" />}>
     See what makes Copilot SDK different
   </Card>
-  <Card title="Copilot Overview" href="/docs/copilot" icon="🤖">
+  <Card title="Copilot Overview" href="/docs/overview" icon={<Bot className="size-full" />}>
     The main product - plug & play AI chat
   </Card>
-  <Card title="Providers" href="/docs/providers" icon="🔌">
+  <Card title="Providers" href="/docs/providers" icon={<Plug className="size-full" />}>
     OpenAI, Anthropic, Google, and more
   </Card>
-  <Card title="React Setup" href="/docs/frameworks/react" icon="⚛️">
+  <Card title="React Setup" href="/docs/quickstart" icon={<Code className="size-full" />}>
     Quick start with React hooks
   </Card>
-  <Card title="Smart Tools" href="/docs/features/smart-tools" icon="🛠️">
+  <Card title="Smart Tools" href="/docs/tools" icon={<Wrench className="size-full" />}>
     Generative UI and tool execution
   </Card>
 </Cards>

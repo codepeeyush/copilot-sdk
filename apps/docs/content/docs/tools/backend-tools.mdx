@@ -5,12 +5,7 @@ icon: Server
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
-
-<Callout type="warn">
-**Coming Soon.** Backend tools documentation is under active development.
-</Callout>
-
-# Backend Tools
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
 Execute tools securely on your backend with access to databases, APIs, and secrets.
 
@@ -31,4 +26,296 @@ Backend tools are perfect for:
 - External API integrations with secret keys
 - File operations and data processing
 
-Detailed documentation coming soon.
+---
+
+## Basic Usage
+
+Define tools in your API route using the `tool()` helper:
+
+```ts title="app/api/chat/route.ts"
+import { streamText, tool } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+import { z } from 'zod';
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = await streamText({
+    model: openai('gpt-4o'),
+    system: 'You are a helpful assistant.',
+    messages,
+    tools: {
+      searchProducts: tool({
+        description: 'Search the product database',
+        parameters: z.object({
+          query: z.string().describe('Search query'),
+          limit: z.number().optional().default(10),
+        }),
+        execute: async ({ query, limit }) => {
+          const results = await db.products.search(query, limit);
+          return results;
+        },
+      }),
+    },
+    maxSteps: 5,
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+---
+
+## Tool Structure
+
+```ts
+tool({
+  // Required: Tell the AI what this tool does
+  description: 'Description of what the tool does',
+
+  // Required: Zod schema for parameters
+  parameters: z.object({
+    param1: z.string().describe('Description for AI'),
+    param2: z.number().optional(),
+  }),
+
+  // Required: Function to execute
+  execute: async (params, context) => {
+    // params is typed from your Zod schema
+    // context provides { toolCallId, abortSignal, messages }
+    return { result: 'data' };
+  },
+})
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `description` | Yes | What the tool does (AI reads this) |
+| `parameters` | Yes | Zod schema for inputs |
+| `execute` | Yes | Async function that runs on server |
+
+---
+
+## Tool Context
+
+The execute function receives a context object with useful information:
+
+```ts
+execute: async (params, context) => {
+  // Unique ID for this tool call
+  console.log('Tool call ID:', context.toolCallId);
+
+  // Check for cancellation
+  if (context.abortSignal?.aborted) {
+    throw new Error('Request cancelled');
+  }
+
+  // Access conversation history
+  console.log('Messages:', context.messages);
+
+  return { result: 'data' };
+}
+```
+
+---
+
+## Multiple Tools
+
+Pass multiple tools to let the AI choose:
+
+```ts
+tools: {
+  queryProducts: tool({
+    description: 'Search for products in the database',
+    parameters: z.object({
+      query: z.string(),
+      category: z.enum(['electronics', 'clothing', 'home']).optional(),
+    }),
+    execute: async ({ query, category }) => {
+      return await db.products.search({ query, category });
+    },
+  }),
+
+  createOrder: tool({
+    description: 'Create a new order for a product',
+    parameters: z.object({
+      productId: z.string(),
+      quantity: z.number().default(1),
+    }),
+    execute: async ({ productId, quantity }) => {
+      return await db.orders.create({ productId, quantity });
+    },
+  }),
+
+  sendEmail: tool({
+    description: 'Send an email notification',
+    parameters: z.object({
+      to: z.string().email(),
+      subject: z.string(),
+      body: z.string(),
+    }),
+    execute: async ({ to, subject, body }) => {
+      await emailService.send({ to, subject, body });
+      return { sent: true };
+    },
+  }),
+},
+maxSteps: 10,
+```
+
+---
+
+## Database Integration
+
+```ts
+import { db } from '@/lib/db';
+
+const dbTools = {
+  queryUsers: tool({
+    description: 'Query users from the database',
+    parameters: z.object({
+      filter: z.object({
+        email: z.string().optional(),
+        role: z.enum(['admin', 'user']).optional(),
+      }).optional(),
+      limit: z.number().default(10),
+    }),
+    execute: async ({ filter, limit }) => {
+      const users = await db.user.findMany({
+        where: filter,
+        take: limit,
+        select: { id: true, email: true, name: true, role: true },
+      });
+      return users;
+    },
+  }),
+
+  updateUser: tool({
+    description: 'Update a user in the database',
+    parameters: z.object({
+      userId: z.string(),
+      data: z.object({
+        name: z.string().optional(),
+        role: z.enum(['admin', 'user']).optional(),
+      }),
+    }),
+    execute: async ({ userId, data }) => {
+      const user = await db.user.update({
+        where: { id: userId },
+        data,
+      });
+      return { updated: true, user };
+    },
+  }),
+};
+```
+
+---
+
+## API Integration
+
+```ts
+const apiTools = {
+  getWeather: tool({
+    description: 'Get current weather for a city',
+    parameters: z.object({
+      city: z.string().describe('City name'),
+    }),
+    execute: async ({ city }) => {
+      const response = await fetch(
+        `https://api.weather.com/v1/current?city=${city}&key=${process.env.WEATHER_API_KEY}`
+      );
+      return response.json();
+    },
+  }),
+
+  createPayment: tool({
+    description: 'Process a payment',
+    parameters: z.object({
+      amount: z.number(),
+      currency: z.enum(['usd', 'eur', 'gbp']).default('usd'),
+    }),
+    execute: async ({ amount, currency }) => {
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const intent = await stripe.paymentIntents.create({
+        amount: amount * 100,
+        currency,
+      });
+      return { clientSecret: intent.client_secret };
+    },
+  }),
+};
+```
+
+<Callout type="info">
+Backend tools have full access to environment variables and secrets. Never expose sensitive data in tool responses.
+</Callout>
+
+---
+
+## Error Handling
+
+Errors in tools are caught and passed back to the AI:
+
+```ts
+execute: async ({ userId }) => {
+  try {
+    const user = await db.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return { error: 'User not found', userId };
+    }
+
+    return { success: true, user };
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : 'Database error',
+    };
+  }
+}
+```
+
+The AI will see the error and can inform the user or try a different approach.
+
+---
+
+## AI Response Control
+
+Control how the AI responds after tool execution:
+
+```ts
+execute: async ({ query }) => {
+  const results = await db.products.search(query);
+
+  return {
+    data: results,
+    _aiResponseMode: 'brief',     // 'verbose' | 'brief' | 'silent'
+    _aiContext: `Found ${results.length} products`,
+  };
+}
+```
+
+| Mode | Behavior |
+|------|----------|
+| `verbose` | AI explains results in detail |
+| `brief` | AI gives short summary |
+| `silent` | No AI response, just show tool result |
+
+---
+
+## Best Practices
+
+1. **Clear descriptions** - AI uses this to decide when to call the tool
+2. **Validate with Zod** - Type safety and clear parameter documentation
+3. **Return structured data** - AI understands JSON better than strings
+4. **Handle errors gracefully** - Return error info instead of throwing
+5. **Limit data exposure** - Only return what the AI needs
+6. **Use environment variables** - Keep secrets in `.env`, never hardcode
+
+---
+
+## Next Steps
+
+- [Frontend Tools](/docs/tools/frontend-tools) - Client-side tools
+- [Agentic Loop](/docs/tools/agentic-loop) - Multi-step execution
+- [Server Setup](/docs/server) - Configure your backend

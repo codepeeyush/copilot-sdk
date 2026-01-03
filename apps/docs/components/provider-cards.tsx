@@ -94,35 +94,6 @@ const providers: ProviderCardData[] = [
       "fast-inference",
     ],
   },
-  {
-    id: "mistral",
-    name: "Mistral AI",
-    href: "/docs/providers/mistral",
-    features: [
-      "image-input",
-      "object-generation",
-      "tool-usage",
-      "tool-streaming",
-    ],
-  },
-  {
-    id: "azure",
-    name: "Azure OpenAI",
-    href: "/docs/providers/azure",
-    features: [
-      "image-input",
-      "image-generation",
-      "object-generation",
-      "tool-usage",
-      "tool-streaming",
-    ],
-  },
-  {
-    id: "ollama",
-    name: "Ollama",
-    href: "/docs/providers/ollama",
-    features: ["image-input", "object-generation", "tool-usage", "local"],
-  },
 ];
 
 function FeatureBadge({ feature }: { feature: Feature }) {

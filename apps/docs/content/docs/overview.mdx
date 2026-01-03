@@ -7,30 +7,13 @@ icon: Robot
 import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
 
-# Copilot Overview
-
 Copilot SDK lets you add AI chat to any React app. Tools execute on the frontend, giving the AI real capabilities in your app.
 
 ---
 
 ## How It Works
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Your App                                                       │
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  CopilotProvider                                         │   │
-│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │   │
-│  │  │  CopilotChat │  │    Tools     │  │   Context    │   │   │
-│  │  │              │  │  (Frontend)  │  │   (State)    │   │   │
-│  │  └──────────────┘  └──────────────┘  └──────────────┘   │   │
-│  └─────────────────────────────────────────────────────────┘   │
-│                              ↕                                  │
-│                       /api/chat (Backend)                       │
-│                              ↕                                  │
-│                      LLM Provider (OpenAI, etc)                 │
-└─────────────────────────────────────────────────────────────────┘
-```
+<ArchitectureDiagram />
 
 ---
 
@@ -44,7 +27,7 @@ Copilot SDK lets you add AI chat to any React app. Tools execute on the frontend
     Give the AI abilities - search, navigate, fetch data, show UI.
   </Card>
   <Card title="Providers" href="/docs/providers">
-    Use OpenAI, Anthropic, Google, xAI, or run locally with Ollama.
+    Use OpenAI, Anthropic, Google, xAI, and more.
   </Card>
 </Cards>
 
@@ -99,7 +82,7 @@ AI calls `search_products({ query: "wireless headphones" })` → Shows results.
 | [**Context Awareness**](/docs/context-awareness) | AI understands your app state |
 | [**Agentic Loop**](/docs/agentic-loop) | Multi-step reasoning and tool chains |
 | [**Multimodal**](/docs/multimodal) | Images, PDFs, and files in chat |
-| [**7+ Providers**](/docs/providers) | OpenAI, Anthropic, Google, xAI, Ollama... |
+| [**4+ Providers**](/docs/providers) | OpenAI, Anthropic, Google, xAI... |
 | [**Server Actions**](/docs/runtime/server-actions) | Secure backend tool execution |
 | [**Knowledge Base**](/docs/runtime/knowledge-base) | RAG with your documents |
 

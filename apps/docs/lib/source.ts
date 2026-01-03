@@ -38,6 +38,8 @@ import {
   NotebookIcon,
   RocketIcon,
   MessageQuestionIcon,
+  AiChip1,
+  Grid1,
 } from "@/components/icons";
 
 const icons: Record<string, React.ComponentType> = {
@@ -75,6 +77,8 @@ const icons: Record<string, React.ComponentType> = {
   Notebook: NotebookIcon,
   RocketCustom: RocketIcon,
   MessageQuestion: MessageQuestionIcon,
+  AiChip1: AiChip1,
+  Grid1: Grid1,
 };
 
 export const source = loader({
