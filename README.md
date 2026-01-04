@@ -10,10 +10,6 @@ Production-ready AI Copilots for any product. Connect any LLM, deploy on your in
 [![npm downloads](https://img.shields.io/npm/dm/@yourgpt/copilot-sdk.svg?style=flat-square)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
-![copilot-sdk](https://img.shields.io/badge/copilot--sdk-black?style=flat-square)
-![ai-copilot](https://img.shields.io/badge/ai--copilot-black?style=flat-square)
-![copilotkit](https://img.shields.io/badge/copilotkit-black?style=flat-square)
-
 [Documentation](https://copilot-sdk.yourgpt.ai)
 
 <br />
