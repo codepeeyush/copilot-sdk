@@ -1,5 +1,6 @@
 {
-  "title": "Documentation",
+  "title": "Build AI Copilots for Your Product",
+  "description": "Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data. Built for speed and control.",
   "pages": [
     "---Getting Started---",
     "index",
