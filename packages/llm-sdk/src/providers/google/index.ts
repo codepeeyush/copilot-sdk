@@ -1,8 +1,8 @@
 /**
  * Google Provider
  *
- * Wraps the GoogleAdapter with provider interface.
- * Adds model capabilities and metadata for multimodal support.
+ * Modern pattern: google('gemini-2.0-flash') returns a LanguageModel
+ * Legacy pattern: createGoogle({ apiKey }) returns an AIProvider
  *
  * Features:
  * - Vision (images)
@@ -13,6 +13,11 @@
  * - Massive context windows (up to 2M tokens)
  */
 
+// NEW: Modern pattern - google() function
+export { google, createGoogle as createGoogleModel } from "./provider";
+export type { GoogleProviderOptions } from "./provider";
+
+// LEGACY: Keep existing createGoogle for backward compatibility
 import { createGoogleAdapter } from "../../adapters/google";
 import type {
   AIProvider,

@@ -1,0 +1,226 @@
+---
+title: generateText()
+description: Generate complete text responses
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Generate complete text responses in a single call. Supports tools and multi-step reasoning.
+
+```ts
+import { generateText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Write a haiku about coding.',
+});
+
+console.log(result.text);
+```
+
+---
+
+## Parameters
+
+```ts
+const result = await generateText({
+  // Required: Language model to use
+  model: openai('gpt-4o'),
+
+  // Content (at least one required)
+  prompt: 'Hello',              // Simple prompt
+  messages: [...],              // Chat history
+  system: 'Be concise.',        // System instruction
+
+  // Optional: Tools for function calling
+  tools: { ... },
+  maxSteps: 5,                  // Max LLM calls for tool loops
+
+  // Optional: Generation settings
+  temperature: 0.7,
+  maxTokens: 4096,
+  signal: abortController.signal,
+});
+```
+
+---
+
+## Response Object
+
+```ts
+const result = await generateText({ ... });
+
+result.text           // string - Generated text
+result.usage          // TokenUsage - { promptTokens, completionTokens, totalTokens }
+result.finishReason   // 'stop' | 'length' | 'tool-calls'
+result.toolCalls      // ToolCall[] - All tool calls made
+result.toolResults    // ToolResult[] - All tool results
+result.steps          // GenerateStep[] - Step-by-step breakdown
+result.response       // { messages } - Full message history
+```
+
+---
+
+## API Route Examples
+
+<Tabs items={['Next.js', 'Node.js']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/generate/route.ts"
+    import { generateText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { prompt } = await req.json();
+
+      const result = await generateText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        prompt,
+      });
+
+      return Response.json({
+        text: result.text,
+        usage: result.usage,
+      });
+    }
+    ```
+  </Tab>
+  <Tab value="Node.js">
+    ```ts title="server.ts"
+    import { createServer } from 'http';
+    import { generateText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    createServer(async (req, res) => {
+      const body = await getBody(req);
+      const { prompt } = JSON.parse(body);
+
+      const result = await generateText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        prompt,
+      });
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        text: result.text,
+        usage: result.usage,
+      }));
+    }).listen(3001);
+
+    function getBody(req: any): Promise<string> {
+      return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk: any) => data += chunk);
+        req.on('end', () => resolve(data));
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## With Tools
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'What is 25 * 48?',
+  tools: {
+    calculate: tool({
+      description: 'Evaluate a math expression',
+      parameters: z.object({
+        expression: z.string().describe('Math expression to evaluate'),
+      }),
+      execute: async ({ expression }) => {
+        return { result: eval(expression) };
+      },
+    }),
+  },
+  maxSteps: 5,
+});
+
+console.log(result.text);
+// "The result of 25 * 48 is 1200."
+
+console.log(result.toolCalls);
+// [{ id: 'call_123', name: 'calculate', args: { expression: '25 * 48' } }]
+
+console.log(result.toolResults);
+// [{ toolCallId: 'call_123', result: { result: 1200 } }]
+```
+
+---
+
+## Multi-step Agentic Workflows
+
+Set `maxSteps` to allow multiple tool calls in sequence:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Research the weather in Tokyo, Paris, and London, then tell me which is warmest.',
+  tools: {
+    getWeather: tool({
+      description: 'Get weather for a city',
+      parameters: z.object({ city: z.string() }),
+      execute: async ({ city }) => fetchWeatherAPI(city),
+    }),
+  },
+  maxSteps: 10, // Allow up to 10 LLM calls
+});
+
+// The AI will:
+// 1. Call getWeather for Tokyo
+// 2. Call getWeather for Paris
+// 3. Call getWeather for London
+// 4. Compare and respond
+
+console.log(result.steps.length); // 4 steps
+```
+
+<Callout type="warn">
+**maxSteps** limits total LLM calls to prevent infinite loops. Set it high enough for your use case.
+</Callout>
+
+---
+
+## Accessing Steps
+
+```ts
+for (const step of result.steps) {
+  console.log('Step text:', step.text);
+  console.log('Tool calls:', step.toolCalls);
+  console.log('Tool results:', step.toolResults);
+  console.log('Finish reason:', step.finishReason);
+  console.log('Usage:', step.usage);
+}
+```
+
+---
+
+## When to Use generateText vs streamText
+
+| Use Case | Function |
+|----------|----------|
+| Chat interfaces | `streamText()` |
+| Real-time responses | `streamText()` |
+| Background processing | `generateText()` |
+| Batch operations | `generateText()` |
+| Simple API endpoints | `generateText()` |
+| When you need full response at once | `generateText()` |
+
+---
+
+## Next Steps
+
+- [streamText()](/docs/llm-sdk/stream-text) - Stream responses in real-time
+- [tool()](/docs/llm-sdk/tools) - Define type-safe tools
+- [Providers](/docs/providers) - Configure LLM providers

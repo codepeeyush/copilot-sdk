@@ -1,0 +1,361 @@
+---
+title: tool()
+description: Define type-safe tools with Zod schemas
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Define type-safe tools that AI models can call. Tools let your AI application interact with external systems, APIs, databases, and more.
+
+---
+
+## Basic Usage
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+import { z } from 'zod';
+
+const weatherTool = tool({
+  description: 'Get current weather for a city',
+  parameters: z.object({
+    city: z.string().describe('City name'),
+  }),
+  execute: async ({ city }) => {
+    // Call your weather API
+    return { temperature: 22, condition: 'sunny' };
+  },
+});
+
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'What is the weather in Tokyo?',
+  tools: { getWeather: weatherTool },
+});
+```
+
+---
+
+## Tool Definition
+
+```ts
+const myTool = tool({
+  // Required: Tell the AI what this tool does
+  description: 'Description of what the tool does',
+
+  // Required: Zod schema for parameters
+  parameters: z.object({
+    param1: z.string().describe('Description for AI'),
+    param2: z.number().optional(),
+  }),
+
+  // Required: Function to execute
+  execute: async (params, context) => {
+    // params is fully typed from your Zod schema
+    // context provides { toolCallId, abortSignal }
+    return { result: 'data' };
+  },
+});
+```
+
+---
+
+## Zod Schema Examples
+
+### Basic Types
+
+```ts
+const myTool = tool({
+  description: 'Example tool',
+  parameters: z.object({
+    // String
+    name: z.string(),
+
+    // Number
+    age: z.number(),
+
+    // Boolean
+    active: z.boolean(),
+
+    // Optional field
+    nickname: z.string().optional(),
+
+    // With default
+    count: z.number().default(10),
+
+    // Enum
+    status: z.enum(['pending', 'active', 'done']),
+
+    // Array
+    tags: z.array(z.string()),
+  }),
+  execute: async (params) => {
+    // params is fully typed!
+    return { success: true };
+  },
+});
+```
+
+### Descriptions for AI
+
+Use `.describe()` to help the AI understand parameters:
+
+```ts
+parameters: z.object({
+  city: z.string().describe('The city name, e.g., "Tokyo" or "New York"'),
+  unit: z.enum(['celsius', 'fahrenheit']).describe('Temperature unit').default('celsius'),
+})
+```
+
+<Callout type="info">
+Good descriptions help the AI provide correct arguments. Be specific about expected formats.
+</Callout>
+
+---
+
+## Multiple Tools
+
+Pass multiple tools to let the AI choose:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Book a flight from NYC to Tokyo for next Monday',
+  tools: {
+    searchFlights: tool({
+      description: 'Search for available flights',
+      parameters: z.object({
+        from: z.string(),
+        to: z.string(),
+        date: z.string(),
+      }),
+      execute: async ({ from, to, date }) => {
+        return await flightAPI.search(from, to, date);
+      },
+    }),
+    bookFlight: tool({
+      description: 'Book a specific flight',
+      parameters: z.object({
+        flightId: z.string(),
+        passengerName: z.string(),
+      }),
+      execute: async ({ flightId, passengerName }) => {
+        return await flightAPI.book(flightId, passengerName);
+      },
+    }),
+    getFlightStatus: tool({
+      description: 'Check flight status',
+      parameters: z.object({
+        flightNumber: z.string(),
+      }),
+      execute: async ({ flightNumber }) => {
+        return await flightAPI.status(flightNumber);
+      },
+    }),
+  },
+  maxSteps: 5,
+});
+```
+
+---
+
+## Tool Context
+
+The execute function receives a context object:
+
+```ts
+const myTool = tool({
+  description: 'My tool',
+  parameters: z.object({ query: z.string() }),
+  execute: async (params, context) => {
+    // Unique ID for this tool call
+    console.log('Tool call ID:', context.toolCallId);
+
+    // Check for cancellation
+    if (context.abortSignal?.aborted) {
+      throw new Error('Cancelled');
+    }
+
+    return { result: 'data' };
+  },
+});
+```
+
+---
+
+## Agentic Workflows (maxSteps)
+
+For complex tasks requiring multiple tool calls:
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'Research the weather in 5 major cities and summarize',
+  tools: {
+    getWeather: tool({
+      description: 'Get weather for a city',
+      parameters: z.object({ city: z.string() }),
+      execute: async ({ city }) => fetchWeather(city),
+    }),
+  },
+  maxSteps: 10, // Allow up to 10 LLM calls
+});
+
+// The AI will call getWeather multiple times, then summarize
+```
+
+<Callout type="warn">
+**maxSteps** limits the total number of LLM calls. Set it high enough for your use case, but not unlimited to prevent runaway loops.
+</Callout>
+
+---
+
+## Accessing Tool Results
+
+```ts
+const result = await generateText({
+  model: openai('gpt-4o'),
+  prompt: 'What is 25 * 48?',
+  tools: { calculate: calculateTool },
+});
+
+// All tool calls made
+console.log(result.toolCalls);
+// [{ id: 'call_123', name: 'calculate', args: { expression: '25 * 48' } }]
+
+// All tool results
+console.log(result.toolResults);
+// [{ toolCallId: 'call_123', result: { answer: 1200 } }]
+
+// Step-by-step breakdown
+for (const step of result.steps) {
+  console.log('Text:', step.text);
+  console.log('Tool calls:', step.toolCalls);
+  console.log('Tool results:', step.toolResults);
+}
+```
+
+---
+
+## With Streaming
+
+Tools work with `streamText()` too:
+
+```ts
+const result = await streamText({
+  model: openai('gpt-4o'),
+  prompt: 'What is the weather?',
+  tools: { getWeather: weatherTool },
+  maxSteps: 5,
+});
+
+for await (const part of result.fullStream) {
+  if (part.type === 'tool-call-complete') {
+    console.log('Tool called:', part.toolCall.name, part.toolCall.args);
+  }
+  if (part.type === 'tool-result') {
+    console.log('Tool result:', part.result);
+  }
+  if (part.type === 'text-delta') {
+    process.stdout.write(part.text);
+  }
+}
+```
+
+---
+
+## Error Handling
+
+Errors in tools are caught and passed back to the AI:
+
+```ts
+const myTool = tool({
+  description: 'Risky operation',
+  parameters: z.object({ id: z.string() }),
+  execute: async ({ id }) => {
+    const item = await db.find(id);
+    if (!item) {
+      throw new Error(`Item ${id} not found`);
+    }
+    return item;
+  },
+});
+```
+
+The AI will see the error and can try again or inform the user.
+
+---
+
+## Real-World Examples
+
+### Database Query Tool
+
+```ts
+const queryDatabase = tool({
+  description: 'Query the product database',
+  parameters: z.object({
+    query: z.string().describe('Search query'),
+    limit: z.number().optional().default(10),
+    category: z.enum(['electronics', 'clothing', 'home']).optional(),
+  }),
+  execute: async ({ query, limit, category }) => {
+    const results = await db.products.search({
+      query,
+      limit,
+      ...(category && { category }),
+    });
+    return results;
+  },
+});
+```
+
+### API Integration Tool
+
+```ts
+const sendEmail = tool({
+  description: 'Send an email to a recipient',
+  parameters: z.object({
+    to: z.string().email().describe('Recipient email address'),
+    subject: z.string().describe('Email subject line'),
+    body: z.string().describe('Email body content'),
+  }),
+  execute: async ({ to, subject, body }) => {
+    await emailService.send({ to, subject, body });
+    return { sent: true, to };
+  },
+});
+```
+
+### Web Scraping Tool
+
+```ts
+const scrapeWebpage = tool({
+  description: 'Extract content from a webpage',
+  parameters: z.object({
+    url: z.string().url().describe('URL to scrape'),
+  }),
+  execute: async ({ url }) => {
+    const response = await fetch(url);
+    const html = await response.text();
+    // Parse and return relevant content
+    return { title: '...', content: '...' };
+  },
+});
+```
+
+---
+
+## TypeScript Types
+
+```ts
+import type { Tool, ToolContext, ToolCall, ToolResult } from '@yourgpt/llm-sdk';
+```
+
+---
+
+## Next Steps
+
+- [generateText()](/docs/llm-sdk/generate-text) - Use tools with text generation
+- [streamText()](/docs/llm-sdk/stream-text) - Use tools with streaming
+- [Agentic Loop](/docs/tools/agentic-loop) - Build complex AI agents

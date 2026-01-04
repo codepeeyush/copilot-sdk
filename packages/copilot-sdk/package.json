@@ -1,6 +1,6 @@
 {
   "name": "@yourgpt/copilot-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Build AI copilots with app context awareness",
   "type": "module",
   "exports": {
@@ -81,15 +81,16 @@
     "directory": "packages/copilot-sdk"
   },
   "keywords": [
+    "copilot-sdk",
+    "ai-copilot",
+    "copilot-ai",
+    "copilotkit",
+    "yourgpt-copilot-sdk",
+    "ai-copilot-sdk",
+    "copilot-plugin",
     "yourgpt",
-    "copilot",
     "ai",
-    "chatbot",
-    "react",
-    "hooks",
-    "context-aware",
-    "openai",
-    "anthropic"
+    "copilot"
   ],
   "sideEffects": [
     "*.css"

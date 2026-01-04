@@ -40,7 +40,6 @@ export type {
   GoogleProviderConfig,
   XAIProviderConfig,
   AzureProviderConfig,
-  GroqProviderConfig,
   OllamaProviderConfig,
   // Google-specific
   GoogleSafetySetting,
@@ -73,9 +72,6 @@ export { createOpenAI, createOpenAIProvider } from "./openai/index";
 
 // Anthropic
 export { createAnthropic, createAnthropicProvider } from "./anthropic/index";
-
-// Groq
-export { createGroq, createGroqProvider } from "./groq/index";
 
 // Ollama
 export { createOllama, createOllamaProvider } from "./ollama/index";
@@ -128,7 +124,6 @@ export type {
 import { registerProvider } from "./registry";
 import { createOpenAI } from "./openai/index";
 import { createAnthropic } from "./anthropic/index";
-import { createGroq } from "./groq/index";
 import { createOllama } from "./ollama/index";
 import { createGoogle } from "./google/index";
 import { createXAI } from "./xai/index";
@@ -137,7 +132,6 @@ import { createAzure } from "./azure/index";
 // Register with default configs (API keys from env)
 registerProvider("openai", (config) => createOpenAI(config as any));
 registerProvider("anthropic", (config) => createAnthropic(config as any));
-registerProvider("groq", (config) => createGroq(config as any));
 registerProvider("ollama", (config) => createOllama(config as any));
 registerProvider("google", (config) => createGoogle(config as any));
 registerProvider("xai", (config) => createXAI(config as any));

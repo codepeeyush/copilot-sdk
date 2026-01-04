@@ -26,13 +26,19 @@ export default async function Page(props: PageProps) {
     <DocsPage
       toc={page.data.toc}
       full={page.data.full}
-      tableOfContent={{
-        style: "clerk",
-        footer: <TocFooter />,
-      }}
+      footer={page.data.footer === false ? { enabled: false } : undefined}
+      tableOfContent={
+        page.data.hideToc
+          ? { enabled: false }
+          : { style: "clerk", footer: <TocFooter /> }
+      }
     >
-      <DocsTitle>{page.data.title}</DocsTitle>
-      <DocsDescription>{page.data.description}</DocsDescription>
+      {!page.data.hideHeader && (
+        <>
+          <DocsTitle>{page.data.title}</DocsTitle>
+          <DocsDescription>{page.data.description}</DocsDescription>
+        </>
+      )}
       <DocsBody>
         <MDX
           components={getMDXComponents({

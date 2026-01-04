@@ -1,0 +1,357 @@
+---
+title: Server Setup
+description: Configure your backend API for the Copilot SDK
+icon: Server
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Set up your backend API to handle chat requests from the Copilot SDK.
+
+---
+
+## Overview
+
+The Copilot SDK frontend connects to your backend API endpoint. Your server:
+
+1. Receives chat messages from the frontend
+2. Calls the LLM with your configuration
+3. Streams the response back to the client
+
+<ServerFlowDiagram />
+
+---
+
+## REST API Contract
+
+### Request
+
+**Endpoint:** `POST /api/chat`
+
+```json
+{
+  "messages": [
+    { "role": "user", "content": "Hello!" }
+  ]
+}
+```
+
+### Response
+
+The SDK supports two response formats:
+
+<Tabs items={['Text Stream', 'Data Stream']}>
+  <Tab value="Text Stream">
+    Simple text streaming for basic chat (no tools).
+
+    **Content-Type:** `text/plain; charset=utf-8`
+
+    ```
+    Hello! How can I help you today?
+    ```
+
+    Use `result.toTextStreamResponse()` to return this format.
+  </Tab>
+  <Tab value="Data Stream">
+    SSE format with structured events. Use when you need tools, usage info, or step-by-step data.
+
+    **Content-Type:** `text/event-stream`
+
+    ```
+    data: {"type":"text-delta","text":"Hello"}
+    data: {"type":"text-delta","text":"!"}
+    data: {"type":"finish","finishReason":"stop","usage":{"promptTokens":10,"completionTokens":5}}
+    data: [DONE]
+    ```
+
+    Use `result.toDataStreamResponse()` to return this format.
+  </Tab>
+</Tabs>
+
+---
+
+## Framework Examples
+
+<Tabs items={['Next.js', 'Node.js']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+  </Tab>
+  <Tab value="Node.js">
+    ```ts title="server.ts"
+    import { createServer } from 'http';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    createServer(async (req, res) => {
+      if (req.method === 'POST' && req.url === '/api/chat') {
+        const body = await getBody(req);
+        const { messages } = JSON.parse(body);
+
+        const result = await streamText({
+          model: openai('gpt-4o'),
+          system: 'You are a helpful assistant.',
+          messages,
+        });
+
+        const response = result.toTextStreamResponse();
+        res.writeHead(200, Object.fromEntries(response.headers));
+
+        const reader = response.body!.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+        res.end();
+      }
+    }).listen(3001);
+
+    function getBody(req: any): Promise<string> {
+      return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk: any) => data += chunk);
+        req.on('end', () => resolve(data));
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## With Tools
+
+Add tools to let the AI call functions on your server:
+
+```ts title="app/api/chat/route.ts"
+import { streamText, tool } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+import { z } from 'zod';
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = await streamText({
+    model: openai('gpt-4o'),
+    system: 'You are a helpful assistant.',
+    messages,
+    tools: {
+      getWeather: tool({
+        description: 'Get current weather for a city',
+        parameters: z.object({
+          city: z.string().describe('City name'),
+        }),
+        execute: async ({ city }) => {
+          const data = await fetchWeatherAPI(city);
+          return { temperature: data.temp, condition: data.condition };
+        },
+      }),
+      searchProducts: tool({
+        description: 'Search the product database',
+        parameters: z.object({
+          query: z.string(),
+          limit: z.number().optional().default(10),
+        }),
+        execute: async ({ query, limit }) => {
+          return await db.products.search(query, limit);
+        },
+      }),
+    },
+    maxSteps: 5,
+  });
+
+  return result.toDataStreamResponse();
+}
+```
+
+<Callout type="info">
+Use `toDataStreamResponse()` when using tools to stream structured events including tool calls and results.
+</Callout>
+
+---
+
+## Environment Variables
+
+Store your API keys in environment variables:
+
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+ANTHROPIC_API_KEY=sk-ant-...
+GOOGLE_AI_API_KEY=...
+```
+
+Access them in your API route:
+
+```ts
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+// API key is read from OPENAI_API_KEY automatically
+const model = openai('gpt-4o');
+
+// Or pass explicitly
+const model = openai('gpt-4o', {
+  apiKey: process.env.OPENAI_API_KEY,
+});
+```
+
+---
+
+## CORS Configuration
+
+For cross-origin requests (e.g., frontend on different port):
+
+<Tabs items={['Next.js', 'Node.js']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    export async function OPTIONS() {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        },
+      });
+    }
+
+    export async function POST(req: Request) {
+      // ... your handler
+
+      const response = result.toTextStreamResponse();
+
+      // Add CORS headers
+      response.headers.set('Access-Control-Allow-Origin', '*');
+
+      return response;
+    }
+    ```
+  </Tab>
+  <Tab value="Node.js">
+    ```ts title="server.ts"
+    createServer(async (req, res) => {
+      // Handle preflight
+      if (req.method === 'OPTIONS') {
+        res.writeHead(204, {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
+        });
+        res.end();
+        return;
+      }
+
+      // Add CORS headers to response
+      res.setHeader('Access-Control-Allow-Origin', '*');
+
+      // ... your handler
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Error Handling
+
+```ts
+export async function POST(req: Request) {
+  try {
+    const { messages } = await req.json();
+
+    const result = await streamText({
+      model: openai('gpt-4o'),
+      messages,
+    });
+
+    return result.toTextStreamResponse();
+  } catch (error) {
+    console.error('Chat error:', error);
+
+    return Response.json(
+      { error: 'Failed to process chat request' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+---
+
+## Request Validation
+
+Validate incoming requests with Zod:
+
+```ts
+import { z } from 'zod';
+
+const ChatRequestSchema = z.object({
+  messages: z.array(z.object({
+    role: z.enum(['user', 'assistant', 'system']),
+    content: z.string(),
+  })),
+});
+
+export async function POST(req: Request) {
+  const body = await req.json();
+
+  const parsed = ChatRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return Response.json(
+      { error: 'Invalid request', details: parsed.error.errors },
+      { status: 400 }
+    );
+  }
+
+  const { messages } = parsed.data;
+  // ... continue with validated data
+}
+```
+
+---
+
+## Connecting Frontend
+
+Point your frontend to your API endpoint:
+
+```tsx title="app/providers.tsx"
+'use client';
+
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      {children}
+    </CopilotProvider>
+  );
+}
+```
+
+For a separate backend server:
+
+```tsx
+<CopilotProvider runtimeUrl="http://localhost:3001/api/chat">
+```
+
+---
+
+## Next Steps
+
+- [LLM SDK](/docs/llm-sdk) - Core text generation functions
+- [Backend Tools](/docs/tools/backend-tools) - Add server-side tools
+- [Providers](/docs/providers) - Configure different LLM providers

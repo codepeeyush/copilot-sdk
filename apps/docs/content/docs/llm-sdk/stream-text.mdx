@@ -1,0 +1,289 @@
+---
+title: streamText()
+description: Stream text responses in real-time
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+Stream text responses in real-time. Returns helpers to consume the stream or convert it to HTTP responses.
+
+```ts
+import { streamText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+const result = await streamText({
+  model: openai('gpt-4o'),
+  prompt: 'Tell me a story.',
+});
+
+// Option 1: Iterate over text chunks
+for await (const chunk of result.textStream) {
+  process.stdout.write(chunk);
+}
+
+// Option 2: Get complete text (waits for stream to finish)
+const text = await result.text;
+
+// Option 3: Return as HTTP Response
+return result.toTextStreamResponse();
+```
+
+---
+
+## Parameters
+
+```ts
+const result = await streamText({
+  // Required: Language model to use
+  model: openai('gpt-4o'),
+
+  // Content (at least one required)
+  prompt: 'Hello',              // Simple prompt
+  messages: [...],              // Chat history
+  system: 'Be concise.',        // System instruction
+
+  // Optional: Tools for function calling
+  tools: { ... },
+  maxSteps: 5,                  // Max LLM calls for tool loops
+
+  // Optional: Generation settings
+  temperature: 0.7,
+  maxTokens: 4096,
+});
+```
+
+---
+
+## Response Object
+
+```ts
+const result = await streamText({ ... });
+
+// Streams
+result.textStream     // AsyncIterable<string> - text only
+result.fullStream     // AsyncIterable<StreamPart> - all events
+
+// Promises (resolve when stream completes)
+result.text           // Promise<string> - full text
+result.usage          // Promise<TokenUsage> - token counts
+result.finishReason   // Promise<FinishReason>
+
+// HTTP Response helpers
+result.toTextStreamResponse()   // text/plain stream
+result.toDataStreamResponse()   // SSE with structured events
+```
+
+---
+
+## API Route Examples
+
+<Tabs items={['Next.js', 'Node.js']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        system: 'You are helpful.',
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+  </Tab>
+  <Tab value="Node.js">
+    ```ts title="server.ts"
+    import { createServer } from 'http';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    createServer(async (req, res) => {
+      const body = await getBody(req);
+      const { messages } = JSON.parse(body);
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        system: 'You are helpful.',
+        messages,
+      });
+
+      const response = result.toTextStreamResponse();
+      res.writeHead(200, Object.fromEntries(response.headers));
+
+      const reader = response.body!.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        res.write(value);
+      }
+      res.end();
+    }).listen(3001);
+
+    function getBody(req: any): Promise<string> {
+      return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk: any) => data += chunk);
+        req.on('end', () => resolve(data));
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Response Types
+
+### Text Stream Response
+
+Simple text streaming. Best for basic chat without tools.
+
+```ts
+return result.toTextStreamResponse();
+```
+
+```
+Content-Type: text/plain; charset=utf-8
+
+Hello! How can I help you?
+```
+
+### Data Stream Response
+
+SSE format with structured events. Use when you need tool calls, usage info, or step-by-step data.
+
+```ts
+return result.toDataStreamResponse();
+```
+
+```
+Content-Type: text/event-stream
+
+data: {"type":"text-delta","text":"Hello"}
+data: {"type":"text-delta","text":"!"}
+data: {"type":"tool-call-complete","toolCall":{...}}
+data: {"type":"tool-result","toolCallId":"...","result":{...}}
+data: {"type":"finish","finishReason":"stop","usage":{...}}
+data: [DONE]
+```
+
+---
+
+## With Tools
+
+```ts
+import { streamText, tool } from '@yourgpt/llm-sdk';
+import { z } from 'zod';
+
+const result = await streamText({
+  model: openai('gpt-4o'),
+  prompt: 'What is the weather in Tokyo?',
+  tools: {
+    getWeather: tool({
+      description: 'Get weather for a city',
+      parameters: z.object({ city: z.string() }),
+      execute: async ({ city }) => ({ temp: 22, condition: 'sunny' }),
+    }),
+  },
+  maxSteps: 5,
+});
+
+return result.toDataStreamResponse();
+```
+
+<Callout type="info">
+Use `toDataStreamResponse()` with tools to receive tool call and result events.
+</Callout>
+
+---
+
+## Consuming the Full Stream
+
+For custom handling of all events:
+
+```ts
+for await (const part of result.fullStream) {
+  switch (part.type) {
+    case 'text-delta':
+      console.log('Text:', part.text);
+      break;
+    case 'tool-call-complete':
+      console.log('Tool called:', part.toolCall.name);
+      break;
+    case 'tool-result':
+      console.log('Tool result:', part.result);
+      break;
+    case 'step-start':
+      console.log('Starting step:', part.step);
+      break;
+    case 'step-finish':
+      console.log('Step done:', part.finishReason);
+      break;
+    case 'finish':
+      console.log('Complete:', part.usage);
+      break;
+    case 'error':
+      console.error('Error:', part.error);
+      break;
+  }
+}
+```
+
+---
+
+## Stream Part Types
+
+| Type | Description | Properties |
+|------|-------------|------------|
+| `text-delta` | Text chunk | `text: string` |
+| `tool-call-complete` | Tool was called | `toolCall: { id, name, args }` |
+| `tool-result` | Tool returned | `toolCallId, result` |
+| `step-start` | New step began | `step: number` |
+| `step-finish` | Step completed | `step, finishReason` |
+| `finish` | Stream done | `finishReason, usage` |
+| `error` | Error occurred | `error: Error` |
+
+---
+
+## Custom Response Headers
+
+```ts
+return result.toTextStreamResponse({
+  status: 200,
+  headers: {
+    'X-Custom-Header': 'value',
+  },
+});
+```
+
+---
+
+## Abort Handling
+
+```ts
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = await streamText({
+    model: openai('gpt-4o'),
+    messages,
+    signal: req.signal, // Pass abort signal
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+---
+
+## Next Steps
+
+- [generateText()](/docs/llm-sdk/generate-text) - Non-streaming generation
+- [tool()](/docs/llm-sdk/tools) - Define type-safe tools
+- [Providers](/docs/providers) - Configure LLM providers

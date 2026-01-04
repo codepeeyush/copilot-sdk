@@ -9,21 +9,10 @@ import { OpenaiDark } from "@/components/ui/svgs/openaiDark";
 import { AnthropicBlack } from "@/components/ui/svgs/anthropicBlack";
 import { AnthropicWhite } from "@/components/ui/svgs/anthropicWhite";
 import { Gemini } from "@/components/ui/svgs/gemini";
-import { MistralAiLogo } from "@/components/ui/svgs/mistralAiLogo";
-import { Groq } from "@/components/ui/svgs/groq";
-import { Azure } from "@/components/ui/svgs/azure";
-import { OllamaLight } from "@/components/ui/svgs/ollamaLight";
-import { OllamaDark } from "@/components/ui/svgs/ollamaDark";
+import { XaiLight } from "@/components/ui/svgs/xaiLight";
+import { XaiDark } from "@/components/ui/svgs/xaiDark";
 
-export type Provider =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "gemini"
-  | "groq"
-  | "mistral"
-  | "azure"
-  | "ollama";
+export type Provider = "openai" | "anthropic" | "google" | "gemini" | "xai";
 
 interface ProviderLogoProps extends SVGProps<SVGSVGElement> {
   provider: Provider;
@@ -74,23 +63,14 @@ export function ProviderLogo({
     case "gemini":
       return <Gemini className={baseClass} {...props} />;
 
-    case "mistral":
-      return <MistralAiLogo className={baseClass} {...props} />;
-
-    case "groq":
-      return <Groq className={cn(baseClass, "rounded")} {...props} />;
-
-    case "azure":
-      return <Azure className={baseClass} {...props} />;
-
-    case "ollama":
+    case "xai":
       return (
         <>
-          <OllamaLight className={cn(baseClass, "dark:hidden")} {...props} />
-          <OllamaDark
-            className={cn(baseClass, "hidden dark:block")}
+          <XaiLight
+            className={cn(baseClass, "dark:hidden fill-current")}
             {...props}
           />
+          <XaiDark className={cn(baseClass, "hidden dark:block")} {...props} />
         </>
       );
 
@@ -106,9 +86,6 @@ export {
   AnthropicBlack,
   AnthropicWhite,
   Gemini,
-  MistralAiLogo,
-  Groq,
-  Azure,
-  OllamaLight,
-  OllamaDark,
+  XaiLight,
+  XaiDark,
 };

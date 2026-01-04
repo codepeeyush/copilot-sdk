@@ -1,8 +1,95 @@
 /**
  * @yourgpt/llm-sdk
  *
- * LLM SDK for Copilot - Multi-provider LLM integration
+ * LLM SDK for YourGPT - Multi-provider LLM integration
+ *
+ * Modern usage:
+ * ```ts
+ * import { generateText, streamText, tool } from '@yourgpt/llm-sdk';
+ * import { openai } from '@yourgpt/llm-sdk/openai';
+ *
+ * const result = await generateText({
+ *   model: openai('gpt-4o'),
+ *   prompt: 'Hello!',
+ * });
+ * ```
  */
+
+// ============================================
+// NEW: Core Functions (Modern API)
+// ============================================
+
+export { generateText } from "./core/generate-text";
+export { streamText } from "./core/stream-text";
+export {
+  tool,
+  formatToolsForOpenAI,
+  formatToolsForAnthropic,
+  formatToolsForGoogle,
+} from "./core/tool";
+
+// Core Types
+export type {
+  // Language Model
+  LanguageModel,
+  ModelCapabilities,
+  DoGenerateParams,
+  DoGenerateResult,
+
+  // Messages
+  CoreMessage,
+  SystemMessage,
+  UserMessage,
+  AssistantMessage,
+  ToolMessage,
+  UserContentPart,
+  TextPart,
+  ImagePart,
+  FilePart,
+
+  // Tools
+  Tool,
+  ToolContext,
+  ToolCall,
+  ToolResult,
+
+  // Generation
+  GenerateTextParams,
+  GenerateTextResult,
+  GenerateStep,
+  StreamTextParams,
+  StreamTextResult,
+  StreamPart,
+
+  // Streaming
+  StreamChunk,
+  TextDeltaChunk,
+  ToolCallChunk,
+  ToolResultChunk,
+  FinishChunk,
+  ErrorChunk,
+
+  // Common
+  TokenUsage,
+  FinishReason,
+  ResponseOptions,
+} from "./core/types";
+
+export { DEFAULT_CAPABILITIES } from "./core/types";
+
+// ============================================
+// NEW: Provider Re-exports (for convenience)
+// Users should import from subpaths for tree-shaking
+// ============================================
+
+export { openai } from "./providers/openai/provider";
+export { anthropic } from "./providers/anthropic/provider";
+export { xai } from "./providers/xai/provider";
+export { google } from "./providers/google/provider";
+
+// ============================================
+// LEGACY: Server (still works, but prefer core functions)
+// ============================================
 
 // Server
 export {
@@ -53,10 +140,6 @@ export {
   AnthropicAdapter,
   createAnthropicAdapter,
   type AnthropicAdapterConfig,
-  // Groq
-  GroqAdapter,
-  createGroqAdapter,
-  type GroqAdapterConfig,
   // Ollama
   OllamaAdapter,
   createOllamaAdapter,
@@ -103,7 +186,6 @@ export {
   createOpenAI,
   createAnthropic,
   createGoogle,
-  createGroq,
   createOllama,
   createXAI,
   createAzure,
@@ -125,7 +207,6 @@ export type {
   GoogleProviderConfig,
   XAIProviderConfig,
   AzureProviderConfig,
-  GroqProviderConfig,
   OllamaProviderConfig,
 } from "./providers";
 

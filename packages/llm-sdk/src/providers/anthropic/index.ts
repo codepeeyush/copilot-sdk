@@ -1,10 +1,15 @@
 /**
  * Anthropic Provider
  *
- * Wraps the existing AnthropicAdapter with provider interface.
- * Adds model capabilities and metadata including extended thinking support.
+ * Modern pattern: anthropic('claude-3-5-sonnet') returns a LanguageModel
+ * Legacy pattern: createAnthropic({ apiKey }) returns an AIProvider
  */
 
+// NEW: Modern pattern - anthropic() function
+export { anthropic, createAnthropic as createAnthropicModel } from "./provider";
+export type { AnthropicProviderOptions } from "./provider";
+
+// LEGACY: Keep existing createAnthropic for backward compatibility
 import { createAnthropicAdapter } from "../../adapters/anthropic";
 import type {
   AIProvider,

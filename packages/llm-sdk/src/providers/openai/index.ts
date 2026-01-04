@@ -1,10 +1,15 @@
 /**
  * OpenAI Provider
  *
- * Wraps the existing OpenAIAdapter with provider interface.
- * Adds model capabilities and metadata.
+ * Modern pattern: openai('gpt-4o') returns a LanguageModel
+ * Legacy pattern: createOpenAI({ apiKey }) returns an AIProvider
  */
 
+// NEW: Modern pattern - openai() function
+export { openai, createOpenAI as createOpenAIModel } from "./provider";
+export type { OpenAIProviderOptions } from "./provider";
+
+// LEGACY: Keep existing createOpenAI for backward compatibility
 import { createOpenAIAdapter } from "../../adapters/openai";
 import type {
   AIProvider,
@@ -141,13 +146,19 @@ const OPENAI_MODELS: Record<string, ModelCapabilities> = {
 // ============================================
 
 /**
- * Create an OpenAI provider
+ * Create an OpenAI provider (Legacy API)
+ *
+ * @deprecated Use `import { openai } from '@yourgpt/llm-sdk/openai'` instead.
  *
  * @example
  * ```typescript
- * const openai = createOpenAI({ apiKey: '...' });
- * const adapter = openai.languageModel('gpt-4o');
- * const caps = openai.getCapabilities('gpt-4o');
+ * // OLD (deprecated):
+ * const provider = createOpenAI({ apiKey: '...' });
+ * const adapter = provider.languageModel('gpt-4o');
+ *
+ * // NEW (recommended):
+ * import { openai } from '@yourgpt/llm-sdk/openai';
+ * const model = openai('gpt-4o');
  * ```
  */
 export function createOpenAI(config: OpenAIProviderConfig = {}): AIProvider {

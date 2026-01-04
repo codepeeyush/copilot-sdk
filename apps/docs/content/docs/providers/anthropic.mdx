@@ -28,27 +28,149 @@ Get your API key from [console.anthropic.com](https://console.anthropic.com/)
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 3. Create API Route (Backend)
+### 3. Usage
+
+```ts
+import { generateText } from '@yourgpt/llm-sdk';
+import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+
+const result = await generateText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  prompt: 'Explain the theory of relativity.',
+});
+
+console.log(result.text);
+```
+
+### 4. Streaming (API Route)
 
 ```ts title="app/api/chat/route.ts"
-import { createRuntime, createAnthropic } from '@yourgpt/llm-sdk';
+import { streamText } from '@yourgpt/llm-sdk';
+import { anthropic } from '@yourgpt/llm-sdk/anthropic';
 
-const anthropic = createAnthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY!,
-});
+export async function POST(req: Request) {
+  const { messages } = await req.json();
 
-const runtime = createRuntime({
-  provider: anthropic,
-  model: 'claude-sonnet-4-20250514',
-  systemPrompt: 'You are a helpful assistant.',
-});
+  const result = await streamText({
+    model: anthropic('claude-3-5-sonnet-20241022'),
+    system: 'You are a helpful assistant.',
+    messages,
+  });
 
-export async function POST(request: Request) {
-  return runtime.handleRequest(request);
+  return result.toTextStreamResponse();
 }
 ```
 
-### 4. Add Provider (Frontend)
+---
+
+## Available Models
+
+```ts
+// Claude 3.5 (Latest)
+anthropic('claude-3-5-sonnet-20241022')  // Best balance of speed & quality
+anthropic('claude-3-5-haiku-20241022')   // Fast and affordable
+
+// Claude 3
+anthropic('claude-3-opus-20240229')      // Most capable
+anthropic('claude-3-sonnet-20240229')    // Balanced
+anthropic('claude-3-haiku-20240307')     // Fastest
+```
+
+---
+
+## Configuration Options
+
+```ts
+import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+
+// Custom API key
+const model = anthropic('claude-3-5-sonnet-20241022', {
+  apiKey: 'sk-ant-custom-key',
+});
+
+// With generation options
+const result = await generateText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  prompt: 'Hello',
+  temperature: 0.7,        // 0-1
+  maxTokens: 4096,         // Max response length
+});
+```
+
+---
+
+## Tool Calling
+
+Claude has robust tool support:
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  prompt: 'Analyze this document for key insights',
+  tools: {
+    analyzeDocument: tool({
+      description: 'Analyze a document',
+      parameters: z.object({
+        documentId: z.string(),
+        analysisType: z.enum(['summary', 'sentiment', 'entities']),
+      }),
+      execute: async ({ documentId, analysisType }) => {
+        return await analyzeDocument(documentId, analysisType);
+      },
+    }),
+  },
+  maxSteps: 5,
+});
+```
+
+---
+
+## Long Context
+
+Claude excels at long documents (200K context):
+
+```ts
+const result = await generateText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  system: `You are a support agent. Here is our full documentation:
+
+  ${fullDocumentation}  // Can be 100K+ tokens
+
+  Answer questions based on this documentation.`,
+  prompt: userQuestion,
+});
+```
+
+---
+
+## Vision (Image Input)
+
+Claude models support image analysis:
+
+```ts
+const result = await generateText({
+  model: anthropic('claude-3-5-sonnet-20241022'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: 'Analyze this screenshot' },
+        { type: 'image', image: base64ImageData },
+      ],
+    },
+  ],
+});
+```
+
+---
+
+## With Copilot UI
+
+Use with the Copilot React components:
 
 ```tsx title="app/providers.tsx"
 'use client';
@@ -66,94 +188,12 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 ---
 
-## Configuration Options
-
-```ts title="app/api/chat/route.ts"
-const runtime = createRuntime({
-  provider: anthropic,
-  model: 'claude-sonnet-4-20250514',
-  systemPrompt: 'You are a helpful assistant.',
-  temperature: 0.7,        // 0-1
-  maxTokens: 4096,         // Max response length
-});
-```
-
----
-
-## Vision (Image Input)
-
-Claude models support image analysis:
-
-```tsx
-import { useCopilot } from '@yourgpt/copilot-sdk/react';
-
-const { sendMessage } = useCopilot();
-
-sendMessage("Analyze this screenshot", {
-  attachments: [
-    {
-      type: 'image',
-      data: base64ImageData,
-      mimeType: 'image/png',
-    }
-  ]
-});
-```
-
----
-
-## Long Context
-
-Claude excels at long documents (200K context):
-
-```ts title="app/api/chat/route.ts"
-const runtime = createRuntime({
-  provider: anthropic,
-  model: 'claude-sonnet-4-20250514',
-  systemPrompt: `You are a support agent. Here is our full documentation:
-
-  ${fullDocumentation}  // Can be 100K+ tokens
-
-  Answer questions based on this documentation.`,
-});
-```
-
----
-
-## Tool Calling
-
-Claude has robust tool support:
-
-```tsx
-import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
-import { z } from 'zod';
-
-function AnalysisTool() {
-  useToolWithSchema({
-    name: 'analyze_document',
-    description: 'Analyze a document for key insights',
-    schema: z.object({
-      documentId: z.string(),
-      analysisType: z.enum(['summary', 'sentiment', 'entities']),
-    }),
-    handler: async ({ documentId, analysisType }) => {
-      const result = await analyzeDocument(documentId, analysisType);
-      return { success: true, data: result };
-    },
-  });
-
-  return null;
-}
-```
-
----
-
 ## Pricing
 
 | Model | Input | Output |
 |-------|-------|--------|
-| claude-sonnet-4 | $3/1M tokens | $15/1M tokens |
-| claude-opus-4 | $15/1M tokens | $75/1M tokens |
+| claude-3-5-sonnet | $3/1M tokens | $15/1M tokens |
+| claude-3-opus | $15/1M tokens | $75/1M tokens |
 | claude-3-5-haiku | $0.80/1M tokens | $4/1M tokens |
 
 *Check [Anthropic pricing](https://anthropic.com/pricing) for current rates.*
@@ -163,4 +203,5 @@ function AnalysisTool() {
 ## Next Steps
 
 - [Google](/docs/providers/google) - Try Gemini models
-- [Tools](/docs/tools) - Build AI tools
+- [generateText()](/docs/llm-sdk/generate-text) - Full API reference
+- [tool()](/docs/llm-sdk/tools) - Define tools with Zod

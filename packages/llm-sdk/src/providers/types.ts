@@ -377,13 +377,6 @@ export interface AzureProviderConfig extends BaseProviderConfig {
 }
 
 /**
- * Groq provider configuration
- */
-export interface GroqProviderConfig extends BaseProviderConfig {
-  // Groq uses OpenAI-compatible API, no extra config needed
-}
-
-/**
  * Ollama provider configuration
  */
 export interface OllamaProviderConfig extends BaseProviderConfig {

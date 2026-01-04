@@ -1,6 +1,6 @@
 ---
 title: Quick Start
-description: Get up and running in 5 minutes
+description: Get up and running in 2 minutes
 icon: RocketCustom
 ---
 
@@ -8,65 +8,194 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Steps, Step } from 'fumadocs-ui/components/steps';
 
-# Quick Start
-
-Get your AI copilot running in 5 minutes.
-
 <Callout type="info">
-**Prerequisites:** Node 18+, React 18+, an LLM API key (OpenAI, Anthropic, etc.)
+**Prerequisites:** Node 18+, an LLM API key (OpenAI, Anthropic, etc.)
 </Callout>
 
----
+## At a Glance
 
-## Install
-
-<Tabs items={['pnpm', 'npm', 'yarn']}>
-  <Tab value="pnpm">
-    ```bash
-    pnpm add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk zod
-    ```
-  </Tab>
-  <Tab value="npm">
-    ```bash
-    npm install @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk zod
-    ```
-  </Tab>
-  <Tab value="yarn">
-    ```bash
-    yarn add @yourgpt/copilot-sdk/react @yourgpt/copilot-sdk/ui @yourgpt/llm-sdk zod
-    ```
-  </Tab>
-</Tabs>
+<QuickSetupSteps />
 
 ---
 
-## Setup
+## Detailed Setup
 
-<Steps>
-  <Step>
-    ### Create API Route (Backend)
+<Tabs items={['New Project', 'Existing Project']}>
+  <Tab value="New Project">
+    ## Create New Project
 
-    ```ts title="app/api/chat/route.ts"
-    import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+    The fastest way to start - one command creates everything:
 
-    const openai = createOpenAI({
-      apiKey: process.env.OPENAI_API_KEY!,
-    });
+    <Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+      <Tab value="pnpm">
+        ```bash
+        pnpm create ai-copilot
+        ```
+      </Tab>
+      <Tab value="npm">
+        ```bash
+        npx create-ai-copilot
+        ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash
+        yarn create ai-copilot
+        ```
+      </Tab>
+      <Tab value="bun">
+        ```bash
+        bunx create-ai-copilot
+        ```
+      </Tab>
+    </Tabs>
 
-    const runtime = createRuntime({
-      provider: openai,
-      model: 'gpt-4o-mini',
-      systemPrompt: 'You are a helpful assistant.',
-    });
+    The CLI will guide you through:
 
-    export async function POST(request: Request) {
-      return runtime.handleRequest(request);
-    }
+    1. **Project name** - Name your app
+    2. **Framework** - Next.js (full-stack) or Vite + React
+    3. **Provider** - OpenAI, Anthropic, Google, or xAI
+    4. **API Key** - Optional, can add to `.env` later
+
+    <Callout type="info">
+    The CLI creates a complete project with frontend, backend, and styling ready to go.
+    </Callout>
+
+    ### Run Your App
+
+    ```bash
+    cd my-app
+    pnpm dev
     ```
-  </Step>
 
-  <Step>
-    ### Add Provider (Frontend)
+    Open [http://localhost:3000](http://localhost:3000) - your AI copilot is ready!
+
+    ---
+
+    ### What's Included
+
+    The generated project includes:
+
+    - **Frontend** - React chat UI with `@yourgpt/copilot-sdk`
+    - **Backend** - API route with `@yourgpt/llm-sdk`
+    - **Styling** - Tailwind CSS with shadcn/ui theming
+    - **TypeScript** - Full type safety
+    - **Environment** - `.env` file for API keys
+
+    ---
+
+    ### Next Steps
+
+    - [Customize the Chat UI](/docs/chat)
+    - [Add AI Tools](/docs/tools)
+    - [Switch Providers](/docs/providers)
+  </Tab>
+
+  <Tab value="Existing Project">
+    ## Add to Existing Project
+
+    Already have a Next.js, Vite, or React app? Add the SDK manually.
+
+    ---
+
+    ### 1. Install Dependencies
+
+    <Tabs items={['pnpm', 'npm', 'yarn']}>
+      <Tab value="pnpm">
+        ```bash
+        pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk zod
+        ```
+      </Tab>
+      <Tab value="npm">
+        ```bash
+        npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk zod
+        ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash
+        yarn add @yourgpt/copilot-sdk @yourgpt/llm-sdk zod
+        ```
+      </Tab>
+    </Tabs>
+
+    ---
+
+    ### 2. Create API Route
+
+    <Tabs items={['Next.js', 'Node.js']}>
+      <Tab value="Next.js">
+        ```ts title="app/api/chat/route.ts"
+        import { streamText } from '@yourgpt/llm-sdk';
+        import { openai } from '@yourgpt/llm-sdk/openai';
+
+        export async function POST(req: Request) {
+          const { messages } = await req.json();
+
+          const result = await streamText({
+            model: openai('gpt-4o-mini'),
+            system: 'You are a helpful assistant.',
+            messages,
+          });
+
+          return result.toTextStreamResponse();
+        }
+        ```
+      </Tab>
+      <Tab value="Node.js">
+        ```ts title="server.ts"
+        import { createServer } from 'http';
+        import { streamText } from '@yourgpt/llm-sdk';
+        import { openai } from '@yourgpt/llm-sdk/openai';
+
+        createServer(async (req, res) => {
+          if (req.method === 'POST' && req.url === '/api/chat') {
+            const body = await getBody(req);
+            const { messages } = JSON.parse(body);
+
+            const result = await streamText({
+              model: openai('gpt-4o-mini'),
+              system: 'You are a helpful assistant.',
+              messages,
+            });
+
+            const response = result.toTextStreamResponse();
+            res.writeHead(200, Object.fromEntries(response.headers));
+
+            const reader = response.body!.getReader();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+            res.end();
+          }
+        }).listen(3001);
+
+        function getBody(req: any): Promise<string> {
+          return new Promise((resolve) => {
+            let data = '';
+            req.on('data', (chunk: any) => data += chunk);
+            req.on('end', () => resolve(data));
+          });
+        }
+        ```
+      </Tab>
+    </Tabs>
+
+    ---
+
+    ### 3. Add Environment Variable
+
+    ```bash title=".env.local"
+    OPENAI_API_KEY=sk-...
+    ```
+
+    <Callout type="info">
+    See [Providers](/docs/providers) for other LLM providers (Anthropic, Google, xAI).
+    </Callout>
+
+    ---
+
+    ### 4. Add Provider (Frontend)
 
     ```tsx title="app/providers.tsx"
     'use client';
@@ -82,6 +211,8 @@ Get your AI copilot running in 5 minutes.
     }
     ```
 
+    Wrap your app with the provider:
+
     ```tsx title="app/layout.tsx"
     import { Providers } from './providers';
 
@@ -95,10 +226,10 @@ Get your AI copilot running in 5 minutes.
       );
     }
     ```
-  </Step>
 
-  <Step>
-    ### Add Chat Component
+    ---
+
+    ### 5. Add Chat Component
 
     ```tsx title="app/page.tsx"
     import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
@@ -111,46 +242,36 @@ Get your AI copilot running in 5 minutes.
       );
     }
     ```
-  </Step>
-</Steps>
 
----
+    ---
 
-## Styling (Tailwind CSS v4)
+    ### 6. Configure Styling (Tailwind CSS v4)
 
-The UI components use Tailwind CSS with [shadcn/ui](https://ui.shadcn.com) theming.
+    ```css title="app/globals.css"
+    @import "tailwindcss";
 
-```css title="app/globals.css"
-@import "tailwindcss";
+    /* Include SDK package for Tailwind class detection */
+    @source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
 
-/* Include SDK package for Tailwind class detection */
-@source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
+    @custom-variant dark (&:is(.dark *));
+    ```
 
-@custom-variant dark (&:is(.dark *));
-```
+    <Callout type="info">
+    For theming and CSS variables, follow the [shadcn/ui theming guide](https://ui.shadcn.com/docs/theming).
+    </Callout>
 
-<Callout type="info">
-For theming and CSS variables, follow the [shadcn/ui theming guide](https://ui.shadcn.com/docs/theming).
-</Callout>
+    ---
 
----
+    ### Done!
 
-## Environment Variables
+    Run `pnpm dev` and you have a working AI chat.
 
-```bash title=".env.local"
-OPENAI_API_KEY=sk-...
-```
+    ---
 
----
+    ### Next Steps
 
-## That's it!
-
-Run `pnpm dev` and you have a working AI chat.
-
----
-
-## Next Steps
-
-- [Chat Component](/docs/chat) - Customize the chat UI
-- [Tools](/docs/tools) - Add AI capabilities
-- [Providers](/docs/providers) - Use different LLM providers
+    - [Customize the Chat UI](/docs/chat)
+    - [Add AI Tools](/docs/tools)
+    - [Switch Providers](/docs/providers)
+  </Tab>
+</Tabs>

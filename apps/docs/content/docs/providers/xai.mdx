@@ -1,0 +1,192 @@
+---
+title: xAI
+description: Ultra-fast inference with Grok models
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+
+<ProviderHeader
+  provider="xai"
+  name="xAI"
+  description="Ultra-fast Grok inference"
+/>
+
+Cutting-edge AI from xAI. Grok models offer real-time information access and ultra-fast inference.
+
+---
+
+## Setup
+
+### 1. Get API Key
+
+Get your API key from [console.x.ai](https://console.x.ai/)
+
+### 2. Add Environment Variable
+
+```bash title=".env.local"
+XAI_API_KEY=xai-...
+```
+
+### 3. Usage
+
+```ts
+import { generateText } from '@yourgpt/llm-sdk';
+import { xai } from '@yourgpt/llm-sdk/xai';
+
+const result = await generateText({
+  model: xai('grok-3-fast-beta'),
+  prompt: 'What are the latest trends in AI?',
+});
+
+console.log(result.text);
+```
+
+### 4. Streaming (API Route)
+
+```ts title="app/api/chat/route.ts"
+import { streamText } from '@yourgpt/llm-sdk';
+import { xai } from '@yourgpt/llm-sdk/xai';
+
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = await streamText({
+    model: xai('grok-3-fast-beta'),
+    system: 'You are a helpful assistant.',
+    messages,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+---
+
+## Available Models
+
+```ts
+// Grok 4.1 Fast (Latest)
+xai('grok-4-1-fast-reasoning')      // Best reasoning, 2M context
+xai('grok-4-1-fast-non-reasoning')  // Fastest, 2M context
+
+// Grok 4 Fast
+xai('grok-4-fast-reasoning')        // Fast reasoning, 2M context
+xai('grok-4-fast-non-reasoning')    // Fastest, 2M context
+
+// Grok 4
+xai('grok-4')                       // Flagship model, 256K context
+
+// Grok 3 (Stable)
+xai('grok-3-beta')                  // Enterprise flagship, 131K context
+xai('grok-3-fast-beta')             // Fast and stable, 131K context
+xai('grok-3-mini-beta')             // Smaller model, 32K context
+
+// Grok Code
+xai('grok-code-fast-1')             // Optimized for coding, 256K context
+```
+
+---
+
+## Configuration Options
+
+```ts
+import { xai } from '@yourgpt/llm-sdk/xai';
+
+// Custom API key
+const model = xai('grok-3-fast-beta', {
+  apiKey: 'xai-custom-key',
+});
+
+// With generation options
+const result = await generateText({
+  model: xai('grok-3-fast-beta'),
+  prompt: 'Hello',
+  temperature: 0.7,
+  maxTokens: 4096,
+});
+```
+
+---
+
+## Tool Calling
+
+xAI supports tool calling with all Grok models:
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { xai } from '@yourgpt/llm-sdk/xai';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: xai('grok-3-fast-beta'),
+  prompt: 'What is the weather in San Francisco?',
+  tools: {
+    getWeather: tool({
+      description: 'Get weather for a city',
+      parameters: z.object({
+        city: z.string(),
+      }),
+      execute: async ({ city }) => {
+        return { temperature: 65, condition: 'foggy' };
+      },
+    }),
+  },
+  maxSteps: 5,
+});
+```
+
+---
+
+## Speed Comparison
+
+xAI Grok offers ultra-fast inference:
+
+| Provider | Tokens/second |
+|----------|---------------|
+| xAI Grok | ~400+ |
+| OpenAI | ~50-80 |
+| Anthropic | ~50-80 |
+
+<Callout type="info">
+Grok's speed makes it ideal for real-time applications, chatbots, and agentic use cases.
+</Callout>
+
+---
+
+## With Copilot UI
+
+Use with the Copilot React components:
+
+```tsx title="app/providers.tsx"
+'use client';
+
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      {children}
+    </CopilotProvider>
+  );
+}
+```
+
+---
+
+## Pricing
+
+| Model | Input | Output |
+|-------|-------|--------|
+| grok-4-1-fast | $0.20/1M tokens | $0.50/1M tokens |
+| grok-3-fast-beta | $0.10/1M tokens | $0.30/1M tokens |
+| grok-3-mini-beta | $0.05/1M tokens | $0.15/1M tokens |
+
+*Check [x.ai/api](https://x.ai/api) for current rates.*
+
+---
+
+## Next Steps
+
+- [OpenAI](/docs/providers/openai) - Try GPT models
+- [generateText()](/docs/llm-sdk/generate-text) - Full API reference
+- [tool()](/docs/llm-sdk/tools) - Define tools with Zod

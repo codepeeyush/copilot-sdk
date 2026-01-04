@@ -1,18 +1,14 @@
 ---
 title: Google (Gemini)
-description: Use Gemini 1.5 Pro, Gemini Flash models
+description: Use Gemini 2.0, Gemini 1.5 Pro, and Flash models
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
 
-<Callout type="warn">
-**Coming Soon.** Google Gemini integration is under active development.
-</Callout>
-
 <ProviderHeader
   provider="google"
   name="Google Generative AI"
-  description="Gemini 1.5 Pro, Gemini Flash"
+  description="Gemini 2.0 Flash, Gemini 1.5 Pro"
 />
 
 Google's Gemini models. Excellent for multimodal tasks with massive context windows.
@@ -31,27 +27,146 @@ Get your API key from [Google AI Studio](https://aistudio.google.com/apikey)
 GOOGLE_API_KEY=...
 ```
 
-### 3. Create API Route (Backend)
+### 3. Usage
+
+```ts
+import { generateText } from '@yourgpt/llm-sdk';
+import { google } from '@yourgpt/llm-sdk/google';
+
+const result = await generateText({
+  model: google('gemini-2.0-flash'),
+  prompt: 'Explain machine learning.',
+});
+
+console.log(result.text);
+```
+
+### 4. Streaming (API Route)
 
 ```ts title="app/api/chat/route.ts"
-import { createRuntime, createGoogle } from '@yourgpt/llm-sdk';
+import { streamText } from '@yourgpt/llm-sdk';
+import { google } from '@yourgpt/llm-sdk/google';
 
-const google = createGoogle({
-  apiKey: process.env.GOOGLE_API_KEY!,
-});
+export async function POST(req: Request) {
+  const { messages } = await req.json();
 
-const runtime = createRuntime({
-  provider: google,
-  model: 'gemini-1.5-pro',
-  systemPrompt: 'You are a helpful assistant.',
-});
+  const result = await streamText({
+    model: google('gemini-2.0-flash'),
+    system: 'You are a helpful assistant.',
+    messages,
+  });
 
-export async function POST(request: Request) {
-  return runtime.handleRequest(request);
+  return result.toTextStreamResponse();
 }
 ```
 
-### 4. Add Provider (Frontend)
+---
+
+## Available Models
+
+```ts
+// Gemini 2.0 (Latest)
+google('gemini-2.0-flash')        // Fast and capable
+google('gemini-2.0-flash-lite')   // Most efficient
+
+// Gemini 1.5
+google('gemini-1.5-pro')          // Best quality
+google('gemini-1.5-flash')        // Fast and cheap
+```
+
+---
+
+## Configuration Options
+
+```ts
+import { google } from '@yourgpt/llm-sdk/google';
+
+// Custom API key
+const model = google('gemini-2.0-flash', {
+  apiKey: 'custom-api-key',
+});
+
+// With generation options
+const result = await generateText({
+  model: google('gemini-2.0-flash'),
+  prompt: 'Hello',
+  temperature: 0.7,        // 0-1
+  maxTokens: 8192,         // Max response length
+});
+```
+
+---
+
+## Tool Calling
+
+```ts
+import { generateText, tool } from '@yourgpt/llm-sdk';
+import { google } from '@yourgpt/llm-sdk/google';
+import { z } from 'zod';
+
+const result = await generateText({
+  model: google('gemini-2.0-flash'),
+  prompt: 'Search our knowledge base for AI topics',
+  tools: {
+    searchKnowledge: tool({
+      description: 'Search internal knowledge base',
+      parameters: z.object({
+        query: z.string(),
+        category: z.string().optional(),
+      }),
+      execute: async ({ query, category }) => {
+        return await searchKnowledge(query, category);
+      },
+    }),
+  },
+  maxSteps: 5,
+});
+```
+
+---
+
+## Massive Context Window
+
+Gemini supports 1M+ token context:
+
+```ts
+const result = await generateText({
+  model: google('gemini-1.5-pro'),
+  system: `Here is the entire codebase:
+
+  ${entireCodebase}  // Can be 500K+ tokens!
+
+  Help users understand and modify this code.`,
+  prompt: userQuestion,
+});
+```
+
+---
+
+## Multimodal (Images, Video, Audio)
+
+Gemini excels at multimodal understanding:
+
+```ts
+const result = await generateText({
+  model: google('gemini-2.0-flash'),
+  messages: [
+    {
+      role: 'user',
+      content: [
+        { type: 'text', text: "What's in this image?" },
+        { type: 'image', image: imageBase64 },
+      ],
+    },
+  ],
+});
+```
+
+---
+
+## With Copilot UI
+
+Use with the Copilot React components:
 
 ```tsx title="app/providers.tsx"
 'use client';
@@ -69,90 +184,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
 ---
 
-## Configuration Options
-
-```ts title="app/api/chat/route.ts"
-const runtime = createRuntime({
-  provider: google,
-  model: 'gemini-1.5-pro',
-  systemPrompt: 'You are a helpful assistant.',
-  temperature: 0.7,        // 0-1
-  maxTokens: 8192,         // Max response length
-});
-```
-
----
-
-## Massive Context Window
-
-Gemini supports 1M+ token context:
-
-```ts title="app/api/chat/route.ts"
-const runtime = createRuntime({
-  provider: google,
-  model: 'gemini-1.5-pro',
-  systemPrompt: `Here is the entire codebase:
-
-  ${entireCodebase}  // Can be 500K+ tokens!
-
-  Help users understand and modify this code.`,
-});
-```
-
----
-
-## Multimodal (Images, Video, Audio)
-
-Gemini excels at multimodal understanding:
-
-```tsx
-import { useCopilot } from '@yourgpt/copilot-sdk/react';
-
-const { sendMessage } = useCopilot();
-
-// Image analysis
-sendMessage("What's in this image?", {
-  attachments: [
-    { type: 'image', data: imageBase64, mimeType: 'image/png' }
-  ]
-});
-```
-
----
-
-## Tool Calling
-
-```tsx
-import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
-import { z } from 'zod';
-
-function SearchTool() {
-  useToolWithSchema({
-    name: 'search_knowledge',
-    description: 'Search internal knowledge base',
-    schema: z.object({
-      query: z.string(),
-      filters: z.object({
-        category: z.string().optional(),
-        dateRange: z.string().optional(),
-      }).optional(),
-    }),
-    handler: async ({ query, filters }) => {
-      const results = await searchKnowledge(query, filters);
-      return { success: true, data: results };
-    },
-  });
-
-  return null;
-}
-```
-
----
-
 ## Pricing
 
 | Model | Input | Output |
 |-------|-------|--------|
+| gemini-2.0-flash | Free tier available | See pricing |
 | gemini-1.5-pro | $1.25/1M tokens | $5/1M tokens |
 | gemini-1.5-flash | $0.075/1M tokens | $0.30/1M tokens |
 
@@ -162,5 +198,6 @@ function SearchTool() {
 
 ## Next Steps
 
-- [Groq](/docs/providers/groq) - Ultra-fast inference
-- [Tools](/docs/tools) - Build AI tools
+- [xAI](/docs/providers/xai) - Ultra-fast inference
+- [generateText()](/docs/llm-sdk/generate-text) - Full API reference
+- [tool()](/docs/llm-sdk/tools) - Define tools with Zod

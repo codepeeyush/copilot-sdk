@@ -1,0 +1,166 @@
+---
+title: Overview
+description: Unified API for any LLM provider
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+
+One API, any provider. Switch between OpenAI, Anthropic, Google, and more with a single line change.
+
+```ts
+import { streamText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
+
+const result = await streamText({
+  model: openai('gpt-4o'),
+  prompt: 'Hello!',
+});
+```
+
+---
+
+## Switch Providers Instantly
+
+Same code, different provider. No refactoring needed.
+
+<Tabs items={['OpenAI', 'Anthropic', 'Google', 'xAI']}>
+  <Tab value="OpenAI">
+    ```ts
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const model = openai('gpt-4o');
+    ```
+  </Tab>
+  <Tab value="Anthropic">
+    ```ts
+    import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+
+    const model = anthropic('claude-sonnet-4-20250514');
+    ```
+  </Tab>
+  <Tab value="Google">
+    ```ts
+    import { google } from '@yourgpt/llm-sdk/google';
+
+    const model = google('gemini-2.0-flash');
+    ```
+  </Tab>
+  <Tab value="xAI">
+    ```ts
+    import { xai } from '@yourgpt/llm-sdk/xai';
+
+    const model = xai('grok-3-fast-beta');
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Framework Examples
+
+Works with any HTTP framework. Returns standard Web `Response` objects.
+
+<Tabs items={['Next.js', 'Express', 'Hono', 'Fastify']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="server.ts"
+    import express from 'express';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(express.json());
+
+    app.post('/api/chat', async (req, res) => {
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages: req.body.messages,
+      });
+
+      const response = result.toTextStreamResponse();
+      res.set(Object.fromEntries(response.headers));
+      response.body?.pipeTo(new WritableStream({
+        write(chunk) { res.write(chunk); },
+        close() { res.end(); }
+      }));
+    });
+    ```
+  </Tab>
+  <Tab value="Hono">
+    ```ts title="src/index.ts"
+    import { Hono } from 'hono';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = new Hono();
+
+    app.post('/api/chat', async (c) => {
+      const { messages } = await c.req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    });
+
+    export default app;
+    ```
+  </Tab>
+  <Tab value="Fastify">
+    ```ts title="server.ts"
+    import Fastify from 'fastify';
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = Fastify();
+
+    app.post('/api/chat', async (req, reply) => {
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        messages: req.body.messages,
+      });
+
+      const response = result.toTextStreamResponse();
+      reply.headers(Object.fromEntries(response.headers));
+      return reply.send(response.body);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Core Functions
+
+| Function | Description |
+|----------|-------------|
+| [`streamText()`](/docs/llm-sdk/stream-text) | Stream responses in real-time |
+| [`generateText()`](/docs/llm-sdk/generate-text) | Generate complete responses |
+| [`tool()`](/docs/llm-sdk/tools) | Define AI-callable functions |
+
+---
+
+## Why Unified?
+
+- **One API** - Learn once, use everywhere
+- **Swap providers** - Change one import, keep all your code
+- **Type-safe** - Full TypeScript support across all providers
+- **Standard responses** - Web `Response` objects work anywhere

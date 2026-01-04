@@ -23,7 +23,6 @@ const formatters: Record<string, ProviderFormatter> = {
   google: geminiFormatter,
   gemini: geminiFormatter, // Alias
   // OpenAI-compatible providers use openaiFormatter
-  groq: openaiFormatter,
   ollama: openaiFormatter,
   xai: openaiFormatter,
   azure: openaiFormatter,

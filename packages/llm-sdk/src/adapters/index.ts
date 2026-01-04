@@ -36,9 +36,6 @@ export {
   type AnthropicAdapterConfig,
 } from "./anthropic";
 
-// Groq
-export { GroqAdapter, createGroqAdapter, type GroqAdapterConfig } from "./groq";
-
 // Ollama
 export {
   OllamaAdapter,
