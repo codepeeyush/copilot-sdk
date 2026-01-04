@@ -24,19 +24,6 @@ Production-ready AI Copilots for any product. Connect any LLM, deploy on your in
 
 <br />
 
-## Why Copilot SDK?
-
-Most AI assistants are blind to your application. They can't see the user's screen, understand their context, or take meaningful actions. **Copilot SDK changes that.**
-
-- **App Context Awareness** — Capture screenshots, console logs, network requests, and DOM state automatically
-- **Minutes to Integrate** — Drop-in React components with sensible defaults
-- **Production-Ready UI** — Beautiful, accessible chat components out of the box
-- **Multi-Provider LLM** — OpenAI, Anthropic, Google, xAI, and more with a unified API
-- **Fully Customizable** — Headless primitives when you need full control
-- **Open Source** — MIT licensed, no vendor lock-in
-
-<br />
-
 ## Quick Start
 
 ### Install
