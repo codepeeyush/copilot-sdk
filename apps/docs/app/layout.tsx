@@ -17,24 +17,24 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: {
     template: "%s | Copilot SDK",
-    default: "Copilot SDK - AI SDK for React",
+    default: "Build AI Copilots for Your Product",
   },
   description:
-    "Open-source SDK for building AI-powered chat interfaces in React",
+    "Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data. Built for speed and control.",
   metadataBase: new URL("https://copilot-sdk.yourgpt.ai"),
   openGraph: {
-    title: "Copilot SDK - AI SDK for React",
+    title: "Build AI Copilots for Your Product",
     description:
-      "Open-source SDK for building AI-powered chat interfaces in React",
+      "Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data. Built for speed and control.",
     siteName: "Copilot SDK",
     type: "website",
     images: ["/og-image.png"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Copilot SDK - AI SDK for React",
+    title: "Build AI Copilots for Your Product",
     description:
-      "Open-source SDK for building AI-powered chat interfaces in React",
+      "Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data. Built for speed and control.",
     images: ["/og-image.png"],
   },
 };
