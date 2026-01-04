@@ -1,29 +1,39 @@
 # @yourgpt/copilot-sdk
 
-Build AI copilots with app context awareness.
+Build AI Copilots for Your Product.
+
+Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data.
 
 ## Installation
 
 ```bash
-npm install @yourgpt/copilot-sdk
+npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk
 ```
 
-## Usage
+## Quick Start
 
 ```tsx
-// React hooks & provider
-import {
-  CopilotProvider,
-  useTools,
-  useAIContext,
-} from "@yourgpt/copilot-sdk/react";
-
-// UI components
+import { CopilotProvider } from "@yourgpt/copilot-sdk/react";
 import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
+import "@yourgpt/copilot-sdk/ui/styles.css";
 
-// Core types and utilities
-import { tool, success, type ToolDefinition } from "@yourgpt/copilot-sdk/core";
+function App() {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      <YourApp />
+      <CopilotChat />
+    </CopilotProvider>
+  );
+}
 ```
+
+## Subpath Exports
+
+| Subpath  | Description                    |
+| -------- | ------------------------------ |
+| `/react` | React hooks and provider       |
+| `/ui`    | Pre-built UI components        |
+| `/core`  | Types, utilities, tool helpers |
 
 ## Styling (Tailwind CSS v4)
 
@@ -44,17 +54,9 @@ For theming, optionally import the default CSS variables:
 @import "@yourgpt/copilot-sdk/ui/styles.css";
 ```
 
-## Subpath Exports
-
-| Subpath  | Description                    |
-| -------- | ------------------------------ |
-| `/core`  | Types, utilities, tool helpers |
-| `/react` | React hooks and provider       |
-| `/ui`    | Pre-built UI components        |
-
 ## Documentation
 
-Visit [https://copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)
+Visit [copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)
 
 ## License
 

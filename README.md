@@ -148,7 +148,7 @@ Visit **[copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)** for full docu
 
 ## Contributing
 
-Have ideas? Let's build together.
+Have any feedback? Share it with us.
 
 [@0fficialRohit](https://x.com/0fficialRohit) · [@rege_dev](https://x.com/rege_dev)
 
