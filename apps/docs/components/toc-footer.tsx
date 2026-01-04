@@ -23,7 +23,7 @@ export function TocFooter() {
       aria-label="Connect with maintainers"
     >
       <p className="mb-3 text-xs font-medium text-fd-muted-foreground">
-        Have ideas? Let&apos;s build together
+        Have any feedback? Share it with us
       </p>
       <nav aria-label="Maintainer profiles" className="flex flex-col gap-2">
         {contributors.map((contributor) => (
