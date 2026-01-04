@@ -263,21 +263,61 @@ Marcus`;
     suggest_resolution: tool({
       title: "Suggest resolution",
       executingTitle: "AI analyzing best approach...",
-      completedTitle: "Resolution recommended",
+      completedTitle: "Resolution applied",
       description:
-        "AI analyzes the ticket and suggests the best resolution path based on similar cases, customer value, and company policies.",
+        "AI analyzes the ticket and suggests the best resolution path. Pauses for user to confirm or modify the approach before applying.",
       location: "client",
+      // NEW: Pause for user to confirm resolution
+      needsApproval: true,
+      approvalMessage: "Review and confirm the suggested resolution",
       aiResponseMode: "none",
       aiContext: (result) => {
         const data = result.data as
-          | { suggestion: string; confidence: number; steps: string[] }
+          | { suggestion: string; confirmed: boolean }
           | undefined;
-        return `[UI Card Displayed: Resolution "${data?.suggestion}" (${data?.confidence}% confidence) with ${data?.steps?.length || 0} action steps. User can apply directly. Just acknowledge - don't repeat steps.]`;
+        if (data?.confirmed) {
+          return `[Resolution APPLIED: User confirmed "${data.suggestion}". Agent should now follow the agreed resolution steps.]`;
+        }
+        return `[Resolution suggestion cancelled by user]`;
       },
       inputSchema: { type: "object", properties: {} },
-      handler: async () => {
-        await new Promise((r) => setTimeout(r, 1100));
+      // Handler receives user's confirmation via context.approvalData
+      handler: async (_params, context) => {
+        const confirmed = context?.approvalData?.confirmed as boolean;
+        const modifiedSteps = context?.approvalData?.modifiedSteps as
+          | string[]
+          | undefined;
 
+        if (!confirmed) {
+          return { success: false, error: "Resolution not confirmed" };
+        }
+
+        const suggestion = "Offer 25% annual Pro discount";
+        const confidence = 92;
+        const reasoning =
+          "Based on 96% similar case match and customer's specific needs. Annual discount provides 25% savings ($147/year) while maintaining API access. Meets their 20% budget reduction target with room to spare. 89% retention rate for this approach.";
+        const defaultSteps = [
+          "Acknowledge their budget constraints empathetically",
+          "Present the 25% annual Pro discount ($36.75/mo vs $49)",
+          "Highlight that this beats their 20% target",
+          "Emphasize keeping API access their team relies on",
+          "Offer to schedule a call if they need manager approval help",
+        ];
+
+        const steps = modifiedSteps || defaultSteps;
+
+        // Update dashboard with applied resolution
+        dashboard.setAppliedResolution(suggestion);
+
+        return {
+          success: true,
+          data: { suggestion, confidence, reasoning, steps, confirmed: true },
+        };
+      },
+      render: (props) => {
+        const { status, approval, result } = props;
+
+        // Generate suggestion for display
         const suggestion = "Offer 25% annual Pro discount";
         const confidence = 92;
         const reasoning =
@@ -290,51 +330,79 @@ Marcus`;
           "Offer to schedule a call if they need manager approval help",
         ];
 
-        return {
-          success: true,
-          data: { suggestion, confidence, reasoning, steps },
-        };
-      },
-      render: (props) => {
-        const result = props.result?.data as
-          | {
-              suggestion: string;
-              confidence: number;
-              reasoning: string;
-              steps: string[];
-            }
-          | undefined;
-        if (!result) return null;
-        return (
-          <ResolutionSuggestionCard
-            suggestion={result.suggestion}
-            confidence={result.confidence}
-            reasoning={result.reasoning}
-            steps={result.steps}
-            onApply={() => {
-              dashboard.setAppliedResolution(result.suggestion);
-            }}
-          />
-        );
+        // Approval-required: User needs to confirm resolution
+        if (status === "approval-required" && approval) {
+          return (
+            <ResolutionSuggestionCard
+              mode="confirm"
+              suggestion={suggestion}
+              confidence={confidence}
+              reasoning={reasoning}
+              steps={steps}
+              onConfirm={(modifiedSteps) => {
+                approval.onApprove({ confirmed: true, modifiedSteps });
+              }}
+              onCancel={() => approval.onReject("Cancelled by user")}
+            />
+          );
+        }
+
+        // Completed: Show applied state
+        if (status === "completed" && result?.data) {
+          const data = result.data as {
+            suggestion: string;
+            confidence: number;
+            reasoning: string;
+            steps: string[];
+          };
+          return (
+            <ResolutionSuggestionCard
+              mode="applied"
+              suggestion={data.suggestion}
+              confidence={data.confidence}
+              reasoning={data.reasoning}
+              steps={data.steps}
+            />
+          );
+        }
+
+        // Error state
+        if (status === "error") {
+          return (
+            <div className="bg-card border border-red-500/30 rounded-xl p-4">
+              <span className="text-sm text-red-500">
+                Resolution failed: {props.error || "Unknown error"}
+              </span>
+            </div>
+          );
+        }
+
+        return null;
       },
     }),
 
     calculate_compensation: tool({
       title: "Calculate compensation",
       executingTitle: "Calculating fair offer...",
-      completedTitle: "Compensation options ready",
+      completedTitle: "Compensation offer sent",
       description:
-        "Calculate appropriate compensation based on customer lifetime value, issue severity, and company guidelines. Provides tiered options.",
+        "Calculate appropriate compensation based on customer lifetime value, issue severity, and company guidelines. Pauses for user to select which offer to send.",
       location: "client",
+      // NEW: Pause for user to select an offer
+      needsApproval: true,
+      approvalMessage: "Select a compensation offer to send to the customer",
       aiResponseMode: "none",
       aiContext: (result) => {
         const data = result.data as
           | {
-              options: Array<{ type: string; value: string }>;
+              selectedOffer?: { type: string; value: string };
               customerValue: string;
             }
           | undefined;
-        return `[UI Card Displayed: ${data?.options?.length || 0} compensation options for ${data?.customerValue} LTV customer. User can select and send. Brief acknowledgment only.]`;
+        if (data?.selectedOffer) {
+          return `[Compensation SENT: User selected "${data.selectedOffer.type}" (${data.selectedOffer.value}) for ${data.customerValue} LTV customer. Offer has been sent to customer.]`;
+        }
+        return `[Compensation cancelled by user]`;
       },
       inputSchema: {
         type: "object",
@@ -346,8 +414,18 @@ Marcus`;
           },
         },
       },
-      handler: async () => {
-        await new Promise((r) => setTimeout(r, 700));
+      // Handler receives user's selected offer via context.approvalData
+      handler: async (_params, context) => {
+        const selectedOffer = context?.approvalData?.selectedOffer as
+          | { type: string; value: string; description: string }
+          | undefined;
+
+        if (!selectedOffer) {
+          return { success: false, error: "No offer selected" };
+        }
+
+        // Update dashboard with sent offer
+        dashboard.setSentOffer(selectedOffer);
 
         const options = [
           {
@@ -375,33 +453,81 @@ Marcus`;
           data: {
             options,
             reasoning,
+            selectedOffer,
             customerValue: currentTicket.customer.lifetimeValue,
           },
         };
       },
       render: (props) => {
-        const result = props.result?.data as
-          | {
-              options: Array<{
-                type: string;
-                value: string;
-                description: string;
-              }>;
-              reasoning: string;
-              customerValue: string;
-            }
-          | undefined;
-        if (!result) return null;
-        return (
-          <CompensationCard
-            options={result.options}
-            reasoning={result.reasoning}
-            customerValue={result.customerValue}
-            onSendOffer={(offer) => {
-              dashboard.setSentOffer(offer);
-            }}
-          />
-        );
+        const { status, approval, result } = props;
+
+        // Generate options for display (same as handler)
+        const options = [
+          {
+            type: "Annual Discount",
+            value: "25% off",
+            description:
+              "Pro plan at $36.75/mo (billed annually) - saves $147/year",
+          },
+          {
+            type: "API-Only Plan",
+            value: "$29/mo",
+            description: "Custom plan with just Analytics + API access",
+          },
+          {
+            type: "3 Months Free",
+            value: "$147 credit",
+            description: "Stay on Pro, next 3 months free while they evaluate",
+          },
+        ];
+
+        const reasoning = `Customer LTV of ${currentTicket.customer.lifetimeValue} over 5 years makes retention high priority. Budget pressure is the driver, not dissatisfaction. Recommend annual discount - it meets their 20% target while preserving full functionality and our revenue.`;
+
+        // Approval-required: User needs to select an offer
+        if (status === "approval-required" && approval) {
+          return (
+            <CompensationCard
+              mode="select"
+              options={options}
+              reasoning={reasoning}
+              customerValue={currentTicket.customer.lifetimeValue}
+              onSelectOffer={(offer) => {
+                approval.onApprove({ selectedOffer: offer });
+              }}
+              onCancel={() => approval.onReject("Cancelled by user")}
+            />
+          );
+        }
+
+        // Completed: Show confirmation with selected offer
+        if (status === "completed" && result?.data) {
+          const data = result.data as {
+            selectedOffer: { type: string; value: string; description: string };
+            customerValue: string;
+          };
+          return (
+            <CompensationCard
+              mode="sent"
+              options={options}
+              reasoning={reasoning}
+              customerValue={data.customerValue}
+              selectedOffer={data.selectedOffer}
+            />
+          );
+        }
+
+        // Error state
+        if (status === "error") {
+          return (
+            <div className="bg-card border border-red-500/30 rounded-xl p-4">
+              <span className="text-sm text-red-500">
+                Compensation failed: {props.error || "Unknown error"}
+              </span>
+            </div>
+          );
+        }
+
+        return null;
       },
     }),
 
@@ -630,37 +756,110 @@ Marcus`;
     }),
 
     schedule_callback: tool({
-      title: (args) => `Schedule callback ${args.date || ""}`,
+      title: "Schedule callback",
       executingTitle: "Scheduling callback...",
-      completedTitle: (args) => `Callback: ${args.date} at ${args.time}`,
-      description: "Schedule a callback with the customer.",
+      completedTitle: "Callback scheduled",
+      description:
+        "Schedule a callback with the customer. Pauses for user to select an available time slot.",
       location: "client",
+      // NEW: Pause for user to select a time slot
+      needsApproval: true,
+      approvalMessage: "Select a time slot for the callback",
       aiResponseMode: "none",
-      aiContext: (result, args) =>
-        `[UI Card Displayed: Callback scheduled ${args.date} at ${args.time}. User sees confirmation. Acknowledge briefly.]`,
+      aiContext: (result) => {
+        const data = result.data as
+          | { selectedSlot?: { date: string; time: string } }
+          | undefined;
+        if (data?.selectedSlot) {
+          return `[Callback SCHEDULED: ${data.selectedSlot.date} at ${data.selectedSlot.time} with ${currentTicket.customer.name}. Calendar invite sent.]`;
+        }
+        return `[Callback scheduling cancelled by user]`;
+      },
       inputSchema: {
         type: "object",
         properties: {
-          date: { type: "string", description: "Callback date" },
-          time: { type: "string", description: "Callback time" },
+          preferredDate: {
+            type: "string",
+            description: "Preferred date (optional hint)",
+          },
+          preferredTime: {
+            type: "string",
+            description: "Preferred time (optional hint)",
+          },
         },
-        required: ["date", "time"],
       },
-      handler: async (params) => {
+      // Handler receives user's selected time slot via context.approvalData
+      handler: async (_params, context) => {
+        const selectedSlot = context?.approvalData?.selectedSlot as
+          | { date: string; time: string; displayDate: string }
+          | undefined;
+
+        if (!selectedSlot) {
+          return { success: false, error: "No time slot selected" };
+        }
+
+        // Update dashboard with scheduled callback
         dashboard.setCallbackScheduled({
-          date: params.date as string,
-          time: params.time as string,
+          date: selectedSlot.date,
+          time: selectedSlot.time,
         });
-        return success({ scheduled: true });
+
+        return success({
+          scheduled: true,
+          selectedSlot,
+          customerName: currentTicket.customer.name,
+          phone: currentTicket.customer.phone,
+        });
       },
-      render: (props) => (
-        <CallbackScheduledCard
-          date={props.args.date as string}
-          time={props.args.time as string}
-          phone={currentTicket.customer.phone}
-          customerName={currentTicket.customer.name}
-        />
-      ),
+      render: (props) => {
+        const { status, approval, result } = props;
+
+        // Approval-required: User needs to select a time slot
+        if (status === "approval-required" && approval) {
+          return (
+            <CallbackScheduledCard
+              mode="select"
+              customerName={currentTicket.customer.name}
+              phone={currentTicket.customer.phone}
+              onSelectSlot={(slot) => {
+                approval.onApprove({ selectedSlot: slot });
+              }}
+              onCancel={() => approval.onReject("Cancelled by user")}
+            />
+          );
+        }
+
+        // Completed: Show confirmation
+        if (status === "completed" && result?.data) {
+          const data = result.data as {
+            selectedSlot: { date: string; time: string; displayDate: string };
+            customerName: string;
+            phone: string;
+          };
+          return (
+            <CallbackScheduledCard
+              mode="confirmed"
+              date={data.selectedSlot.displayDate || data.selectedSlot.date}
+              time={data.selectedSlot.time}
+              phone={data.phone}
+              customerName={data.customerName}
+            />
+          );
+        }
+
+        // Error state
+        if (status === "error") {
+          return (
+            <div className="bg-card border border-red-500/30 rounded-xl p-4">
+              <span className="text-sm text-red-500">
+                Scheduling failed: {props.error || "Unknown error"}
+              </span>
+            </div>
+          );
+        }
+
+        return null;
+      },
     }),
 
     escalate_ticket: tool({
