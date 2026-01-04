@@ -156,4 +156,4 @@ Have any feedback? Share it with us.
 
 ## License
 
-[MIT](./LICENSE) — use it however you want.
+[MIT License](./LICENSE)
