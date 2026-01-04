@@ -2,15 +2,19 @@
 
 # Copilot SDK
 
-### Build AI Copilots That Actually Understand Your App
+### Build AI Copilots for Your Product
 
-The open-source SDK for building **context-aware AI assistants** that see what your users see.
+Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data. Built for speed and control.
 
 [![npm version](https://img.shields.io/npm/v/@yourgpt/copilot-sdk.svg?style=flat-square)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
 [![npm downloads](https://img.shields.io/npm/dm/@yourgpt/copilot-sdk.svg?style=flat-square)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
 
-[Documentation](https://copilot-sdk.yourgpt.ai) · [Examples](https://copilot-sdk.yourgpt.ai/docs/examples)
+![copilot-sdk](https://img.shields.io/badge/copilot--sdk-black?style=flat-square)
+![ai-copilot](https://img.shields.io/badge/ai--copilot-black?style=flat-square)
+![copilotkit](https://img.shields.io/badge/copilotkit-black?style=flat-square)
+
+[Documentation](https://copilot-sdk.yourgpt.ai)
 
 <br />
 
@@ -27,7 +31,7 @@ Most AI assistants are blind to your application. They can't see the user's scre
 - **App Context Awareness** — Capture screenshots, console logs, network requests, and DOM state automatically
 - **Minutes to Integrate** — Drop-in React components with sensible defaults
 - **Production-Ready UI** — Beautiful, accessible chat components out of the box
-- **Multi-Provider LLM** — OpenAI, Anthropic, Google, and more with a unified API
+- **Multi-Provider LLM** — OpenAI, Anthropic, Google, xAI, and more with a unified API
 - **Fully Customizable** — Headless primitives when you need full control
 - **Open Source** — MIT licensed, no vendor lock-in
 
@@ -38,7 +42,7 @@ Most AI assistants are blind to your application. They can't see the user's scre
 ### Install
 
 ```bash
-npm install @yourgpt/copilot-sdk
+npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk
 ```
 
 ### Frontend (React)
@@ -50,10 +54,7 @@ import "@yourgpt/copilot-sdk/ui/styles.css";
 
 function App() {
   return (
-    <CopilotProvider
-      runtimeUrl="/api/copilot"
-      tools={{ screenshot: true, console: true, network: true }}
-    >
+    <CopilotProvider runtimeUrl="/api/chat">
       <YourApp />
       <CopilotChat />
     </CopilotProvider>
@@ -64,27 +65,89 @@ function App() {
 ### Backend (Next.js)
 
 ```ts
-// app/api/copilot/route.ts
-import { createRuntime, createOpenAI } from "@yourgpt/llm-sdk";
+// app/api/chat/route.ts
+import { streamText } from "@yourgpt/llm-sdk";
+import { openai } from "@yourgpt/llm-sdk/openai";
 
-const runtime = createRuntime({
-  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY! }),
-  model: "gpt-4o",
+export async function POST(req: Request) {
+  const { messages } = await req.json();
+
+  const result = await streamText({
+    model: openai("gpt-5"),
+    system: "You are a helpful assistant.",
+    messages,
+  });
+
+  return result.toTextStreamResponse();
+}
+```
+
+<br />
+
+## LLM SDK - Multi-Provider Support
+
+Use any LLM provider with a unified API:
+
+```ts
+import { streamText } from "@yourgpt/llm-sdk";
+import { openai } from "@yourgpt/llm-sdk/openai";
+import { anthropic } from "@yourgpt/llm-sdk/anthropic";
+import { google } from "@yourgpt/llm-sdk/google";
+import { xai } from "@yourgpt/llm-sdk/xai";
+
+// OpenAI
+await streamText({ model: openai("gpt-5"), messages });
+
+// Anthropic
+await streamText({ model: anthropic("claude-sonnet-4-20250514"), messages });
+
+// Google
+await streamText({ model: google("gemini-2.0-flash"), messages });
+
+// xAI
+await streamText({ model: xai("grok-3"), messages });
+```
+
+### Server-Side Tools
+
+Add tools to let the AI call functions on your server:
+
+```ts
+import { streamText, tool } from "@yourgpt/llm-sdk";
+import { openai } from "@yourgpt/llm-sdk/openai";
+import { z } from "zod";
+
+const result = await streamText({
+  model: openai("gpt-5"),
+  messages,
+  tools: {
+    getWeather: tool({
+      description: "Get current weather for a city",
+      parameters: z.object({
+        city: z.string().describe("City name"),
+      }),
+      execute: async ({ city }) => {
+        const data = await fetchWeatherAPI(city);
+        return { temperature: data.temp, condition: data.condition };
+      },
+    }),
+  },
+  maxSteps: 5,
 });
 
-export const POST = (req: Request) => runtime.handleRequest(req);
+return result.toDataStreamResponse();
 ```
 
 <br />
 
 ## Packages
 
-| Package                      | Description                      |
-| ---------------------------- | -------------------------------- |
-| `@yourgpt/copilot-sdk/core`  | Core utilities and capture tools |
-| `@yourgpt/copilot-sdk/react` | React hooks and provider         |
-| `@yourgpt/copilot-sdk/ui`    | Pre-built chat components        |
-| `@yourgpt/llm-sdk`           | Multi-provider LLM integration   |
+| Package                      | Description                              |
+| ---------------------------- | ---------------------------------------- |
+| `@yourgpt/copilot-sdk/react` | React hooks and provider                 |
+| `@yourgpt/copilot-sdk/ui`    | Pre-built chat components                |
+| `@yourgpt/copilot-sdk/core`  | Core utilities and context capture tools |
+| `@yourgpt/llm-sdk`           | Multi-provider LLM SDK with streaming    |
 
 <br />
 
@@ -94,7 +157,8 @@ Visit **[copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)** for full docu
 
 - [Getting Started](https://copilot-sdk.yourgpt.ai/docs)
 - [Why Copilot SDK](https://copilot-sdk.yourgpt.ai/docs/why-copilot-sdk)
-- [Examples](https://copilot-sdk.yourgpt.ai/docs/examples)
+- [LLM SDK](https://copilot-sdk.yourgpt.ai/docs/llm-sdk)
+- [Providers](https://copilot-sdk.yourgpt.ai/docs/providers)
 - [API Reference](https://copilot-sdk.yourgpt.ai/docs/api-reference)
 
 <br />
