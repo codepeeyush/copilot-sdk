@@ -165,6 +165,7 @@ export {
 // ============================================
 export {
   Chat,
+  ChatWelcome,
   CopilotChat,
   ConnectedChat, // Alias for CopilotChat (backwards compatibility)
   ToolExecutionMessage,
@@ -177,6 +178,8 @@ export {
   // Generative UI types (for custom tool renderers)
   type ToolRendererProps,
   type ToolRenderers,
+  // Welcome screen config
+  type WelcomeConfig,
   // Persistence types
   type CopilotChatPersistenceConfig,
   type CopilotChatClassNames,

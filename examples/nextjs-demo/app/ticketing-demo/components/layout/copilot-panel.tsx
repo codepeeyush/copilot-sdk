@@ -274,7 +274,7 @@ export function CopilotPanel() {
   };
 
   return (
-    <div className="w-[440px] border-l border-border flex flex-col bg-muted shrink-0">
+    <div className="w-[420px] border-l border-border flex flex-col bg-muted shrink-0">
       {/* Copilot Chat with Built-in Persistence and Unified Header */}
       <CopilotChat
         placeholder="Ask AI to draft responses, analyze risk, find similar tickets..."
@@ -285,6 +285,12 @@ export function CopilotPanel() {
         header={{
           name: "Support Copilot",
         }}
+        suggestions={[
+          "Summarize this ticket",
+          "Draft a response to the customer",
+          "Find similar tickets",
+          "Analyze customer sentiment",
+        ]}
       />
     </div>
   );

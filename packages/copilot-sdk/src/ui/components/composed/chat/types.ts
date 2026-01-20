@@ -2,6 +2,7 @@ import React from "react";
 import type { ToolExecutionData, ToolApprovalStatus } from "../tools";
 import type { PermissionLevel } from "../../ui/permission-confirmation";
 import type { ToolDefinition } from "../../../../core";
+import type { Thread } from "../../../../core/types/thread";
 
 /**
  * Message attachment (images, files, etc.)
@@ -179,6 +180,29 @@ export interface ChatHeaderConfig {
   onClose?: () => void;
 }
 
+/**
+ * Welcome screen configuration for CopilotChat
+ * Shown when there are no messages (new session)
+ */
+export interface WelcomeConfig {
+  /** Hero title (default: "How can I help you today?") */
+  title?: string;
+  /** Hero subtitle (default: "Ask anything and get it done.") */
+  subtitle?: string;
+  /** Hero logo URL (defaults to header logo or SDK logo) */
+  logo?: string;
+  /** Label for suggestions section (default: "Try AI Copilot") */
+  suggestionsLabel?: string;
+  /** Show recent chats section (requires persistence) (default: true) */
+  showRecentChats?: boolean;
+  /** Label for recent chats section (default: "Recent chats") */
+  recentChatsLabel?: string;
+  /** Max recent chats to show (default: 3) */
+  maxRecentChats?: number;
+  /** "View more" link text (default: "View more..") */
+  viewMoreLabel?: string;
+}
+
 export type ChatProps = {
   // === Core Props ===
   /** Messages to display */
@@ -211,6 +235,21 @@ export type ChatProps = {
   name?: string;
   /** @deprecated Use `header.onClose` instead */
   onClose?: () => void;
+
+  // === Welcome Screen ===
+  /**
+   * Welcome screen configuration. Shown when no messages.
+   * Set to `false` to disable and show empty chat instead.
+   */
+  welcome?: WelcomeConfig | false;
+  /** Recent threads for welcome screen (from persistence) */
+  recentThreads?: Thread[];
+  /** Called when user selects a recent thread */
+  onSelectThread?: (threadId: string) => void;
+  /** Called when user deletes a thread from welcome screen */
+  onDeleteThread?: (threadId: string) => void;
+  /** Called when user clicks "View more" in recent threads */
+  onViewMoreThreads?: () => void;
 
   // === Appearance ===
   /** Show powered by footer (free tier) */

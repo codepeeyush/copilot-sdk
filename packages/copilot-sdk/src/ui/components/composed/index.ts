@@ -1,6 +1,7 @@
 export {
   Chat,
   ChatHeader,
+  ChatWelcome,
   Suggestions,
   DefaultMessage,
   ToolExecutionMessage,
@@ -8,6 +9,7 @@ export {
   type ChatMessage,
   type ToolRendererProps,
   type ToolRenderers,
+  type WelcomeConfig,
 } from "./chat";
 export {
   CopilotChat,

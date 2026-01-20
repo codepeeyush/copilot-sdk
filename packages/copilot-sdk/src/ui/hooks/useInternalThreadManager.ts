@@ -76,6 +76,7 @@ export function useInternalThreadManager(
     createThread,
     switchThread,
     updateCurrentThread,
+    clearCurrentThread,
     refreshThreads,
   } = threadManager;
 
@@ -92,8 +93,15 @@ export function useInternalThreadManager(
   const hasInitializedRef = useRef(false);
 
   // Generate a snapshot key from messages for comparison
+  // Uses ID + content hash to detect actual changes
   const getMessageSnapshot = useCallback((msgs: typeof messages) => {
-    return msgs.map((m) => `${m.id}:${m.content?.length ?? 0}`).join("|");
+    return msgs
+      .map((m) => {
+        // Simple hash: first 20 chars + length for uniqueness without full comparison
+        const contentPreview = (m.content ?? "").slice(0, 20);
+        return `${m.id}:${contentPreview}:${m.content?.length ?? 0}`;
+      })
+      .join("|");
   }, []);
 
   // Convert UIMessage to core Message format
@@ -148,22 +156,24 @@ export function useInternalThreadManager(
     [switchThread, setMessages, getMessageSnapshot, onThreadChange],
   );
 
-  // Handle new thread
+  // Handle new thread - just clear messages, thread is created lazily on first message
   const handleNewThread = useCallback(async () => {
     isLoadingMessagesRef.current = true;
 
-    const thread = await createThread();
+    // Don't create thread yet - it will be created automatically when first message is sent
+    // This prevents empty threads from being created
+    clearCurrentThread();
     lastSavedSnapshotRef.current = "";
-    savingToThreadRef.current = thread.id;
+    savingToThreadRef.current = null;
     setMessages([]);
 
-    // Notify thread change
-    onThreadChange?.(thread.id);
+    // Notify thread change (null = new unsaved thread)
+    onThreadChange?.(null);
 
     requestAnimationFrame(() => {
       isLoadingMessagesRef.current = false;
     });
-  }, [createThread, setMessages, onThreadChange]);
+  }, [clearCurrentThread, setMessages, onThreadChange]);
 
   // Auto-restore: load messages when thread is restored from storage
   useEffect(() => {
@@ -229,7 +239,9 @@ export function useInternalThreadManager(
     const coreMessages = convertToCore(messages);
 
     // If no thread exists, create one with these messages
-    if (!currentThreadId) {
+    if (!currentThreadId && !savingToThreadRef.current) {
+      // Set ref immediately to prevent race condition with rapid messages
+      savingToThreadRef.current = "creating";
       createThread({ messages: coreMessages }).then((thread) => {
         lastSavedSnapshotRef.current = currentSnapshot;
         savingToThreadRef.current = thread.id;

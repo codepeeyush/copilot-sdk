@@ -10,116 +10,37 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 
 Chat persistence saves threads and messages so users can continue conversations across browser sessions, devices, or after logging out.
 
----
-
-## Quick Start
-
-<Tabs items={['localStorage (Demo)', 'Server (Production)']}>
-<Tab value="localStorage (Demo)">
-```tsx
-import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
-import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
-
-function App() {
-  return (
-    <CopilotProvider runtimeUrl="/api/chat">
-      <CopilotChat
-        persistence={true}
-        showThreadPicker={true}
-      />
-    </CopilotProvider>
-  );
-}
-```
-
-Zero configuration—threads stored in browser localStorage.
-</Tab>
-
-<Tab value="Server (Production)">
-```tsx
-import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
-import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
-
-function App() {
-  return (
-    <CopilotProvider runtimeUrl="/api/chat">
-      <CopilotChat
-        persistence={{
-          type: "server",
-          endpoint: "/api/threads",
-        }}
-        showThreadPicker={true}
-      />
-    </CopilotProvider>
-  );
-}
-```
-
-Point to your own API routes for full control.
-</Tab>
-</Tabs>
+<Callout type="info" title="YourGPT Cloud Persistence">
+Skip the setup—**YourGPT Cloud** handles persistence, analytics, and scaling for you. [Book a meeting →](https://cal.com/yourgpt/demo)
+</Callout>
 
 ---
 
-## Persistence Types
+## Browser Storage
+
+For simple browser-level persistence without server setup:
 
 ```tsx
-type PersistenceConfig =
-  | boolean                    // true = localStorage
-  | { type: "local" }          // Explicit localStorage
-  | { type: "server"; endpoint: string; headers?: Record<string, string> }
-  | { type: "cloud"; apiKey: string }  // Coming soon
-```
-
-| Type | Best For | Setup | Multi-device |
-|------|----------|-------|--------------|
-| **localStorage** | Demos | Zero config | ❌ |
-| **Server** | Production | API routes + DB | ✅ |
-| **Cloud** | Quick prod *(soon)* | API key | ✅ |
-
----
-
-## localStorage
-
-Zero-config persistence for demos and prototyping.
-
-```tsx
-// Simple
-<CopilotChat persistence={true} showThreadPicker={true} />
-
-// With options
 <CopilotChat
-  persistence={{
-    type: "local",
-    saveDebounce: 1000,           // Auto-save delay (ms)
-    autoRestoreLastThread: true,  // Restore last thread on load
-  }}
+  persistence={true}
   showThreadPicker={true}
 />
 ```
 
-<Callout type="warn">
-localStorage is browser-only and limited to ~5MB. Use server persistence for production.
-</Callout>
+Data is stored in localStorage (~5MB limit, single device only).
 
 ---
 
 ## Server Persistence
 
-Store threads in your own database with full control over data.
-
-### Configuration
+Store threads in your own database for cross-device sync and user accounts.
 
 ```tsx
 <CopilotChat
   persistence={{
     type: "server",
-    endpoint: "/api/threads",     // Your thread CRUD API
-    headers: {                    // Optional auth headers
-      Authorization: `Bearer ${token}`,
-    },
-    saveDebounce: 1000,
-    autoRestoreLastThread: true,
+    endpoint: "/api/threads",
+    headers: { Authorization: `Bearer ${token}` },
   }}
   showThreadPicker={true}
 />
@@ -231,279 +152,105 @@ export default router;
 </Tab>
 </Tabs>
 
-### Request/Response Format
-
-<Tabs items={['List', 'Get', 'Create', 'Update']}>
-<Tab value="List">
-**GET /api/threads**
-
-Query params: `limit`, `offset`, `orderBy`, `orderDir`
-
-```json
-{
-  "threads": [
-    {
-      "id": "thread_123",
-      "title": "Help with React",
-      "preview": "How do I use hooks?",
-      "messageCount": 5,
-      "createdAt": "2024-01-01T00:00:00Z",
-      "updatedAt": "2024-01-01T00:05:00Z"
-    }
-  ],
-  "total": 1,
-  "hasMore": false
-}
-```
-</Tab>
-
-<Tab value="Get">
-**GET /api/threads/:id**
-
-```json
-{
-  "id": "thread_123",
-  "title": "Help with React",
-  "messageCount": 2,
-  "createdAt": "2024-01-01T00:00:00Z",
-  "updatedAt": "2024-01-01T00:05:00Z",
-  "messages": [
-    { "id": "msg_1", "role": "user", "content": "How do I use hooks?" },
-    { "id": "msg_2", "role": "assistant", "content": "React hooks are..." }
-  ]
-}
-```
-</Tab>
-
-<Tab value="Create">
-**POST /api/threads**
-
-```json
-// Request
-{ "id": "thread_123", "title": "New Thread", "messages": [] }
-
-// Response (201)
-{ "id": "thread_123", "title": "New Thread", "messageCount": 0, ... }
-```
-</Tab>
-
-<Tab value="Update">
-**PATCH /api/threads/:id**
-
-```json
-// Request
-{ "title": "Updated", "messages": [...] }
-
-// Response
-{ "id": "thread_123", "title": "Updated", "messageCount": 10, ... }
-```
-</Tab>
-</Tabs>
-
 ---
 
-## Server-Side Message Persistence
+## useThreadManager Hook
 
-Use the `onFinish` callback to save messages after each response:
-
-```typescript
-// app/api/chat/route.ts
-import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
-
-const runtime = createRuntime({
-  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-  model: 'gpt-4o-mini',
-});
-
-export async function POST(request: Request) {
-  return runtime.handleRequest(request, {
-    onFinish: async ({ messages, threadId }) => {
-      if (!threadId) return;
-
-      await db.thread.update({
-        where: { id: threadId },
-        data: {
-          messages: { push: messages },
-          updatedAt: new Date(),
-        },
-      });
-    },
-  });
-}
-```
-
-<Callout type="info">
-`onFinish` runs after the stream completes, ensuring messages are only saved after successful responses.
-</Callout>
-
----
-
-## Database Schemas
-
-<Tabs items={['Prisma', 'Drizzle', 'MongoDB']}>
-<Tab value="Prisma">
-```prisma
-model Thread {
-  id          String    @id @default(cuid())
-  title       String?
-  preview     String?
-  userId      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  messages    Message[]
-  user        User      @relation(fields: [userId], references: [id])
-}
-
-model Message {
-  id          String   @id @default(cuid())
-  role        String
-  content     String
-  toolCalls   Json?
-  toolCallId  String?
-  createdAt   DateTime @default(now())
-  threadId    String
-  thread      Thread   @relation(fields: [threadId], references: [id])
-}
-```
-</Tab>
-
-<Tab value="Drizzle">
-```typescript
-import { pgTable, text, timestamp, json, integer } from 'drizzle-orm/pg-core';
-
-export const threads = pgTable('threads', {
-  id: text('id').primaryKey(),
-  title: text('title'),
-  preview: text('preview'),
-  userId: text('user_id').notNull(),
-  messageCount: integer('message_count').default(0),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
-export const messages = pgTable('messages', {
-  id: text('id').primaryKey(),
-  threadId: text('thread_id').notNull().references(() => threads.id),
-  role: text('role').notNull(),
-  content: text('content'),
-  toolCalls: json('tool_calls'),
-  toolCallId: text('tool_call_id'),
-  createdAt: timestamp('created_at').defaultNow(),
-});
-```
-</Tab>
-
-<Tab value="MongoDB">
-```typescript
-import mongoose from 'mongoose';
-
-const messageSchema = new mongoose.Schema({
-  role: { type: String, required: true },
-  content: String,
-  tool_calls: mongoose.Schema.Types.Mixed,
-  tool_call_id: String,
-  created_at: { type: Date, default: Date.now },
-});
-
-const threadSchema = new mongoose.Schema({
-  title: String,
-  preview: String,
-  userId: { type: String, required: true },
-  messages: [messageSchema],
-  messageCount: { type: Number, default: 0 },
-}, { timestamps: true });
-
-export const Thread = mongoose.model('Thread', threadSchema);
-```
-</Tab>
-</Tabs>
-
----
-
-## Authentication
-
-Add auth headers and scope threads to users:
-
-```tsx
-function App() {
-  const { token } = useAuth();
-
-  return (
-    <CopilotChat
-      persistence={{
-        type: "server",
-        endpoint: "/api/threads",
-        headers: { Authorization: `Bearer ${token}` },
-      }}
-    />
-  );
-}
-```
-
-```typescript
-// Server: Verify and scope to user
-export async function GET(request: Request) {
-  const session = await getServerSession();
-  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const threads = await db.thread.findMany({
-    where: { userId: session.user.id },
-    orderBy: { updatedAt: 'desc' },
-  });
-
-  return Response.json({ threads, total: threads.length, hasMore: false });
-}
-```
-
----
-
-## Advanced: Direct Adapter Usage
-
-For custom integrations, use the adapter directly:
-
-```tsx
-import { useThreadManager, createServerAdapter } from '@yourgpt/copilot-sdk/react';
-
-const adapter = createServerAdapter({
-  endpoint: '/api/threads',
-  headers: { Authorization: `Bearer ${token}` },
-});
-
-const { threads, currentThread, createThread, switchThread } = useThreadManager({
-  adapter,
-});
-```
-
----
-
-## Thread Picker
-
-Enable the built-in UI for switching conversations:
-
-```tsx
-<CopilotChat
-  persistence={true}
-  showThreadPicker={true}
-/>
-```
-
-For custom UI, use `useThreadManager`:
+Access thread management functions directly for custom UIs:
 
 ```tsx
 import { useThreadManager } from '@yourgpt/copilot-sdk/react';
 
 function CustomThreadList() {
-  const { threads, currentThread, switchThread, createThread, deleteThread } = useThreadManager();
+  const {
+    threads,           // All threads
+    currentThread,     // Currently active thread
+    currentThreadId,   // Current thread ID
+    isLoading,         // Loading state
+    createThread,      // Create new thread
+    switchThread,      // Switch to a thread
+    deleteThread,      // Delete a thread
+    updateCurrentThread, // Update current thread
+  } = useThreadManager();
 
   return (
-    <ul>
-      {threads.map(t => (
-        <li key={t.id} onClick={() => switchThread(t.id)}>
-          {t.title || 'Untitled'}
-        </li>
+    <div>
+      {threads.map(thread => (
+        <div key={thread.id}>
+          <span onClick={() => switchThread(thread.id)}>
+            {thread.title || 'Untitled'}
+          </span>
+          <button onClick={() => deleteThread(thread.id)}>Delete</button>
+        </div>
       ))}
-      <button onClick={() => createThread()}>New</button>
-    </ul>
+      <button onClick={() => createThread()}>New Thread</button>
+    </div>
   );
 }
 ```
+
+### Thread Object
+
+```typescript
+interface Thread {
+  id: string;
+  title?: string;
+  preview?: string;
+  messageCount?: number;
+  createdAt?: Date;
+  updatedAt?: Date;
+  messages?: Message[];
+}
+```
+
+---
+
+## Custom Adapters
+
+Create custom storage adapters for any backend:
+
+```tsx
+import { useThreadManager } from '@yourgpt/copilot-sdk/react';
+import type { ThreadStorageAdapter } from '@yourgpt/copilot-sdk/react';
+
+const customAdapter: ThreadStorageAdapter = {
+  async getThreads() {
+    const response = await fetch('/api/my-threads');
+    return response.json();
+  },
+  async getThread(id) {
+    const response = await fetch(`/api/my-threads/${id}`);
+    return response.json();
+  },
+  async createThread(thread) {
+    const response = await fetch('/api/my-threads', {
+      method: 'POST',
+      body: JSON.stringify(thread),
+    });
+    return response.json();
+  },
+  async updateThread(id, updates) {
+    const response = await fetch(`/api/my-threads/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(updates),
+    });
+    return response.json();
+  },
+  async deleteThread(id) {
+    await fetch(`/api/my-threads/${id}`, { method: 'DELETE' });
+  },
+};
+
+// Use with hook
+const threadManager = useThreadManager({ adapter: customAdapter });
+
+// Or use built-in server adapter
+import { createServerAdapter } from '@yourgpt/copilot-sdk/react';
+
+const serverAdapter = createServerAdapter({
+  endpoint: '/api/threads',
+  headers: { Authorization: `Bearer ${token}` },
+});
+```
+
+

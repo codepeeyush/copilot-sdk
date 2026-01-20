@@ -153,6 +153,9 @@ export type CopilotChatProps = Omit<
   | "classNames"
   | "header"
   | "threadPicker"
+  | "recentThreads"
+  | "onSelectThread"
+  | "onViewMoreThreads"
 > & {
   /**
    * Header configuration.
@@ -498,12 +501,27 @@ export function CopilotChat(props: CopilotChatProps) {
   const { threadManager, handleSwitchThread, handleNewThread, isBusy } =
     threadManagerResult;
 
+  // Handle delete thread
+  const handleDeleteThread = React.useCallback(
+    (threadId: string) => {
+      const isCurrentThread = threadManager.currentThreadId === threadId;
+      threadManager.deleteThread(threadId);
+
+      // If deleting the current thread, clear messages and show welcome screen
+      if (isCurrentThread) {
+        handleNewThread();
+      }
+    },
+    [threadManager, handleNewThread],
+  );
+
   const threadPickerElement =
     isPersistenceEnabled && showThreadPicker ? (
       <ThreadPicker
         value={threadManager.currentThreadId}
         threads={threadManager.threads}
         onSelect={handleSwitchThread}
+        onDeleteThread={handleDeleteThread}
         onNewThread={handleNewThread}
         loading={threadManager.isLoading}
         disabled={isBusy}
@@ -541,6 +559,10 @@ export function CopilotChat(props: CopilotChatProps) {
       threadPicker={threadPickerElement}
       showHeader={shouldShowHeader}
       renderHeader={useCustomHeader ? chatProps.renderHeader : undefined}
+      // Welcome screen props
+      recentThreads={isPersistenceEnabled ? threadManager.threads : undefined}
+      onSelectThread={isPersistenceEnabled ? handleSwitchThread : undefined}
+      onDeleteThread={isPersistenceEnabled ? handleDeleteThread : undefined}
     />
   );
 }

@@ -12,6 +12,7 @@ import {
 import { FollowUpQuestions, parseFollowUps } from "../../ui/follow-up";
 import type { ChatMessage, MessageAttachment, ToolRenderers } from "./types";
 import type { ToolDefinition, ToolRenderProps } from "../../../../core";
+import CopilotSDKLogo from "../../icons/copilot-sdk-logo";
 
 type DefaultMessageProps = {
   message: ChatMessage;
@@ -177,7 +178,12 @@ export function DefaultMessage({
         src={assistantAvatar.src || ""}
         alt="Assistant"
         fallback={assistantAvatar.fallback}
-        className="bg-primary text-primary-foreground"
+        fallbackIcon={
+          !assistantAvatar.src ? (
+            <CopilotSDKLogo className="size-5" />
+          ) : undefined
+        }
+        className="bg-background"
       />
       <div className="flex-1 min-w-0 max-w-[80%]">
         {/* Reasoning/Thinking (collapsible, above content) */}

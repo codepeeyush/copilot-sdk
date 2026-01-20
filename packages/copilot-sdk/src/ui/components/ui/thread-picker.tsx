@@ -54,6 +54,8 @@ export interface ThreadPickerProps {
   threads: Thread[];
   /** Called when a thread is selected */
   onSelect?: (threadId: string) => void;
+  /** Called when a thread is deleted */
+  onDeleteThread?: (threadId: string) => void;
   /** Called when "New conversation" is clicked */
   onNewThread?: () => void;
   /** Placeholder text when no thread is selected */
@@ -124,6 +126,30 @@ function CheckIcon({ className }: { className?: string }) {
   );
 }
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      className={cn("w-4 h-4", className)}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 6h18" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"
+      />
+    </svg>
+  );
+}
+
 // ============================================
 // Component
 // ============================================
@@ -147,6 +173,7 @@ export function ThreadPicker({
   value,
   threads,
   onSelect,
+  onDeleteThread,
   onNewThread,
   placeholder = "Select conversation...",
   newThreadLabel = "New conversation",
@@ -188,7 +215,7 @@ export function ThreadPicker({
           buttonClassName,
         )}
       >
-        <div className="flex items-center gap-1 min-w-0 text-xs flex-1">
+        <div className="flex items-center gap-1 text-xs ">
           {loading ? (
             <span className="text-muted-foreground">Loading...</span>
           ) : selectedThread ? (
@@ -236,42 +263,60 @@ export function ThreadPicker({
         {/* Thread list */}
         {threads.length > 0 ? (
           threads.map((thread) => (
-            <button
+            <div
               key={thread.id}
-              type="button"
-              onClick={() => handleSelect(thread.id)}
               className={cn(
-                "flex flex-col gap-0.5 w-full px-2.5 py-1.5 text-left",
+                "group flex items-center gap-1 w-full px-2.5 py-1.5",
                 "hover:bg-accent hover:text-accent-foreground",
-                "focus:bg-accent focus:text-accent-foreground focus:outline-none",
+                "focus-within:bg-accent focus-within:text-accent-foreground",
                 value === thread.id && "bg-accent",
                 itemClassName,
               )}
             >
-              <div className="flex items-center justify-between gap-2">
-                <span className="font-medium text-xs truncate">
-                  {thread.title || "Untitled conversation"}
-                </span>
-                {value === thread.id && (
-                  <CheckIcon className="flex-shrink-0 text-primary size-3" />
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                {thread.preview && (
-                  <span className="truncate max-w-[180px]">
-                    {thread.preview}
+              <button
+                type="button"
+                onClick={() => handleSelect(thread.id)}
+                className="flex-1 flex flex-col gap-0.5 text-left focus:outline-none min-w-0"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-medium text-xs truncate">
+                    {thread.title || "Untitled conversation"}
                   </span>
-                )}
-                {thread.preview && thread.updatedAt && (
-                  <span className="flex-shrink-0">·</span>
-                )}
-                {thread.updatedAt && (
-                  <span className="flex-shrink-0">
-                    {formatDate(thread.updatedAt)}
-                  </span>
-                )}
-              </div>
-            </button>
+                  {value === thread.id && (
+                    <CheckIcon className="flex-shrink-0 text-primary size-3" />
+                  )}
+                </div>
+                <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  {thread.preview && (
+                    <span className="truncate max-w-[180px]">
+                      {thread.preview}
+                    </span>
+                  )}
+                  {thread.preview && thread.updatedAt && (
+                    <span className="flex-shrink-0">·</span>
+                  )}
+                  {thread.updatedAt && (
+                    <span className="flex-shrink-0">
+                      {formatDate(thread.updatedAt)}
+                    </span>
+                  )}
+                </div>
+              </button>
+              {/* Delete button - appears on hover */}
+              {onDeleteThread && (
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteThread(thread.id);
+                  }}
+                  className="flex-shrink-0 p-1 rounded opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all focus:opacity-100 focus:outline-none"
+                  aria-label="Delete thread"
+                >
+                  <TrashIcon className="size-3" />
+                </button>
+              )}
+            </div>
           ))
         ) : (
           <div className="px-2.5 py-3 text-center text-xs text-muted-foreground">
