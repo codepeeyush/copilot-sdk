@@ -4,6 +4,8 @@ export type {
   ChatRequest,
   ActionRequest,
   RequestContext,
+  HandleRequestOptions,
+  HandleRequestResult,
 } from "./types";
 export {
   createSSEHeaders,

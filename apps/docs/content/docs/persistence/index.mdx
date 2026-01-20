@@ -1,0 +1,509 @@
+---
+title: Chat Persistence
+description: Save and restore chat conversations across sessions
+icon: History
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tabs, Tab } from 'fumadocs-ui/components/tabs';
+import { Steps, Step } from 'fumadocs-ui/components/steps';
+
+Chat persistence saves threads and messages so users can continue conversations across browser sessions, devices, or after logging out.
+
+---
+
+## Quick Start
+
+<Tabs items={['localStorage (Demo)', 'Server (Production)']}>
+<Tab value="localStorage (Demo)">
+```tsx
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
+
+function App() {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      <CopilotChat
+        persistence={true}
+        showThreadPicker={true}
+      />
+    </CopilotProvider>
+  );
+}
+```
+
+Zero configuration—threads stored in browser localStorage.
+</Tab>
+
+<Tab value="Server (Production)">
+```tsx
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
+
+function App() {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      <CopilotChat
+        persistence={{
+          type: "server",
+          endpoint: "/api/threads",
+        }}
+        showThreadPicker={true}
+      />
+    </CopilotProvider>
+  );
+}
+```
+
+Point to your own API routes for full control.
+</Tab>
+</Tabs>
+
+---
+
+## Persistence Types
+
+```tsx
+type PersistenceConfig =
+  | boolean                    // true = localStorage
+  | { type: "local" }          // Explicit localStorage
+  | { type: "server"; endpoint: string; headers?: Record<string, string> }
+  | { type: "cloud"; apiKey: string }  // Coming soon
+```
+
+| Type | Best For | Setup | Multi-device |
+|------|----------|-------|--------------|
+| **localStorage** | Demos | Zero config | ❌ |
+| **Server** | Production | API routes + DB | ✅ |
+| **Cloud** | Quick prod *(soon)* | API key | ✅ |
+
+---
+
+## localStorage
+
+Zero-config persistence for demos and prototyping.
+
+```tsx
+// Simple
+<CopilotChat persistence={true} showThreadPicker={true} />
+
+// With options
+<CopilotChat
+  persistence={{
+    type: "local",
+    saveDebounce: 1000,           // Auto-save delay (ms)
+    autoRestoreLastThread: true,  // Restore last thread on load
+  }}
+  showThreadPicker={true}
+/>
+```
+
+<Callout type="warn">
+localStorage is browser-only and limited to ~5MB. Use server persistence for production.
+</Callout>
+
+---
+
+## Server Persistence
+
+Store threads in your own database with full control over data.
+
+### Configuration
+
+```tsx
+<CopilotChat
+  persistence={{
+    type: "server",
+    endpoint: "/api/threads",     // Your thread CRUD API
+    headers: {                    // Optional auth headers
+      Authorization: `Bearer ${token}`,
+    },
+    saveDebounce: 1000,
+    autoRestoreLastThread: true,
+  }}
+  showThreadPicker={true}
+/>
+```
+
+### API Contract
+
+Your endpoint must implement these routes:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/threads` | List threads |
+| `POST` | `/api/threads` | Create thread |
+| `GET` | `/api/threads/:id` | Get thread with messages |
+| `PATCH` | `/api/threads/:id` | Update thread |
+| `DELETE` | `/api/threads/:id` | Delete thread |
+
+### Implementation
+
+<Tabs items={['Next.js', 'Express']}>
+<Tab value="Next.js">
+```typescript
+// app/api/threads/route.ts
+export async function GET() {
+  const threads = await db.thread.findMany({
+    orderBy: { updatedAt: 'desc' },
+  });
+  return Response.json({ threads, total: threads.length, hasMore: false });
+}
+
+export async function POST(request: Request) {
+  const body = await request.json();
+  const thread = await db.thread.create({ data: body });
+  return Response.json(thread, { status: 201 });
+}
+```
+
+```typescript
+// app/api/threads/[id]/route.ts
+import { NextRequest } from 'next/server';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const thread = await db.thread.findUnique({ where: { id } });
+  if (!thread) return Response.json({ error: 'Not found' }, { status: 404 });
+  return Response.json(thread);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const updates = await request.json();
+  const thread = await db.thread.update({ where: { id }, data: updates });
+  return Response.json(thread);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  await db.thread.delete({ where: { id } });
+  return new Response(null, { status: 204 });
+}
+```
+</Tab>
+
+<Tab value="Express">
+```typescript
+import { Router } from 'express';
+const router = Router();
+
+router.get('/', async (req, res) => {
+  const threads = await db.thread.findMany();
+  res.json({ threads, total: threads.length, hasMore: false });
+});
+
+router.post('/', async (req, res) => {
+  const thread = await db.thread.create({ data: req.body });
+  res.status(201).json(thread);
+});
+
+router.get('/:id', async (req, res) => {
+  const thread = await db.thread.findUnique({ where: { id: req.params.id } });
+  if (!thread) return res.status(404).json({ error: 'Not found' });
+  res.json(thread);
+});
+
+router.patch('/:id', async (req, res) => {
+  const thread = await db.thread.update({
+    where: { id: req.params.id },
+    data: req.body,
+  });
+  res.json(thread);
+});
+
+router.delete('/:id', async (req, res) => {
+  await db.thread.delete({ where: { id: req.params.id } });
+  res.status(204).send();
+});
+
+export default router;
+```
+</Tab>
+</Tabs>
+
+### Request/Response Format
+
+<Tabs items={['List', 'Get', 'Create', 'Update']}>
+<Tab value="List">
+**GET /api/threads**
+
+Query params: `limit`, `offset`, `orderBy`, `orderDir`
+
+```json
+{
+  "threads": [
+    {
+      "id": "thread_123",
+      "title": "Help with React",
+      "preview": "How do I use hooks?",
+      "messageCount": 5,
+      "createdAt": "2024-01-01T00:00:00Z",
+      "updatedAt": "2024-01-01T00:05:00Z"
+    }
+  ],
+  "total": 1,
+  "hasMore": false
+}
+```
+</Tab>
+
+<Tab value="Get">
+**GET /api/threads/:id**
+
+```json
+{
+  "id": "thread_123",
+  "title": "Help with React",
+  "messageCount": 2,
+  "createdAt": "2024-01-01T00:00:00Z",
+  "updatedAt": "2024-01-01T00:05:00Z",
+  "messages": [
+    { "id": "msg_1", "role": "user", "content": "How do I use hooks?" },
+    { "id": "msg_2", "role": "assistant", "content": "React hooks are..." }
+  ]
+}
+```
+</Tab>
+
+<Tab value="Create">
+**POST /api/threads**
+
+```json
+// Request
+{ "id": "thread_123", "title": "New Thread", "messages": [] }
+
+// Response (201)
+{ "id": "thread_123", "title": "New Thread", "messageCount": 0, ... }
+```
+</Tab>
+
+<Tab value="Update">
+**PATCH /api/threads/:id**
+
+```json
+// Request
+{ "title": "Updated", "messages": [...] }
+
+// Response
+{ "id": "thread_123", "title": "Updated", "messageCount": 10, ... }
+```
+</Tab>
+</Tabs>
+
+---
+
+## Server-Side Message Persistence
+
+Use the `onFinish` callback to save messages after each response:
+
+```typescript
+// app/api/chat/route.ts
+import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o-mini',
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request, {
+    onFinish: async ({ messages, threadId }) => {
+      if (!threadId) return;
+
+      await db.thread.update({
+        where: { id: threadId },
+        data: {
+          messages: { push: messages },
+          updatedAt: new Date(),
+        },
+      });
+    },
+  });
+}
+```
+
+<Callout type="info">
+`onFinish` runs after the stream completes, ensuring messages are only saved after successful responses.
+</Callout>
+
+---
+
+## Database Schemas
+
+<Tabs items={['Prisma', 'Drizzle', 'MongoDB']}>
+<Tab value="Prisma">
+```prisma
+model Thread {
+  id          String    @id @default(cuid())
+  title       String?
+  preview     String?
+  userId      String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  messages    Message[]
+  user        User      @relation(fields: [userId], references: [id])
+}
+
+model Message {
+  id          String   @id @default(cuid())
+  role        String
+  content     String
+  toolCalls   Json?
+  toolCallId  String?
+  createdAt   DateTime @default(now())
+  threadId    String
+  thread      Thread   @relation(fields: [threadId], references: [id])
+}
+```
+</Tab>
+
+<Tab value="Drizzle">
+```typescript
+import { pgTable, text, timestamp, json, integer } from 'drizzle-orm/pg-core';
+
+export const threads = pgTable('threads', {
+  id: text('id').primaryKey(),
+  title: text('title'),
+  preview: text('preview'),
+  userId: text('user_id').notNull(),
+  messageCount: integer('message_count').default(0),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+export const messages = pgTable('messages', {
+  id: text('id').primaryKey(),
+  threadId: text('thread_id').notNull().references(() => threads.id),
+  role: text('role').notNull(),
+  content: text('content'),
+  toolCalls: json('tool_calls'),
+  toolCallId: text('tool_call_id'),
+  createdAt: timestamp('created_at').defaultNow(),
+});
+```
+</Tab>
+
+<Tab value="MongoDB">
+```typescript
+import mongoose from 'mongoose';
+
+const messageSchema = new mongoose.Schema({
+  role: { type: String, required: true },
+  content: String,
+  tool_calls: mongoose.Schema.Types.Mixed,
+  tool_call_id: String,
+  created_at: { type: Date, default: Date.now },
+});
+
+const threadSchema = new mongoose.Schema({
+  title: String,
+  preview: String,
+  userId: { type: String, required: true },
+  messages: [messageSchema],
+  messageCount: { type: Number, default: 0 },
+}, { timestamps: true });
+
+export const Thread = mongoose.model('Thread', threadSchema);
+```
+</Tab>
+</Tabs>
+
+---
+
+## Authentication
+
+Add auth headers and scope threads to users:
+
+```tsx
+function App() {
+  const { token } = useAuth();
+
+  return (
+    <CopilotChat
+      persistence={{
+        type: "server",
+        endpoint: "/api/threads",
+        headers: { Authorization: `Bearer ${token}` },
+      }}
+    />
+  );
+}
+```
+
+```typescript
+// Server: Verify and scope to user
+export async function GET(request: Request) {
+  const session = await getServerSession();
+  if (!session) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const threads = await db.thread.findMany({
+    where: { userId: session.user.id },
+    orderBy: { updatedAt: 'desc' },
+  });
+
+  return Response.json({ threads, total: threads.length, hasMore: false });
+}
+```
+
+---
+
+## Advanced: Direct Adapter Usage
+
+For custom integrations, use the adapter directly:
+
+```tsx
+import { useThreadManager, createServerAdapter } from '@yourgpt/copilot-sdk/react';
+
+const adapter = createServerAdapter({
+  endpoint: '/api/threads',
+  headers: { Authorization: `Bearer ${token}` },
+});
+
+const { threads, currentThread, createThread, switchThread } = useThreadManager({
+  adapter,
+});
+```
+
+---
+
+## Thread Picker
+
+Enable the built-in UI for switching conversations:
+
+```tsx
+<CopilotChat
+  persistence={true}
+  showThreadPicker={true}
+/>
+```
+
+For custom UI, use `useThreadManager`:
+
+```tsx
+import { useThreadManager } from '@yourgpt/copilot-sdk/react';
+
+function CustomThreadList() {
+  const { threads, currentThread, switchThread, createThread, deleteThread } = useThreadManager();
+
+  return (
+    <ul>
+      {threads.map(t => (
+        <li key={t.id} onClick={() => switchThread(t.id)}>
+          {t.title || 'Untitled'}
+        </li>
+      ))}
+      <button onClick={() => createThread()}>New</button>
+    </ul>
+  );
+}
+```

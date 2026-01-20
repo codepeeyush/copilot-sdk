@@ -8,6 +8,133 @@ import {
 } from "../../../react";
 import { Chat, type ChatProps } from "./chat";
 import type { ToolExecutionData } from "./tools/tool-execution-list";
+import { ThreadPicker } from "../ui/thread-picker";
+import {
+  useInternalThreadManager,
+  type UseInternalThreadManagerConfig,
+} from "../../hooks/useInternalThreadManager";
+import type {
+  ThreadStorageAdapter,
+  AsyncThreadStorageAdapter,
+} from "../../../thread/adapters";
+import { createServerAdapter } from "../../../thread/adapters";
+
+// ============================================
+// Persistence Configuration Types
+// ============================================
+
+/**
+ * localStorage persistence (zero config)
+ */
+export interface LocalPersistenceConfig {
+  type: "local";
+  /** Debounce delay for auto-save (ms). Default: 1000 */
+  saveDebounce?: number;
+  /** Whether to auto-restore the last active thread. Default: true */
+  autoRestoreLastThread?: boolean;
+}
+
+/**
+ * Server persistence (point to your own API routes)
+ */
+export interface ServerPersistenceConfig {
+  type: "server";
+  /**
+   * Endpoint URL for your thread CRUD API
+   * @example "/api/threads"
+   */
+  endpoint: string;
+  /** Additional headers for requests (e.g., auth tokens) */
+  headers?: Record<string, string>;
+  /** Debounce delay for auto-save (ms). Default: 1000 */
+  saveDebounce?: number;
+  /** Whether to auto-restore the last active thread. Default: true */
+  autoRestoreLastThread?: boolean;
+}
+
+/**
+ * Cloud persistence (future - managed service)
+ */
+export interface CloudPersistenceConfig {
+  type: "cloud";
+  /** Copilot Cloud API key */
+  apiKey: string;
+  /** Custom endpoint for enterprise (optional) */
+  endpoint?: string;
+}
+
+/**
+ * Legacy persistence config (backward compatibility)
+ */
+export interface LegacyPersistenceConfig {
+  /** Storage adapter (defaults to localStorage) */
+  adapter?: ThreadStorageAdapter | AsyncThreadStorageAdapter;
+  /** Debounce delay for auto-save (ms). Default: 1000 */
+  saveDebounce?: number;
+  /** Whether to auto-restore the last active thread on mount. Default: true */
+  autoRestoreLastThread?: boolean;
+}
+
+/**
+ * Persistence configuration for CopilotChat
+ *
+ * @example localStorage (zero config)
+ * ```tsx
+ * <CopilotChat persistence={true} />
+ * // or explicitly:
+ * <CopilotChat persistence={{ type: "local" }} />
+ * ```
+ *
+ * @example Server persistence
+ * ```tsx
+ * <CopilotChat
+ *   persistence={{
+ *     type: "server",
+ *     threadsUrl: "/api/threads",
+ *     headers: { Authorization: `Bearer ${token}` },
+ *   }}
+ * />
+ * ```
+ */
+export type CopilotChatPersistenceConfig =
+  | LocalPersistenceConfig
+  | ServerPersistenceConfig
+  | CloudPersistenceConfig
+  | LegacyPersistenceConfig;
+
+/**
+ * Extended classNames for CopilotChat including thread picker
+ */
+export interface CopilotChatClassNames {
+  // Existing Chat classNames
+  root?: string;
+  header?: string;
+  container?: string;
+  messageList?: string;
+  userMessage?: string;
+  assistantMessage?: string;
+  input?: string;
+  suggestions?: string;
+  footer?: string;
+  // Thread picker classNames
+  threadPicker?: string;
+  threadPickerButton?: string;
+  threadPickerDropdown?: string;
+  threadPickerItem?: string;
+  threadPickerNewButton?: string;
+}
+
+/**
+ * Header configuration for CopilotChat
+ */
+export interface CopilotChatHeaderConfig {
+  /** Logo image URL (default: YourGPT logo) */
+  logo?: string;
+  /** Copilot name (default: "AI Copilot") */
+  name?: string;
+  /** Called when close button is clicked */
+  onClose?: () => void;
+}
 
 /**
  * Props for CopilotChat - auto-connects to CopilotProvider context
@@ -23,7 +150,41 @@ export type CopilotChatProps = Omit<
   | "onApproveToolExecution"
   | "onRejectToolExecution"
   | "processAttachment"
->;
+  | "classNames"
+  | "header"
+  | "threadPicker"
+> & {
+  /**
+   * Header configuration.
+   * Providing this prop will automatically show the header.
+   */
+  header?: CopilotChatHeaderConfig;
+  /**
+   * Enable built-in persistence.
+   * - `true`: Use localStorage with default settings
+   * - `object`: Custom persistence config
+   * - `undefined`: No persistence (default)
+   */
+  persistence?: boolean | CopilotChatPersistenceConfig;
+
+  /**
+   * Show thread picker in the header for switching conversations.
+   * Requires `persistence` to be enabled.
+   * @default false
+   */
+  showThreadPicker?: boolean;
+
+  /**
+   * Callback when the current thread changes.
+   * Useful for syncing thread ID with URL or external state.
+   */
+  onThreadChange?: (threadId: string | null) => void;
+
+  /**
+   * Granular class names for sub-components including thread picker
+   */
+  classNames?: CopilotChatClassNames;
+};
 
 /**
  * CopilotChat - Auto-connected chat component
@@ -64,7 +225,89 @@ export type CopilotChatProps = Omit<
  * />
  * ```
  */
+/**
+ * Parse persistence config into internal thread manager config
+ */
+function parsePersistenceConfig(
+  persistence: boolean | CopilotChatPersistenceConfig | undefined,
+  onThreadChange?: (threadId: string | null) => void,
+): UseInternalThreadManagerConfig | undefined {
+  // Not enabled
+  if (!persistence) {
+    return undefined;
+  }
+
+  // Boolean true = localStorage with defaults
+  if (persistence === true) {
+    return {
+      onThreadChange,
+      autoRestoreLastThread: true,
+    };
+  }
+
+  // Type-based config
+  if ("type" in persistence) {
+    switch (persistence.type) {
+      case "local":
+        return {
+          saveDebounce: persistence.saveDebounce,
+          autoRestoreLastThread: persistence.autoRestoreLastThread ?? true,
+          onThreadChange,
+        };
+
+      case "server":
+        return {
+          adapter: createServerAdapter({
+            endpoint: persistence.endpoint,
+            headers: persistence.headers,
+          }),
+          saveDebounce: persistence.saveDebounce,
+          autoRestoreLastThread: persistence.autoRestoreLastThread ?? true,
+          onThreadChange,
+        };
+
+      case "cloud":
+        // Future: Cloud persistence not yet implemented
+        console.warn(
+          "[Copilot SDK] Cloud persistence is not yet implemented. Falling back to localStorage.",
+        );
+        return {
+          onThreadChange,
+          autoRestoreLastThread: true,
+        };
+    }
+  }
+
+  // Legacy config (has adapter property or other legacy fields)
+  const legacyConfig = persistence as LegacyPersistenceConfig;
+  return {
+    adapter: legacyConfig.adapter,
+    saveDebounce: legacyConfig.saveDebounce,
+    autoRestoreLastThread: legacyConfig.autoRestoreLastThread ?? true,
+    onThreadChange,
+  };
+}
+
 export function CopilotChat(props: CopilotChatProps) {
+  const {
+    persistence,
+    showThreadPicker = false,
+    onThreadChange,
+    classNames,
+    header,
+    ...chatProps
+  } = props;
+
+  // Parse persistence config
+  const persistenceConfig = parsePersistenceConfig(persistence, onThreadChange);
+
+  // Use internal thread manager when persistence is enabled
+  const threadManagerResult = useInternalThreadManager(
+    persistenceConfig ?? { autoRestoreLastThread: false },
+  );
+
+  const isPersistenceEnabled = !!persistence;
+
   // Auto-connect to context internally
   const {
     messages,
@@ -199,8 +442,8 @@ export function CopilotChat(props: CopilotChatProps) {
 
   // Show suggestions only when no messages
   const suggestions =
-    visibleMessages.length === 0 && props.suggestions?.length
-      ? props.suggestions
+    visibleMessages.length === 0 && chatProps.suggestions?.length
+      ? chatProps.suggestions
       : [];
 
   // isProcessing: Show "Continuing..." loader ONLY when we're in an active tool flow
@@ -236,19 +479,68 @@ export function CopilotChat(props: CopilotChatProps) {
     isProcessingToolResults = hasCompletedTools && !hasExecutingTools;
   }
 
+  // Extract chat classNames (without thread picker classes)
+  const chatClassNames = classNames
+    ? {
+        root: classNames.root,
+        header: classNames.header,
+        container: classNames.container,
+        messageList: classNames.messageList,
+        userMessage: classNames.userMessage,
+        assistantMessage: classNames.assistantMessage,
+        input: classNames.input,
+        suggestions: classNames.suggestions,
+        footer: classNames.footer,
+      }
+    : undefined;
+
+  // Build thread picker element (if enabled)
+  const { threadManager, handleSwitchThread, handleNewThread, isBusy } =
+    threadManagerResult;
+
+  const threadPickerElement =
+    isPersistenceEnabled && showThreadPicker ? (
+      <ThreadPicker
+        value={threadManager.currentThreadId}
+        threads={threadManager.threads}
+        onSelect={handleSwitchThread}
+        onNewThread={handleNewThread}
+        loading={threadManager.isLoading}
+        disabled={isBusy}
+        size="sm"
+        className={classNames?.threadPicker}
+        buttonClassName={classNames?.threadPickerButton}
+        dropdownClassName={classNames?.threadPickerDropdown}
+        itemClassName={classNames?.threadPickerItem}
+        newButtonClassName={classNames?.threadPickerNewButton}
+      />
+    ) : undefined;
+
+  // Auto-show header when any header element is configured
+  const shouldShowHeader = !!header || showThreadPicker || chatProps.showHeader;
+
+  // Only use custom renderHeader if user provided it AND we're not using built-in header features
+  const useCustomHeader =
+    chatProps.renderHeader && !header && !showThreadPicker;
+
   return (
     <Chat
-      {...props}
+      {...chatProps}
       messages={visibleMessages}
       onSendMessage={sendMessage}
       onStop={stop}
       isLoading={isLoading}
-      showPoweredBy={props.showPoweredBy ?? true}
+      showPoweredBy={chatProps.showPoweredBy ?? true}
       suggestions={suggestions}
       isProcessing={isProcessingToolResults}
       onApproveToolExecution={approveToolExecution}
       onRejectToolExecution={rejectToolExecution}
       registeredTools={registeredTools}
+      classNames={chatClassNames}
+      header={header}
+      threadPicker={threadPickerElement}
+      showHeader={shouldShowHeader}
+      renderHeader={useCustomHeader ? chatProps.renderHeader : undefined}
     />
   );
 }

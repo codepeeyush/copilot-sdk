@@ -29,6 +29,7 @@ import {
   Image,
   Lightbulb,
   Paintbrush,
+  Database,
 } from "lucide-react";
 
 // Custom icons
@@ -79,6 +80,7 @@ const icons: Record<string, React.ComponentType> = {
   MessageQuestion: MessageQuestionIcon,
   AiChip1: AiChip1,
   Grid1: Grid1,
+  Database: Database,
 };
 
 export const source = loader({

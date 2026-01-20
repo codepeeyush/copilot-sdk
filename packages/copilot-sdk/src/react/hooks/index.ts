@@ -67,3 +67,10 @@ export {
 
 // Dev Logger
 export { useDevLogger, type DevLoggerState } from "./useDevLogger";
+
+// Thread Manager
+export {
+  useThreadManager,
+  type UseThreadManagerConfig,
+  type UseThreadManagerReturn,
+} from "./useThreadManager";

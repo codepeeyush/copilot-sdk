@@ -11,6 +11,7 @@
     "chat",
     "smart-ai-context",
     "tools",
+    "chat-persistence",
     "server",
     "customizations",
     "generative-ui",

@@ -76,6 +76,7 @@ export interface CopilotContextValue {
   ) => Promise<void>;
   stop: () => void;
   clearMessages: () => void;
+  setMessages: (messages: UIMessage[]) => void;
   regenerate: (messageId?: string) => Promise<void>;
 
   // Tool execution
@@ -347,6 +348,10 @@ export function CopilotProvider({
     chatRef.current?.clearMessages();
   }, []);
 
+  const setMessages = useCallback((messages: UIMessage[]) => {
+    chatRef.current?.setMessages(messages);
+  }, []);
+
   const regenerate = useCallback(async (messageId?: string) => {
     await chatRef.current?.regenerate(messageId);
   }, []);
@@ -403,6 +408,7 @@ export function CopilotProvider({
       sendMessage,
       stop,
       clearMessages,
+      setMessages,
       regenerate,
 
       // Tool execution
@@ -436,6 +442,7 @@ export function CopilotProvider({
       sendMessage,
       stop,
       clearMessages,
+      setMessages,
       regenerate,
       registerTool,
       unregisterTool,

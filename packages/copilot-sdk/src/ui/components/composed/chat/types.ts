@@ -163,6 +163,22 @@ export type PendingAttachment = {
   error?: string;
 };
 
+// ============================================
+// Header Configuration
+// ============================================
+
+/**
+ * Header configuration for CopilotChat
+ */
+export interface ChatHeaderConfig {
+  /** Logo image URL (default: YourGPT logo) */
+  logo?: string;
+  /** Copilot name (default: "AI Copilot") */
+  name?: string;
+  /** Called when close button is clicked */
+  onClose?: () => void;
+}
+
 export type ChatProps = {
   // === Core Props ===
   /** Messages to display */
@@ -179,13 +195,21 @@ export type ChatProps = {
   placeholder?: string;
   /** Custom welcome message when no messages */
   welcomeMessage?: React.ReactNode;
-  /** Title shown in header (if showHeader is true) */
+  /** @deprecated Use `header.name` instead */
   title?: string;
 
   // === Header ===
-  /** Show header bar with title and close button */
+  /** Show header bar */
   showHeader?: boolean;
-  /** Called when close button is clicked */
+  /** Header configuration */
+  header?: ChatHeaderConfig;
+  /** Thread picker element (passed from connected-chat) */
+  threadPicker?: React.ReactNode;
+  /** @deprecated Use `header.logo` instead */
+  logo?: string;
+  /** @deprecated Use `header.name` instead */
+  name?: string;
+  /** @deprecated Use `header.onClose` instead */
   onClose?: () => void;
 
   // === Appearance ===

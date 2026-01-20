@@ -20,7 +20,12 @@ import {
   createAnthropicAdapter,
   createOllamaAdapter,
 } from "../adapters";
-import type { RuntimeConfig, ChatRequest } from "./types";
+import type {
+  RuntimeConfig,
+  ChatRequest,
+  HandleRequestOptions,
+  HandleRequestResult,
+} from "./types";
 import { createSSEResponse } from "./streaming";
 
 // ============================================
@@ -324,8 +329,31 @@ export class Runtime {
 
   /**
    * Handle HTTP request (for use with any framework)
+   *
+   * @param request - The HTTP request
+   * @param options - Optional configuration including onFinish callback for persistence
+   *
+   * @example
+   * ```typescript
+   * // Basic usage
+   * return runtime.handleRequest(request);
+   *
+   * // With server-side persistence
+   * return runtime.handleRequest(request, {
+   *   onFinish: async ({ messages, threadId }) => {
+   *     await db.thread.upsert({
+   *       where: { id: threadId },
+   *       update: { messages, updatedAt: new Date() },
+   *       create: { id: threadId, messages },
+   *     });
+   *   },
+   * });
+   * ```
    */
-  async handleRequest(request: Request): Promise<Response> {
+  async handleRequest(
+    request: Request,
+    options?: HandleRequestOptions,
+  ): Promise<Response> {
     try {
       const body = (await request.json()) as ChatRequest;
 
@@ -348,6 +376,7 @@ export class Runtime {
           signal,
           useAgentLoop || false,
           request,
+          options,
         );
       }
 
@@ -355,7 +384,15 @@ export class Runtime {
       const generator = useAgentLoop
         ? this.processChatWithLoop(body, signal, undefined, undefined, request)
         : this.processChat(body, signal);
-      return createSSEResponse(generator);
+
+      // Wrap generator to intercept done event for onFinish callback
+      const wrappedGenerator = this.wrapGeneratorWithOnFinish(
+        generator,
+        body.threadId,
+        options,
+      );
+
+      return createSSEResponse(wrappedGenerator);
     } catch (error) {
       console.error("[Copilot SDK] Error:", error);
 
@@ -372,6 +409,39 @@ export class Runtime {
   }
 
   /**
+   * Wrap a generator to intercept the done event and call onFinish
+   */
+  private async *wrapGeneratorWithOnFinish(
+    generator: AsyncGenerator<StreamEvent>,
+    threadId?: string,
+    options?: HandleRequestOptions,
+  ): AsyncGenerator<StreamEvent> {
+    let doneMessages: DoneEventMessage[] | undefined;
+
+    for await (const event of generator) {
+      // Capture messages from done event
+      if (event.type === "done" && event.messages) {
+        doneMessages = event.messages;
+      }
+      yield event;
+    }
+
+    // Call onFinish after stream completes
+    if (options?.onFinish && doneMessages) {
+      try {
+        const result: HandleRequestResult = {
+          messages: doneMessages,
+          threadId,
+          // TODO: Add usage tracking when available from adapter
+        };
+        await options.onFinish(result);
+      } catch (error) {
+        console.error("[Copilot SDK] onFinish callback error:", error);
+      }
+    }
+  }
+
+  /**
    * Handle non-streaming request - returns JSON instead of SSE
    */
   private async handleNonStreamingRequest(
@@ -379,6 +449,7 @@ export class Runtime {
     signal: AbortSignal | undefined,
     useAgentLoop: boolean,
     httpRequest: Request,
+    options?: HandleRequestOptions,
   ): Promise<Response> {
     try {
       const generator = useAgentLoop
@@ -436,6 +507,22 @@ export class Runtime {
           case "error":
             error = { message: event.message, code: event.code };
             break;
+        }
+      }
+
+      // Call onFinish callback if provided
+      if (options?.onFinish && messages && !error) {
+        try {
+          const result: HandleRequestResult = {
+            messages,
+            threadId: body.threadId,
+          };
+          await options.onFinish(result);
+        } catch (callbackError) {
+          console.error(
+            "[Copilot SDK] onFinish callback error:",
+            callbackError,
+          );
         }
       }
 

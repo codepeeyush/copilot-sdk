@@ -77,6 +77,11 @@ export function Chat({
   title,
   // Header
   showHeader = false,
+  header,
+  threadPicker,
+  // Deprecated header props (backwards compat)
+  logo,
+  name,
   onClose,
   // Appearance
   showPoweredBy = true,
@@ -336,8 +341,11 @@ export function Chat({
           renderHeader()
         ) : (
           <ChatHeader
+            logo={header?.logo ?? logo}
+            name={header?.name ?? name}
             title={title}
-            onClose={onClose}
+            threadPicker={threadPicker}
+            onClose={header?.onClose ?? onClose}
             className={classNames.header}
           />
         ))}

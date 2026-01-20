@@ -6,6 +6,7 @@ export { ToolExecutionMessage } from "./tool-execution-message";
 export type {
   ChatMessage,
   ChatProps,
+  ChatHeaderConfig,
   MessageAttachment,
   ToolRendererProps,
   ToolRenderers,

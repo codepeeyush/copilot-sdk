@@ -8,6 +8,10 @@ export interface Thread {
   id: string;
   /** Thread title (auto-generated from first message or manual) */
   title?: string;
+  /** Preview of the first message (for thread lists) */
+  preview?: string;
+  /** Number of messages in this thread */
+  messageCount?: number;
   /** When thread was created */
   createdAt: Date;
   /** When thread was last updated */

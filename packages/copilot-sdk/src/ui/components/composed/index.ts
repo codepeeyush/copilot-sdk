@@ -14,6 +14,13 @@ export {
   ConnectedChat,
   type CopilotChatProps,
   type ConnectedChatProps,
+  type CopilotChatPersistenceConfig,
+  type CopilotChatClassNames,
+  type CopilotChatHeaderConfig,
+  // New typed persistence configs
+  type LocalPersistenceConfig,
+  type ServerPersistenceConfig,
+  type CloudPersistenceConfig,
 } from "./connected-chat";
 export { PoweredBy, type PoweredByProps } from "./powered-by";
 

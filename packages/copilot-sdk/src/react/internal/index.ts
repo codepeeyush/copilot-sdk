@@ -25,3 +25,16 @@ export {
 
 // useChat - Thin React hook using useSyncExternalStore
 export { useChat, type UseChatConfig, type UseChatReturn } from "./useChat";
+
+// ReactThreadManagerState - React-specific ThreadManagerState implementation
+export {
+  ReactThreadManagerState,
+  createReactThreadManagerState,
+} from "./ReactThreadManagerState";
+
+// ReactThreadManager - React adapter for ThreadManager
+export {
+  ReactThreadManager,
+  createReactThreadManager,
+  type ReactThreadManagerConfig,
+} from "./ReactThreadManager";
