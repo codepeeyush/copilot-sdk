@@ -99,7 +99,7 @@ for pkg in "${PACKAGES[@]}"; do
   echo -e "  Publishing $PKG_NAME@$PKG_VERSION..."
 
   cd "packages/$pkg"
-  npm publish --access public 2>&1 | grep -E "(notice|error|\+)"
+  pnpm publish --access public --no-git-checks 2>&1 | grep -E "(notice|error|\+)"
 
   if [ ${PIPESTATUS[0]} -eq 0 ]; then
     echo -e "${GREEN}  ✓ $PKG_NAME@$PKG_VERSION published${NC}"
