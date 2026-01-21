@@ -5,7 +5,13 @@ Multi-provider LLM SDK with streaming. One API, any provider.
 ## Installation
 
 ```bash
-npm install @yourgpt/llm-sdk
+npm install @yourgpt/llm-sdk openai
+```
+
+For Anthropic, install `@anthropic-ai/sdk` instead:
+
+```bash
+npm install @yourgpt/llm-sdk @anthropic-ai/sdk
 ```
 
 ## Quick Start
@@ -18,7 +24,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = await streamText({
-    model: openai("gpt-5"),
+    model: openai("gpt-4o"),
     system: "You are a helpful assistant.",
     messages,
   });
@@ -36,16 +42,16 @@ import { google } from "@yourgpt/llm-sdk/google";
 import { xai } from "@yourgpt/llm-sdk/xai";
 
 // OpenAI
-await streamText({ model: openai("gpt-5"), messages });
+await streamText({ model: openai("gpt-4o"), messages });
 
 // Anthropic
 await streamText({ model: anthropic("claude-sonnet-4-20250514"), messages });
 
-// Google
+// Google Gemini (uses OpenAI-compatible API)
 await streamText({ model: google("gemini-2.0-flash"), messages });
 
-// xAI
-await streamText({ model: xai("grok-3"), messages });
+// xAI Grok (uses OpenAI-compatible API)
+await streamText({ model: xai("grok-3-fast-beta"), messages });
 ```
 
 ## Server-Side Tools
@@ -56,7 +62,7 @@ import { openai } from "@yourgpt/llm-sdk/openai";
 import { z } from "zod";
 
 const result = await streamText({
-  model: openai("gpt-5"),
+  model: openai("gpt-4o"),
   messages,
   tools: {
     getWeather: tool({
@@ -77,14 +83,16 @@ return result.toDataStreamResponse();
 
 ## Supported Providers
 
-| Provider      | Import                       |
-| ------------- | ---------------------------- |
-| OpenAI        | `@yourgpt/llm-sdk/openai`    |
-| Anthropic     | `@yourgpt/llm-sdk/anthropic` |
-| Google Gemini | `@yourgpt/llm-sdk/google`    |
-| xAI (Grok)    | `@yourgpt/llm-sdk/xai`       |
-| Ollama        | `@yourgpt/llm-sdk/ollama`    |
-| Azure OpenAI  | `@yourgpt/llm-sdk/azure`     |
+| Provider      | Import                       | SDK Required        |
+| ------------- | ---------------------------- | ------------------- |
+| OpenAI        | `@yourgpt/llm-sdk/openai`    | `openai`            |
+| Anthropic     | `@yourgpt/llm-sdk/anthropic` | `@anthropic-ai/sdk` |
+| Google Gemini | `@yourgpt/llm-sdk/google`    | `openai`            |
+| xAI (Grok)    | `@yourgpt/llm-sdk/xai`       | `openai`            |
+| Ollama        | `@yourgpt/llm-sdk/ollama`    | `openai`            |
+| Azure OpenAI  | `@yourgpt/llm-sdk/azure`     | `openai`            |
+
+> **Note:** OpenAI, Google, xAI, Ollama, and Azure all use the `openai` SDK because they have OpenAI-compatible APIs. Only Anthropic requires its native SDK for full feature support.
 
 ## Documentation
 

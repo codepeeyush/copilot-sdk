@@ -1,7 +1,8 @@
 /**
- * Google Provider - Modern Pattern
+ * Google Provider - OpenAI-Compatible
  *
- * Google Gemini models.
+ * Uses OpenAI SDK with Google's OpenAI-compatible endpoint.
+ * BaseURL: https://generativelanguage.googleapis.com/v1beta/openai/
  *
  * @example
  * ```ts
@@ -38,6 +39,22 @@ interface GoogleModelConfig {
 }
 
 const GOOGLE_MODELS: Record<string, GoogleModelConfig> = {
+  // Gemini 2.5 (Experimental)
+  "gemini-2.5-pro-preview-05-06": {
+    vision: true,
+    tools: true,
+    audio: true,
+    video: true,
+    maxTokens: 1048576,
+  },
+  "gemini-2.5-flash-preview-05-20": {
+    vision: true,
+    tools: true,
+    audio: true,
+    video: true,
+    maxTokens: 1048576,
+  },
+
   // Gemini 2.0
   "gemini-2.0-flash": {
     vision: true,
@@ -51,6 +68,13 @@ const GOOGLE_MODELS: Record<string, GoogleModelConfig> = {
     tools: true,
     audio: true,
     video: true,
+    maxTokens: 1048576,
+  },
+  "gemini-2.0-flash-lite": {
+    vision: true,
+    tools: true,
+    audio: false,
+    video: false,
     maxTokens: 1048576,
   },
   "gemini-2.0-flash-thinking-exp": {
@@ -106,11 +130,8 @@ const GOOGLE_MODELS: Record<string, GoogleModelConfig> = {
 export interface GoogleProviderOptions {
   /** API key (defaults to GOOGLE_API_KEY or GEMINI_API_KEY env var) */
   apiKey?: string;
-  /** Safety settings */
-  safetySettings?: Array<{
-    category: string;
-    threshold: string;
-  }>;
+  /** Base URL for API (defaults to Google's OpenAI-compatible endpoint) */
+  baseURL?: string;
 }
 
 // ============================================
@@ -118,7 +139,22 @@ export interface GoogleProviderOptions {
 // ============================================
 
 /**
- * Create a Google Gemini language model
+ * Create a Google Gemini language model using OpenAI-compatible API
+ *
+ * @param modelId - Model ID (e.g., 'gemini-2.0-flash', 'gemini-1.5-pro')
+ * @param options - Provider options
+ * @returns LanguageModel instance
+ *
+ * @example
+ * ```ts
+ * // Basic usage
+ * const model = google('gemini-2.0-flash');
+ *
+ * // With custom options
+ * const model = google('gemini-1.5-pro', {
+ *   apiKey: 'your-api-key',
+ * });
+ * ```
  */
 export function google(
   modelId: string,
@@ -126,17 +162,24 @@ export function google(
 ): LanguageModel {
   const apiKey =
     options.apiKey ?? process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+  const baseURL =
+    options.baseURL ??
+    "https://generativelanguage.googleapis.com/v1beta/openai/";
 
-  // Lazy-load Google client
+  // Lazy-load OpenAI client (Google uses OpenAI-compatible API)
   let client: any = null;
   async function getClient(): Promise<any> {
     if (!client) {
-      const { GoogleGenerativeAI } = await import("@google/generative-ai");
-      client = new GoogleGenerativeAI(apiKey!);
+      const { default: OpenAI } = await import("openai");
+      client = new OpenAI({
+        apiKey,
+        baseURL,
+      });
     }
     return client;
   }
 
+  // Get model config
   const modelConfig =
     GOOGLE_MODELS[modelId] ?? GOOGLE_MODELS["gemini-2.0-flash"];
 
@@ -159,61 +202,37 @@ export function google(
 
     async doGenerate(params: DoGenerateParams): Promise<DoGenerateResult> {
       const client = await getClient();
-      const model = client.getGenerativeModel({
+
+      const messages = formatMessagesForGoogle(params.messages);
+
+      const response = await client.chat.completions.create({
         model: modelId,
-        safetySettings: options.safetySettings,
+        messages,
+        tools: params.tools as any,
+        temperature: params.temperature,
+        max_tokens: params.maxTokens,
       });
 
-      const { systemInstruction, contents } = formatMessagesForGemini(
-        params.messages,
+      const choice = response.choices[0];
+      const message = choice.message;
+
+      // Parse tool calls
+      const toolCalls: ToolCall[] = (message.tool_calls ?? []).map(
+        (tc: any) => ({
+          id: tc.id,
+          name: tc.function.name,
+          args: JSON.parse(tc.function.arguments || "{}"),
+        }),
       );
 
-      const chat = model.startChat({
-        history: contents.slice(0, -1),
-        systemInstruction: systemInstruction
-          ? { parts: [{ text: systemInstruction }] }
-          : undefined,
-        tools: params.tools
-          ? [{ functionDeclarations: formatToolsForGemini(params.tools) }]
-          : undefined,
-        generationConfig: {
-          temperature: params.temperature,
-          maxOutputTokens: params.maxTokens,
-        },
-      });
-
-      const lastMessage = contents[contents.length - 1];
-      const result = await chat.sendMessage(lastMessage.parts);
-      const response = result.response;
-
-      let text = "";
-      const toolCalls: ToolCall[] = [];
-      let toolCallIndex = 0;
-
-      const candidate = response.candidates?.[0];
-      if (candidate?.content?.parts) {
-        for (const part of candidate.content.parts) {
-          if ("text" in part && part.text) {
-            text += part.text;
-          }
-          if ("functionCall" in part && part.functionCall) {
-            toolCalls.push({
-              id: `call_${toolCallIndex++}`,
-              name: part.functionCall.name,
-              args: part.functionCall.args || {},
-            });
-          }
-        }
-      }
-
       return {
-        text,
+        text: message.content ?? "",
         toolCalls,
-        finishReason: mapFinishReason(candidate?.finishReason),
+        finishReason: mapFinishReason(choice.finish_reason),
         usage: {
-          promptTokens: response.usageMetadata?.promptTokenCount ?? 0,
-          completionTokens: response.usageMetadata?.candidatesTokenCount ?? 0,
-          totalTokens: response.usageMetadata?.totalTokenCount ?? 0,
+          promptTokens: response.usage?.prompt_tokens ?? 0,
+          completionTokens: response.usage?.completion_tokens ?? 0,
+          totalTokens: response.usage?.total_tokens ?? 0,
         },
         rawResponse: response,
       };
@@ -221,84 +240,101 @@ export function google(
 
     async *doStream(params: DoGenerateParams): AsyncGenerator<StreamChunk> {
       const client = await getClient();
-      const model = client.getGenerativeModel({
+
+      const messages = formatMessagesForGoogle(params.messages);
+
+      const stream = await client.chat.completions.create({
         model: modelId,
-        safetySettings: options.safetySettings,
+        messages,
+        tools: params.tools as any,
+        temperature: params.temperature,
+        max_tokens: params.maxTokens,
+        stream: true,
       });
 
-      const { systemInstruction, contents } = formatMessagesForGemini(
-        params.messages,
-      );
+      // Track current tool call being built
+      let currentToolCall: {
+        id: string;
+        name: string;
+        arguments: string;
+      } | null = null;
 
-      const chat = model.startChat({
-        history: contents.slice(0, -1),
-        systemInstruction: systemInstruction
-          ? { parts: [{ text: systemInstruction }] }
-          : undefined,
-        tools: params.tools
-          ? [{ functionDeclarations: formatToolsForGemini(params.tools) }]
-          : undefined,
-        generationConfig: {
-          temperature: params.temperature,
-          maxOutputTokens: params.maxTokens,
-        },
-      });
+      let totalPromptTokens = 0;
+      let totalCompletionTokens = 0;
 
-      const lastMessage = contents[contents.length - 1];
-      const result = await chat.sendMessageStream(lastMessage.parts);
+      for await (const chunk of stream) {
+        // Check abort
+        if (params.signal?.aborted) {
+          yield { type: "error", error: new Error("Aborted") };
+          return;
+        }
 
-      let toolCallIndex = 0;
-      let promptTokens = 0;
-      let completionTokens = 0;
+        const choice = chunk.choices[0];
+        const delta = choice?.delta;
 
-      try {
-        for await (const chunk of result.stream) {
-          if (params.signal?.aborted) {
-            yield { type: "error", error: new Error("Aborted") };
-            return;
-          }
+        // Text content
+        if (delta?.content) {
+          yield { type: "text-delta", text: delta.content };
+        }
 
-          const candidate = chunk.candidates?.[0];
-          if (!candidate?.content?.parts) continue;
-
-          for (const part of candidate.content.parts) {
-            if ("text" in part && part.text) {
-              yield { type: "text-delta", text: part.text };
-            }
-            if ("functionCall" in part && part.functionCall) {
-              yield {
-                type: "tool-call",
-                toolCall: {
-                  id: `call_${toolCallIndex++}`,
-                  name: part.functionCall.name,
-                  args: part.functionCall.args || {},
-                },
+        // Tool calls
+        if (delta?.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            if (tc.id) {
+              // New tool call - emit previous if exists
+              if (currentToolCall) {
+                yield {
+                  type: "tool-call",
+                  toolCall: {
+                    id: currentToolCall.id,
+                    name: currentToolCall.name,
+                    args: JSON.parse(currentToolCall.arguments || "{}"),
+                  },
+                };
+              }
+              currentToolCall = {
+                id: tc.id,
+                name: tc.function?.name ?? "",
+                arguments: tc.function?.arguments ?? "",
               };
+            } else if (currentToolCall && tc.function?.arguments) {
+              // Append arguments
+              currentToolCall.arguments += tc.function.arguments;
             }
-          }
-
-          if (chunk.usageMetadata) {
-            promptTokens = chunk.usageMetadata.promptTokenCount ?? 0;
-            completionTokens = chunk.usageMetadata.candidatesTokenCount ?? 0;
-          }
-
-          if (candidate.finishReason) {
-            yield {
-              type: "finish",
-              finishReason: mapFinishReason(candidate.finishReason),
-              usage: {
-                promptTokens,
-                completionTokens,
-                totalTokens: promptTokens + completionTokens,
-              },
-            };
           }
         }
-      } catch (error) {
-        yield {
-          type: "error",
-          error: error instanceof Error ? error : new Error(String(error)),
-        };
+
+        // Finish reason
+        if (choice?.finish_reason) {
+          // Emit pending tool call
+          if (currentToolCall) {
+            yield {
+              type: "tool-call",
+              toolCall: {
+                id: currentToolCall.id,
+                name: currentToolCall.name,
+                args: JSON.parse(currentToolCall.arguments || "{}"),
+              },
+            };
+            currentToolCall = null;
+          }
+
+          // Usage from final chunk (if available)
+          if (chunk.usage) {
+            totalPromptTokens = chunk.usage.prompt_tokens;
+            totalCompletionTokens = chunk.usage.completion_tokens;
+          }
+
+          yield {
+            type: "finish",
+            finishReason: mapFinishReason(choice.finish_reason),
+            usage: {
+              promptTokens: totalPromptTokens,
+              completionTokens: totalCompletionTokens,
+              totalTokens: totalPromptTokens + totalCompletionTokens,
+            },
+          };
+        }
       }
     },
   };
@@ -308,120 +344,88 @@ export function google(
 // Helper Functions
 // ============================================
 
-function mapFinishReason(reason: string | undefined): FinishReason {
+/**
+ * Map finish reason to our FinishReason type
+ */
+function mapFinishReason(reason: string | null): FinishReason {
   switch (reason) {
-    case "STOP":
+    case "stop":
       return "stop";
-    case "MAX_TOKENS":
+    case "length":
       return "length";
-    case "SAFETY":
+    case "tool_calls":
+    case "function_call":
+      return "tool-calls";
+    case "content_filter":
       return "content-filter";
     default:
       return "unknown";
   }
 }
 
-function formatMessagesForGemini(messages: CoreMessage[]): {
-  systemInstruction: string;
-  contents: Array<{ role: "user" | "model"; parts: any[] }>;
-} {
-  let systemInstruction = "";
-  const contents: Array<{ role: "user" | "model"; parts: any[] }> = [];
+/**
+ * Format CoreMessage[] for Google's OpenAI-compatible API
+ */
+function formatMessagesForGoogle(messages: CoreMessage[]): any[] {
+  return messages.map((msg) => {
+    switch (msg.role) {
+      case "system":
+        return { role: "system", content: msg.content };
 
-  for (const msg of messages) {
-    if (msg.role === "system") {
-      systemInstruction += (systemInstruction ? "\n" : "") + msg.content;
-      continue;
-    }
-
-    const parts: any[] = [];
-
-    if (msg.role === "user") {
-      if (typeof msg.content === "string") {
-        parts.push({ text: msg.content });
-      } else {
-        for (const part of msg.content) {
-          if (part.type === "text") {
-            parts.push({ text: part.text });
-          } else if (part.type === "image") {
-            const imageData =
-              typeof part.image === "string"
-                ? part.image
-                : Buffer.from(part.image).toString("base64");
-
-            const base64 = imageData.startsWith("data:")
-              ? imageData.split(",")[1]
-              : imageData;
-
-            parts.push({
-              inlineData: {
-                mimeType: part.mimeType ?? "image/png",
-                data: base64,
-              },
-            });
-          }
+      case "user":
+        if (typeof msg.content === "string") {
+          return { role: "user", content: msg.content };
         }
-      }
-      contents.push({ role: "user", parts });
-    } else if (msg.role === "assistant") {
-      if (msg.content) {
-        parts.push({ text: msg.content });
-      }
-      if (msg.toolCalls?.length) {
-        for (const tc of msg.toolCalls) {
-          parts.push({
-            functionCall: {
+        // Handle multimodal content
+        return {
+          role: "user",
+          content: msg.content.map((part) => {
+            if (part.type === "text") {
+              return { type: "text", text: part.text };
+            }
+            if (part.type === "image") {
+              const imageData =
+                typeof part.image === "string"
+                  ? part.image
+                  : Buffer.from(part.image).toString("base64");
+              const url = imageData.startsWith("data:")
+                ? imageData
+                : `data:${part.mimeType ?? "image/png"};base64,${imageData}`;
+              return { type: "image_url", image_url: { url, detail: "auto" } };
+            }
+            return { type: "text", text: "" };
+          }),
+        };
+
+      case "assistant":
+        const assistantMsg: any = {
+          role: "assistant",
+          content: msg.content,
+        };
+        if (msg.toolCalls && msg.toolCalls.length > 0) {
+          assistantMsg.tool_calls = msg.toolCalls.map((tc) => ({
+            id: tc.id,
+            type: "function",
+            function: {
               name: tc.name,
-              args: tc.args,
+              arguments: JSON.stringify(tc.args),
             },
-          });
+          }));
         }
-      }
-      if (parts.length > 0) {
-        contents.push({ role: "model", parts });
-      }
-    } else if (msg.role === "tool") {
-      // Tool results go as user message with functionResponse
-      contents.push({
-        role: "user",
-        parts: [
-          {
-            functionResponse: {
-              name: "tool", // Gemini doesn't track by ID
-              response: JSON.parse(msg.content || "{}"),
-            },
-          },
-        ],
-      });
+        return assistantMsg;
+
+      case "tool":
+        return {
+          role: "tool",
+          tool_call_id: msg.toolCallId,
+          content: msg.content,
+        };
+
+      default:
+        return msg;
     }
-  }
-
-  // Ensure starts with user
-  if (contents.length === 0 || contents[0].role !== "user") {
-    contents.unshift({ role: "user", parts: [{ text: "" }] });
-  }
-
-  // Merge consecutive same-role messages
-  const merged: typeof contents = [];
-  for (const content of contents) {
-    const last = merged[merged.length - 1];
-    if (last && last.role === content.role) {
-      last.parts.push(...content.parts);
-    } else {
-      merged.push({ ...content, parts: [...content.parts] });
-    }
-  }
-
-  return { systemInstruction, contents: merged };
+  });
 }
 
-function formatToolsForGemini(tools: unknown[]): any[] {
-  // Tools are already in OpenAI format from formatToolsForOpenAI
-  return (tools as any[]).map((t) => ({
-    name: t.function.name,
-    description: t.function.description,
-    parameters: t.function.parameters,
-  }));
-}
-
+// Also export as createGoogle for backward compatibility
 export { google as createGoogle };

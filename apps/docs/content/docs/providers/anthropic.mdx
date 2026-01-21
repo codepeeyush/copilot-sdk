@@ -18,17 +18,23 @@ Claude models from Anthropic. Known for safety, long context, and excellent reas
 
 ## Setup
 
-### 1. Get API Key
+### 1. Install Packages
+
+```bash
+npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk @anthropic-ai/sdk
+```
+
+### 2. Get API Key
 
 Get your API key from [console.anthropic.com](https://console.anthropic.com/)
 
-### 2. Add Environment Variable
+### 3. Add Environment Variable
 
 ```bash title=".env.local"
 ANTHROPIC_API_KEY=sk-ant-...
 ```
 
-### 3. Usage
+### 4. Usage
 
 ```ts
 import { generateText } from '@yourgpt/llm-sdk';
@@ -42,7 +48,7 @@ const result = await generateText({
 console.log(result.text);
 ```
 
-### 4. Streaming (API Route)
+### 5. Streaming (API Route)
 
 ```ts title="app/api/chat/route.ts"
 import { streamText } from '@yourgpt/llm-sdk';
