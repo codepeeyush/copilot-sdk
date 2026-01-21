@@ -40,8 +40,6 @@ export interface DevLoggerState {
     loaded: boolean;
   };
   config: {
-    provider: string;
-    model: string;
     runtimeUrl: string;
   };
 }
@@ -113,10 +111,6 @@ export function useDevLogger(): DevLoggerState {
         loaded: ctx.permissionsLoaded || false,
       },
       config: {
-        provider:
-          ctx.config?.config?.provider ||
-          (ctx.config?.cloud ? "yourgpt-cloud" : "unknown"),
-        model: ctx.config?.config?.model || "default",
         runtimeUrl: ctx.config?.runtimeUrl || ctx.config?.cloud?.endpoint || "",
       },
     };
