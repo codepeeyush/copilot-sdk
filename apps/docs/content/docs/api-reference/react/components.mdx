@@ -9,7 +9,9 @@ Provider and context components for React.
 
 ## CopilotProvider
 
-Root provider that enables AI chat functionality.
+Root provider that enables AI chat functionality. Connect to your backend API that handles LLM configuration.
+
+> **Note:** LLM settings (model, temperature, etc.) are configured on your server using `@yourgpt/llm-sdk`. The frontend only specifies the runtime URL.
 
 ```tsx
 import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
@@ -35,10 +37,12 @@ function App() {
 | Prop | Type | Required | Description |
 |------|------|----------|-------------|
 | `runtimeUrl` | `string` | Yes | Your API endpoint URL |
-| `systemPrompt` | `string` | No | Override the system prompt |
-| `threadId` | `string` | No | Conversation/thread ID |
-| `initialMessages` | `UIMessage[]` | No | Pre-populate messages |
-| `onMessagesChange` | `(messages: UIMessage[]) => void` | No | Callback on message changes |
+| `systemPrompt` | `string` | No | System prompt sent with each request |
+| `threadId` | `string` | No | Thread ID for conversation persistence |
+| `initialMessages` | `Message[]` | No | Initial messages to populate the chat |
+| `onMessagesChange` | `(messages: Message[]) => void` | No | Callback when messages change |
+| `onError` | `(error: Error) => void` | No | Callback when an error occurs |
+| `streaming` | `boolean` | No | Enable/disable streaming (default: true) |
 | `debug` | `boolean` | No | Enable debug logging |
 
 ---

@@ -9,10 +9,12 @@ import { formatMessagesForOpenAI, formatTools } from "./base";
 /**
  * OpenAI adapter configuration
  */
-export interface OpenAIAdapterConfig extends Partial<LLMConfig> {
+export interface OpenAIAdapterConfig {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 /**

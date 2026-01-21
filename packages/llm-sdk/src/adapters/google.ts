@@ -28,10 +28,12 @@ import { formatTools } from "./base";
 /**
  * Google adapter configuration
  */
-export interface GoogleAdapterConfig extends Partial<LLMConfig> {
+export interface GoogleAdapterConfig {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
   /** Safety settings */
   safetySettings?: Array<{
     category: string;

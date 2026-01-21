@@ -7,6 +7,15 @@ import type {
 } from "@yourgpt/copilot-sdk/core";
 
 /**
+ * Request-level LLM configuration overrides
+ */
+export interface RequestLLMConfig {
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+}
+
+/**
  * Chat completion request
  */
 export interface ChatCompletionRequest {
@@ -23,7 +32,7 @@ export interface ChatCompletionRequest {
   /** System prompt */
   systemPrompt?: string;
   /** LLM configuration overrides */
-  config?: Partial<LLMConfig>;
+  config?: RequestLLMConfig;
   /** Abort signal for cancellation */
   signal?: AbortSignal;
 }

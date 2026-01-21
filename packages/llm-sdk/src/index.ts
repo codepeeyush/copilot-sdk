@@ -216,7 +216,6 @@ export type {
   ActionDefinition,
   StreamEvent,
   LLMConfig,
-  LLMProvider,
   // Tool types (AIProvider is exported from ./providers above)
   ToolDefinition,
   ToolLocation,

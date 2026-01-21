@@ -20,7 +20,6 @@ import React, {
 
 import type {
   Message,
-  CopilotConfig,
   ToolsConfig,
   ToolDefinition,
   ActionDefinition,
@@ -47,18 +46,23 @@ import {
 
 export interface CopilotProviderProps {
   children: React.ReactNode;
+  /** Runtime API endpoint URL */
   runtimeUrl: string;
-  config?: CopilotConfig["config"];
-  cloud?: CopilotConfig["cloud"];
+  /** System prompt sent with each request */
   systemPrompt?: string;
   /** @deprecated Use useTools() hook instead */
   tools?: ToolsConfig;
+  /** Thread ID for conversation persistence */
   threadId?: string;
+  /** Initial messages to populate the chat */
   initialMessages?: Message[];
+  /** Callback when messages change */
   onMessagesChange?: (messages: Message[]) => void;
+  /** Callback when an error occurs */
   onError?: (error: Error) => void;
   /** Enable/disable streaming (default: true) */
   streaming?: boolean;
+  /** Enable debug logging */
   debug?: boolean;
 }
 
@@ -132,8 +136,6 @@ export function useCopilot(): CopilotContextValue {
 export function CopilotProvider({
   children,
   runtimeUrl,
-  config,
-  cloud,
   systemPrompt,
   tools: toolsConfig,
   threadId,
@@ -192,7 +194,6 @@ export function CopilotProvider({
     chatRef.current = new ReactChatWithTools(
       {
         runtimeUrl,
-        llm: config,
         systemPrompt,
         threadId,
         initialMessages: uiInitialMessages,
