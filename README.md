@@ -25,7 +25,7 @@ Production-ready AI Copilots for any product. Connect any LLM, deploy on your in
 ### Install
 
 ```bash
-npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk
+npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk openai
 ```
 
 ### Frontend (React)
@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = await streamText({
-    model: openai("gpt-5"),
+    model: openai("gpt-4o"),
     system: "You are a helpful assistant.",
     messages,
   });
@@ -79,17 +79,24 @@ import { google } from "@yourgpt/llm-sdk/google";
 import { xai } from "@yourgpt/llm-sdk/xai";
 
 // OpenAI
-await streamText({ model: openai("gpt-5"), messages });
+await streamText({ model: openai("gpt-4o"), messages });
 
 // Anthropic
 await streamText({ model: anthropic("claude-sonnet-4-20250514"), messages });
 
-// Google
+// Google Gemini (uses OpenAI-compatible API)
 await streamText({ model: google("gemini-2.0-flash"), messages });
 
-// xAI
-await streamText({ model: xai("grok-3"), messages });
+// xAI Grok (uses OpenAI-compatible API)
+await streamText({ model: xai("grok-3-fast-beta"), messages });
 ```
+
+### SDK Requirements
+
+| Provider            | SDK Required        |
+| ------------------- | ------------------- |
+| OpenAI, Google, xAI | `openai`            |
+| Anthropic           | `@anthropic-ai/sdk` |
 
 ### Server-Side Tools
 
@@ -101,7 +108,7 @@ import { openai } from "@yourgpt/llm-sdk/openai";
 import { z } from "zod";
 
 const result = await streamText({
-  model: openai("gpt-5"),
+  model: openai("gpt-4o"),
   messages,
   tools: {
     getWeather: tool({

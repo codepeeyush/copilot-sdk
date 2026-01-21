@@ -102,20 +102,24 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
     <Tabs items={['pnpm', 'npm', 'yarn']}>
       <Tab value="pnpm">
         ```bash
-        pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk zod
+        pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk openai zod
         ```
       </Tab>
       <Tab value="npm">
         ```bash
-        npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk zod
+        npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk openai zod
         ```
       </Tab>
       <Tab value="yarn">
         ```bash
-        yarn add @yourgpt/copilot-sdk @yourgpt/llm-sdk zod
+        yarn add @yourgpt/copilot-sdk @yourgpt/llm-sdk openai zod
         ```
       </Tab>
     </Tabs>
+
+    <Callout type="info">
+    The `openai` SDK works with OpenAI, Google Gemini, and xAI (all OpenAI-compatible). For Anthropic, install `@anthropic-ai/sdk` instead.
+    </Callout>
 
     ---
 

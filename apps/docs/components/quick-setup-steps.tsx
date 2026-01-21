@@ -16,7 +16,7 @@ const steps: StepData[] = [
     title: "Install",
     description: "Add the SDK packages",
     language: "bash",
-    code: "pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk",
+    code: "pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk openai",
   },
   {
     title: "Backend",
