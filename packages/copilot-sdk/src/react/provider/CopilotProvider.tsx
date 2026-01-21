@@ -64,6 +64,10 @@ export interface CopilotProviderProps {
   streaming?: boolean;
   /** Enable debug logging */
   debug?: boolean;
+  /** Max tool execution iterations (default: 20) */
+  maxIterations?: number;
+  /** Custom message when max iterations reached (sent to AI as tool result) */
+  maxIterationsMessage?: string;
 }
 
 export interface CopilotContextValue {
@@ -144,6 +148,8 @@ export function CopilotProvider({
   onError,
   streaming,
   debug = false,
+  maxIterations,
+  maxIterationsMessage,
 }: CopilotProviderProps) {
   // Debug logger
   const debugLog = useCallback(
@@ -199,6 +205,8 @@ export function CopilotProvider({
         initialMessages: uiInitialMessages,
         streaming,
         debug,
+        maxIterations,
+        maxIterationsMessage,
       },
       {
         onToolExecutionsChange: (executions) => {

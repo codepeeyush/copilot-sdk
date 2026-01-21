@@ -48,6 +48,8 @@ export interface ChatWithToolsConfig {
   tools?: ToolDefinition[];
   /** Max tool execution iterations (default: 20) */
   maxIterations?: number;
+  /** Custom error message when max iterations reached (sent to AI as tool result) */
+  maxIterationsMessage?: string;
   /** State implementation (injected by framework adapter) */
   state?: ChatState<UIMessage>;
   /** Transport implementation */
@@ -197,6 +199,27 @@ export class ChatWithTools {
           }));
 
           await this.chat.continueWithToolResults(toolResults);
+        } else if (
+          this.agentLoop.maxIterationsReached &&
+          toolCallInfos.length > 0
+        ) {
+          // Max iterations reached - still need to add tool_result to prevent API errors
+          // Without this, the conversation has tool_use without tool_result
+          this.debug("Max iterations reached, adding blocked tool results");
+
+          const errorMessage =
+            this.config.maxIterationsMessage ||
+            "Tool execution paused: iteration limit reached. User can say 'continue' to resume.";
+
+          const blockedResults = toolCallInfos.map((tc) => ({
+            toolCallId: tc.id,
+            result: {
+              success: false,
+              error: errorMessage,
+            },
+          }));
+
+          await this.chat.continueWithToolResults(blockedResults);
         }
       } catch (error) {
         this.debug("Error executing tools:", error);
@@ -265,6 +288,8 @@ export class ChatWithTools {
     content: string,
     attachments?: MessageAttachment[],
   ): Promise<void> {
+    // Reset iteration counter so user can continue after max iterations
+    this.agentLoop.resetIterations();
     await this.chat.sendMessage(content, attachments);
   }
 

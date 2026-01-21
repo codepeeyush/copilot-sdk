@@ -22,6 +22,7 @@ export default function TicketingDemoPage() {
         runtimeUrl="/api/chat/anthropic"
         systemPrompt={SYSTEM_PROMPT}
         streaming={true}
+        maxIterations={2}
       >
         <TicketingTools />
         <div className="h-screen flex bg-background overflow-hidden text-foreground">

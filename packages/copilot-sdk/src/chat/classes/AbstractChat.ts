@@ -233,6 +233,10 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
     this.debug("sendMessage", { content, attachments });
 
     try {
+      // IMPORTANT: Resolve any pending tool_calls before sending
+      // This prevents Anthropic API errors: "tool_use without tool_result"
+      this.resolveUnresolvedToolCalls();
+
       // Create user message
       const userMessage = createUserMessage(content, attachments) as T;
 
@@ -252,6 +256,61 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
       await this.processRequest();
     } catch (error) {
       this.handleError(error as Error);
+    }
+  }
+
+  /**
+   * Resolve any tool_calls that don't have corresponding tool_results.
+   * This prevents Anthropic API errors when tool_use has no tool_result.
+   * Can happen when max iterations is reached or tool execution is interrupted.
+   */
+  private resolveUnresolvedToolCalls(): void {
+    const messages = this.state.messages;
+
+    // Collect all tool_call IDs from assistant messages
+    const allToolCallIds = new Set<string>();
+    // Collect resolved tool_call IDs from tool messages
+    const resolvedIds = new Set<string>();
+
+    for (const msg of messages) {
+      if (msg.role === "assistant" && msg.toolCalls?.length) {
+        for (const tc of msg.toolCalls) {
+          allToolCallIds.add(tc.id);
+        }
+      }
+      if (msg.role === "tool" && msg.toolCallId) {
+        resolvedIds.add(msg.toolCallId);
+      }
+    }
+
+    // Find unresolved tool_calls
+    const unresolvedIds = [...allToolCallIds].filter(
+      (id) => !resolvedIds.has(id),
+    );
+
+    if (unresolvedIds.length > 0) {
+      this.debug(
+        "resolveUnresolvedToolCalls",
+        `Adding ${unresolvedIds.length} missing tool results`,
+      );
+
+      // Add error result for each unresolved tool_call
+      for (const toolCallId of unresolvedIds) {
+        const toolMessage = {
+          id: generateMessageId(),
+          role: "tool" as const,
+          content: JSON.stringify({
+            success: false,
+            error: "Tool execution was interrupted. Please try again.",
+          }),
+          toolCallId,
+          createdAt: new Date(),
+        } as T;
+
+        this.state.pushMessage(toolMessage);
+      }
+
+      this.callbacks.onMessagesChange?.(this.state.messages);
     }
   }
 

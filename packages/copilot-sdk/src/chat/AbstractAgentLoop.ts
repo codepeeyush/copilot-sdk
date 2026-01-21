@@ -434,6 +434,15 @@ export class AbstractAgentLoop implements AgentLoopActions {
   }
 
   /**
+   * Reset iteration counter only (allows continuing after max iterations)
+   * Called when user sends a new message
+   */
+  resetIterations(): void {
+    this.setIteration(0);
+    this._maxIterationsReached = false;
+  }
+
+  /**
    * Update configuration
    */
   updateConfig(config: Partial<AgentLoopConfig>): void {
