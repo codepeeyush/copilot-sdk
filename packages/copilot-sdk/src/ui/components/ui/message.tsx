@@ -22,7 +22,10 @@ const Message = ({ children, className, ...props }: MessageProps) => (
 export type MessageAvatarProps = {
   src: string;
   alt: string;
+  /** Text fallback (e.g. "AI") */
   fallback?: string;
+  /** Icon/component fallback (takes precedence over text fallback when src is empty) */
+  fallbackIcon?: React.ReactNode;
   delayMs?: number;
   className?: string;
 };
@@ -31,15 +34,16 @@ const MessageAvatar = ({
   src,
   alt,
   fallback,
+  fallbackIcon,
   delayMs,
   className,
 }: MessageAvatarProps) => {
   return (
     <Avatar className={cn("size-7 shrink-0", className)}>
       <AvatarImage src={src} alt={alt} />
-      {fallback && (
-        <AvatarFallback delayMs={delayMs}>{fallback}</AvatarFallback>
-      )}
+      <AvatarFallback delayMs={delayMs}>
+        {fallbackIcon || fallback}
+      </AvatarFallback>
     </Avatar>
   );
 };

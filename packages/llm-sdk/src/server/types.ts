@@ -199,3 +199,49 @@ export interface RequestContext {
   /** Parsed request body */
   body: ChatRequest;
 }
+
+// ============================================
+// Handle Request Options (for onFinish callback)
+// ============================================
+
+import type { DoneEventMessage } from "@yourgpt/copilot-sdk/core";
+
+/**
+ * Result passed to onFinish callback after stream completes
+ */
+export interface HandleRequestResult {
+  /** All messages from this request (assistant messages + tool results) */
+  messages: DoneEventMessage[];
+  /** Thread ID if provided in request */
+  threadId?: string;
+  /** Token usage information */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * Options for handleRequest method
+ *
+ * @example
+ * ```typescript
+ * runtime.handleRequest(request, {
+ *   onFinish: async ({ messages, threadId }) => {
+ *     await db.thread.upsert({
+ *       where: { id: threadId },
+ *       update: { messages, updatedAt: new Date() },
+ *       create: { id: threadId, messages },
+ *     });
+ *   },
+ * });
+ * ```
+ */
+export interface HandleRequestOptions {
+  /**
+   * Called after the stream completes successfully.
+   * Use this for server-side persistence of messages.
+   */
+  onFinish?: (result: HandleRequestResult) => Promise<void> | void;
+}

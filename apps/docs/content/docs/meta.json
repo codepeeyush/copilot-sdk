@@ -11,6 +11,7 @@
     "chat",
     "smart-ai-context",
     "tools",
+    "chat-history",
     "server",
     "customizations",
     "generative-ui",

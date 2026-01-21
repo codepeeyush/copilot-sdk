@@ -84,6 +84,23 @@ export {
   type CapabilitiesResponse,
 } from "./hooks/useCapabilities";
 
+// Thread Manager Hook
+export {
+  useThreadManager,
+  type UseThreadManagerConfig,
+  type UseThreadManagerReturn,
+} from "./hooks/useThreadManager";
+
+// Thread Adapters (for custom persistence)
+export {
+  createServerAdapter,
+  createLocalStorageAdapter,
+  createMemoryAdapter,
+  type ServerAdapterConfig,
+  type LocalStorageAdapterConfig,
+  type AsyncThreadStorageAdapter,
+} from "../thread";
+
 // Core (Vercel AI SDK pattern)
 // These use useSyncExternalStore for optimal React integration
 export {
@@ -96,6 +113,12 @@ export {
   type ReactChatConfig,
   type UseChatConfig,
   type UseChatReturn,
+  // Thread Manager
+  ReactThreadManager,
+  ReactThreadManagerState,
+  createReactThreadManager,
+  createReactThreadManagerState,
+  type ReactThreadManagerConfig,
 } from "./internal";
 
 // Re-export chat types (framework-agnostic core)

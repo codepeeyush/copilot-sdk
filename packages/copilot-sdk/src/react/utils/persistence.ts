@@ -16,10 +16,10 @@ export const localStoragePersistence: ThreadStorageAdapter = {
           updatedAt: t.updatedAt.toISOString(),
           messages: t.messages.map((m) => ({
             ...m,
-            createdAt:
-              m.createdAt instanceof Date
-                ? m.createdAt.toISOString()
-                : m.createdAt,
+            created_at:
+              m.created_at instanceof Date
+                ? m.created_at.toISOString()
+                : m.created_at,
           })),
         })),
       );
@@ -42,7 +42,7 @@ export const localStoragePersistence: ThreadStorageAdapter = {
         updatedAt: new Date(t.updatedAt),
         messages: t.messages.map((m: any) => ({
           ...m,
-          createdAt: new Date(m.createdAt),
+          created_at: new Date(m.created_at),
         })),
       }));
     } catch (e) {

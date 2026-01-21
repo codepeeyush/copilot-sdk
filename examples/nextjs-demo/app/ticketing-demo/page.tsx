@@ -10,23 +10,6 @@ import {
   CopilotPanel,
 } from "./components/layout";
 
-// You have AI tools to help:
-// **Analysis Tools:**
-// - get_customer_context - See full customer history and AI recommendations
-// - detect_sentiment - Understand how the customer is feeling
-// - analyze_customer_risk - Assess churn probability and risk factors
-
-// **Research Tools:**
-// - find_similar_tickets - Find past successful retention cases
-// - search_knowledge_base - Check pricing policies and options
-
-// **Action Tools:**
-// - calculate_compensation - Get personalized discount/offer options
-// - suggest_resolution - AI recommendation for best approach
-// - draft_response - Generate empathetic response with offer
-// - schedule_callback - Set up follow-up call if needed
-// - escalate_ticket - Escalate to manager for special approval
-
 const SYSTEM_PROMPT = `You are an AI assistant helping customer success agents.
 
 **Response Style:**

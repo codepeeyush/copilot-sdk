@@ -229,3 +229,35 @@ export type {
   UploadResult,
   UploadOptions,
 } from "./services";
+
+// ============================================
+// Thread Management (Framework-agnostic)
+// ============================================
+export {
+  // ThreadManager
+  ThreadManager,
+  createThreadManager,
+  // Adapters
+  createLocalStorageAdapter,
+  localStorageAdapter,
+  createMemoryAdapter,
+  noopAdapter,
+  // Interfaces
+  SimpleThreadManagerState,
+} from "../thread";
+
+export type {
+  // ThreadManager types
+  ThreadManagerConfig,
+  ThreadManagerCallbacks,
+  CreateThreadOptions,
+  UpdateThreadOptions,
+  // Interface types
+  ThreadManagerState,
+  LoadStatus,
+  // Adapter types
+  AsyncThreadStorageAdapter,
+  LocalStorageAdapterConfig,
+  ListThreadsOptions,
+  ListThreadsResult,
+} from "../thread";

@@ -137,6 +137,18 @@ export {
   type ProviderGroup,
 } from "./components/ui/model-selector";
 
+// Thread management components
+export {
+  ThreadPicker,
+  type ThreadPickerProps,
+} from "./components/ui/thread-picker";
+export {
+  ThreadList,
+  ThreadCard,
+  type ThreadListProps,
+  type ThreadCardProps,
+} from "./components/ui/thread-list";
+
 // ============================================
 // Context Providers
 // ============================================
@@ -153,6 +165,7 @@ export {
 // ============================================
 export {
   Chat,
+  ChatWelcome,
   CopilotChat,
   ConnectedChat, // Alias for CopilotChat (backwards compatibility)
   ToolExecutionMessage,
@@ -165,6 +178,15 @@ export {
   // Generative UI types (for custom tool renderers)
   type ToolRendererProps,
   type ToolRenderers,
+  // Welcome screen config
+  type WelcomeConfig,
+  // Persistence types
+  type CopilotChatPersistenceConfig,
+  type CopilotChatClassNames,
+  // Typed persistence configs
+  type LocalPersistenceConfig,
+  type ServerPersistenceConfig,
+  type CloudPersistenceConfig,
 } from "./components/composed";
 
 // ============================================
