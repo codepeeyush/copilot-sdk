@@ -86,7 +86,6 @@ export type {
   ToolCall,
   TokenUsage,
   // Config types
-  LLMProvider,
   LLMConfig,
   CloudConfig,
   Extension,
@@ -178,8 +177,6 @@ export {
   parseStreamEvent,
   serializeStreamEvent,
   formatSSE,
-  getDefaultModel,
-  DEFAULT_MODELS,
   // Tool functions
   tool,
   toolToOpenAIFormat,

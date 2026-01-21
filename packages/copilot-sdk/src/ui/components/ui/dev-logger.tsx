@@ -46,8 +46,6 @@ export interface DevLoggerState {
   };
   // Config
   config: {
-    provider: string;
-    model: string;
     runtimeUrl: string;
   };
 }
@@ -337,9 +335,7 @@ function AgentTab({ state }: { state: DevLoggerState }) {
 function ConfigTab({ state }: { state: DevLoggerState }) {
   return (
     <div className="space-y-4">
-      <Section title="Provider">
-        <Row label="Provider" value={state.config.provider || "Not set"} />
-        <Row label="Model" value={state.config.model || "Default"} />
+      <Section title="Runtime">
         <Row
           label="Runtime URL"
           value={state.config.runtimeUrl || "Not set"}
