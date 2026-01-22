@@ -81,6 +81,12 @@ export interface ChatState<T extends UIMessage = UIMessage> {
   updateLastMessage(updater: (message: T) => T): void;
 
   /**
+   * Update a specific message by ID
+   * Returns true if message was found and updated, false otherwise
+   */
+  updateMessageById(id: string, updater: (message: T) => T): boolean;
+
+  /**
    * Set all messages (replace entire array)
    */
   setMessages(messages: T[]): void;
@@ -185,6 +191,13 @@ export class SimpleChatState<
     if (this._messages.length === 0) return;
     const lastIndex = this._messages.length - 1;
     this.replaceMessage(lastIndex, updater(this._messages[lastIndex]));
+  }
+
+  updateMessageById(id: string, updater: (message: T) => T): boolean {
+    const index = this._messages.findIndex((m) => m.id === id);
+    if (index === -1) return false;
+    this.replaceMessage(index, updater(this._messages[index]));
+    return true;
   }
 
   setMessages(messages: T[]): void {

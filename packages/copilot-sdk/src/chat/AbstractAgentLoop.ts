@@ -49,6 +49,10 @@ export class AbstractAgentLoop implements AgentLoopActions {
   private _maxIterations: number;
   private _maxIterationsReached = false;
   private _isProcessing = false;
+  private _isCancelled = false;
+
+  // Cancellation support
+  private abortController: AbortController | null = null;
 
   // Registered tools
   private registeredTools: Map<string, ToolDefinition> = new Map();
@@ -111,6 +115,14 @@ export class AbstractAgentLoop implements AgentLoopActions {
 
   get isProcessing(): boolean {
     return this._isProcessing;
+  }
+
+  get isCancelled(): boolean {
+    return this._isCancelled;
+  }
+
+  get signal(): AbortSignal | undefined {
+    return this.abortController?.signal;
   }
 
   get state(): AgentLoopState {
@@ -207,6 +219,11 @@ export class AbstractAgentLoop implements AgentLoopActions {
    * Returns tool results for sending back to LLM
    */
   async executeToolCalls(toolCalls: ToolCallInfo[]): Promise<ToolResponse[]> {
+    // Check if cancelled
+    if (this._isCancelled) {
+      return [];
+    }
+
     // Check iteration limit
     if (this._iteration >= this._maxIterations) {
       this._maxIterationsReached = true;
@@ -214,14 +231,31 @@ export class AbstractAgentLoop implements AgentLoopActions {
       return [];
     }
 
+    // Create new abort controller for this batch
+    this.abortController = new AbortController();
+    this._isCancelled = false;
+    this._isProcessing = true;
+
     this.setIteration(this._iteration + 1);
     const results: ToolResponse[] = [];
 
     for (const toolCall of toolCalls) {
+      // Check if cancelled before each tool
+      if (this._isCancelled || this.abortController.signal.aborted) {
+        // Mark remaining tools as cancelled
+        results.push({
+          toolCallId: toolCall.id,
+          success: false,
+          error: "Tool execution cancelled",
+        });
+        continue;
+      }
+
       const result = await this.executeSingleTool(toolCall);
       results.push(result);
     }
 
+    this._isProcessing = false;
     return results;
   }
 
@@ -312,8 +346,15 @@ export class AbstractAgentLoop implements AgentLoopActions {
       if (!tool.handler) {
         throw new Error(`Tool "${toolCall.name}" has no handler`);
       }
-      // Pass approvalData to handler via context
+
+      // Check if cancelled before executing
+      if (this._isCancelled || this.abortController?.signal.aborted) {
+        throw new Error("Tool execution cancelled");
+      }
+
+      // Pass signal and approvalData to handler via context
       const result = await tool.handler(toolCall.args, {
+        signal: this.abortController?.signal,
         data: { toolCallId: toolCall.id },
         approvalData,
       });
@@ -421,6 +462,44 @@ export class AbstractAgentLoop implements AgentLoopActions {
     this._maxIterationsReached = false;
   }
 
+  /**
+   * Cancel all pending and executing tools
+   * This will:
+   * 1. Abort the current abort controller (signals tools to stop)
+   * 2. Reject all pending approvals
+   * 3. Mark executing tools as cancelled
+   */
+  cancel(): void {
+    this._isCancelled = true;
+    this._isProcessing = false;
+
+    // Abort the controller to signal tools
+    this.abortController?.abort();
+
+    // Reject all pending approvals
+    for (const [id, pending] of this.pendingApprovals) {
+      pending.resolve({ approved: false });
+      this.updateToolExecution(id, {
+        status: "failed",
+        approvalStatus: "rejected",
+        error: "Cancelled by user",
+        completedAt: new Date(),
+      });
+    }
+    this.pendingApprovals.clear();
+
+    // Mark any executing tools as failed
+    for (const exec of this._toolExecutions) {
+      if (exec.status === "executing" || exec.status === "pending") {
+        this.updateToolExecution(exec.id, {
+          status: "failed",
+          error: "Cancelled by user",
+          completedAt: new Date(),
+        });
+      }
+    }
+  }
+
   // ============================================
   // State Management
   // ============================================
@@ -431,6 +510,8 @@ export class AbstractAgentLoop implements AgentLoopActions {
   reset(): void {
     this.clearToolExecutions();
     this.pendingApprovals.clear();
+    this._isCancelled = false;
+    this.abortController = null;
   }
 
   /**
@@ -440,6 +521,7 @@ export class AbstractAgentLoop implements AgentLoopActions {
   resetIterations(): void {
     this.setIteration(0);
     this._maxIterationsReached = false;
+    this._isCancelled = false;
   }
 
   /**

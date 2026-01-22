@@ -41,10 +41,10 @@ export function processStreamChunk(
 ): StreamingMessageState {
   switch (chunk.type) {
     case "message:start":
-      return {
-        ...state,
-        messageId: chunk.id,
-      };
+      // Don't overwrite messageId - keep the client-generated ID
+      // since that's what's stored in the messages array.
+      // The server's ID is ignored to maintain consistency with updateMessageById.
+      return state;
 
     case "message:delta":
       return {
