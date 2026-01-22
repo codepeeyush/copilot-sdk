@@ -7,13 +7,39 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Packages to publish
-PACKAGES=("copilot-sdk" "llm-sdk")
+# Available packages
+ALL_PACKAGES=("copilot-sdk" "llm-sdk")
 
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo -e "${BLUE}  📦 YourGPT SDK Publish Script${NC}"
 echo -e "${BLUE}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
 echo ""
+
+# Step 0: Select packages to publish
+echo -e "${YELLOW}Which packages do you want to publish?${NC}"
+echo -e "  ${BLUE}1)${NC} @yourgpt/copilot-sdk only"
+echo -e "  ${BLUE}2)${NC} @yourgpt/llm-sdk only"
+echo -e "  ${BLUE}3)${NC} Both packages"
+echo ""
+read -p "Select option (1/2/3): " -n 1 -r PUBLISH_OPTION
+echo ""
+echo ""
+
+case $PUBLISH_OPTION in
+  1)
+    PACKAGES=("copilot-sdk")
+    ;;
+  2)
+    PACKAGES=("llm-sdk")
+    ;;
+  3)
+    PACKAGES=("copilot-sdk" "llm-sdk")
+    ;;
+  *)
+    echo -e "${RED}Invalid option. Aborted.${NC}"
+    exit 1
+    ;;
+esac
 
 # Step 1: Check npm login
 echo -e "${YELLOW}[1/6] Checking npm authentication...${NC}"

@@ -1,105 +1,53 @@
-import { cn } from "../../lib/utils";
-import { marked } from "marked";
-import { memo, useId, useMemo } from "react";
-import ReactMarkdown, { Components } from "react-markdown";
-import remarkBreaks from "remark-breaks";
-import remarkGfm from "remark-gfm";
-import { CodeBlock, CodeBlockCode } from "./code-block";
+import { memo, ComponentProps } from "react";
+import { Streamdown } from "streamdown";
+import { code } from "@streamdown/code";
 
 export type MarkdownProps = {
   children: string;
   id?: string;
   className?: string;
-  components?: Partial<Components>;
+  isStreaming?: boolean;
 };
 
-function parseMarkdownIntoBlocks(markdown: string): string[] {
-  const tokens = marked.lexer(markdown);
-  return tokens.map((token) => token.raw);
-}
-
-function extractLanguage(className?: string): string {
-  if (!className) return "plaintext";
-  const match = className.match(/language-(\w+)/);
-  return match ? match[1] : "plaintext";
-}
-
-const INITIAL_COMPONENTS: Partial<Components> = {
-  code: function CodeComponent({ className, children, ...props }) {
-    const isInline =
-      !props.node?.position?.start.line ||
-      props.node?.position?.start.line === props.node?.position?.end.line;
-
-    if (isInline) {
-      return (
-        <span
-          className={cn(
-            "bg-primary-foreground rounded-sm px-1 font-mono text-sm",
-            className,
-          )}
-          {...props}
-        >
-          {children}
-        </span>
-      );
-    }
-
-    const language = extractLanguage(className);
-
-    return (
-      <CodeBlock className={className}>
-        <CodeBlockCode code={children as string} language={language} />
-      </CodeBlock>
-    );
-  },
-  pre: function PreComponent({ children }) {
-    return <>{children}</>;
-  },
+// Normalized heading component for chat UI (same size, just bold)
+// Ignore Streamdown's className to prevent its text-3xl etc. from overriding
+const createHeading = (Tag: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") => {
+  const HeadingComponent = ({
+    children,
+    className: _,
+    ...props
+  }: ComponentProps<typeof Tag>) => (
+    <Tag className="text-[1em] font-semibold my-2 first:mt-0" {...props}>
+      {children}
+    </Tag>
+  );
+  HeadingComponent.displayName = Tag.toUpperCase();
+  return HeadingComponent;
 };
 
-const MemoizedMarkdownBlock = memo(
-  function MarkdownBlock({
-    content,
-    components = INITIAL_COMPONENTS,
-  }: {
-    content: string;
-    components?: Partial<Components>;
-  }) {
-    return (
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, remarkBreaks]}
-        components={components}
-      >
-        {content}
-      </ReactMarkdown>
-    );
-  },
-  function propsAreEqual(prevProps, nextProps) {
-    return prevProps.content === nextProps.content;
-  },
-);
-
-MemoizedMarkdownBlock.displayName = "MemoizedMarkdownBlock";
+const headingComponents = {
+  h1: createHeading("h1"),
+  h2: createHeading("h2"),
+  h3: createHeading("h3"),
+  h4: createHeading("h4"),
+  h5: createHeading("h5"),
+  h6: createHeading("h6"),
+};
 
 function MarkdownComponent({
   children,
-  id,
   className,
-  components = INITIAL_COMPONENTS,
+  isStreaming = false,
 }: MarkdownProps) {
-  const generatedId = useId();
-  const blockId = id ?? generatedId;
-  const blocks = useMemo(() => parseMarkdownIntoBlocks(children), [children]);
-
   return (
     <div className={className}>
-      {blocks.map((block, index) => (
-        <MemoizedMarkdownBlock
-          key={`${blockId}-block-${index}`}
-          content={block}
-          components={components}
-        />
-      ))}
+      <Streamdown
+        plugins={{ code }}
+        isAnimating={isStreaming}
+        components={headingComponents}
+      >
+        {children}
+      </Streamdown>
     </div>
   );
 }

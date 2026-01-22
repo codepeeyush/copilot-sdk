@@ -112,6 +112,7 @@ export function DefaultMessage({
                 "rounded-lg px-4 py-2 bg-primary text-primary-foreground",
                 userMessageClassName,
               )}
+              markdown
               size={size}
             >
               {message.content}
