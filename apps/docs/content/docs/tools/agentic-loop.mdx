@@ -63,7 +63,9 @@ AI: [Calls search_flights]
 
 ## Configuration
 
-The agentic loop is configured on the backend runtime:
+### Server-Side (Recommended)
+
+Configure the agentic loop on the backend runtime:
 
 ```ts
 // app/api/chat/route.ts
@@ -73,13 +75,33 @@ const runtime = createRuntime({
   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
   model: 'gpt-4o',
   // Agentic loop settings
-  maxIterations: 20,  // Maximum tool call cycles (default: 20)
+  agentLoop: {
+    maxIterations: 20,  // Maximum tool call cycles (default: 20)
+    debug: true,        // Enable debug logging
+  },
 });
 
 export async function POST(request: Request) {
   return runtime.handleRequest(request);
 }
 ```
+
+### Client-Side
+
+You can also set `maxIterations` on the `CopilotProvider` (sent with each request):
+
+```tsx
+<CopilotProvider
+  runtimeUrl="/api/chat"
+  maxIterations={10}  // Override server default for this client
+>
+  {children}
+</CopilotProvider>
+```
+
+<Callout type="info">
+Client-side `maxIterations` is passed in the request body. The server can enforce a maximum limit.
+</Callout>
 
 ### maxIterations
 

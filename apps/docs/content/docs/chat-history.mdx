@@ -249,4 +249,64 @@ const serverAdapter = createServerAdapter({
 });
 ```
 
+---
+
+## ChatWelcome Component
+
+Display a welcome screen when starting a new conversation, with suggestions and recent chat history:
+
+```tsx
+import { ChatWelcome } from '@yourgpt/copilot-sdk/ui';
+
+function WelcomeScreen() {
+  const { sendMessage, threads, switchThread } = useCopilot();
+
+  return (
+    <ChatWelcome
+      config={{
+        title: "How can I help you today?",
+        subtitle: "Ask anything and get it done.",
+        logo: "/logo.png",
+        showRecentChats: true,
+        maxRecentChats: 3,
+      }}
+      suggestions={[
+        "Help me write an email",
+        "Explain this code",
+        "Create a marketing plan",
+      ]}
+      recentThreads={threads}
+      onSendMessage={sendMessage}
+      onSelectThread={switchThread}
+    />
+  );
+}
+```
+
+### ChatWelcome Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `config` | `WelcomeConfig` | Title, subtitle, logo, and display settings |
+| `suggestions` | `string[]` | Clickable suggestion prompts |
+| `recentThreads` | `Thread[]` | Recent conversations to display |
+| `onSendMessage` | `(message, attachments?) => void` | Called when user sends a message |
+| `onSelectThread` | `(threadId) => void` | Called when user selects a thread |
+| `onDeleteThread` | `(threadId) => void` | Called when user deletes a thread |
+| `attachmentsEnabled` | `boolean` | Enable file attachments (default: true) |
+
+### WelcomeConfig
+
+```typescript
+interface WelcomeConfig {
+  title?: string;           // Main heading
+  subtitle?: string;        // Subheading
+  logo?: string;            // Logo image URL
+  showRecentChats?: boolean; // Show recent threads
+  recentChatsLabel?: string; // Label for recent chats section
+  maxRecentChats?: number;   // Max threads to show (default: 3)
+  suggestionsLabel?: string; // Label for suggestions
+}
+```
+
 
