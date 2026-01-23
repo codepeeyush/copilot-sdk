@@ -371,6 +371,13 @@ export class ChatWithTools {
     this.chat.setContext(context);
   }
 
+  /**
+   * Set system prompt dynamically
+   */
+  setSystemPrompt(prompt: string): void {
+    this.chat.setSystemPrompt(prompt);
+  }
+
   // ============================================
   // Tool Registration
   // ============================================

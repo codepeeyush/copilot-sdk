@@ -554,6 +554,15 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
   }
 
   /**
+   * Set system prompt dynamically
+   * This allows updating the system prompt after initialization
+   */
+  setSystemPrompt(prompt: string): void {
+    this.config.systemPrompt = prompt;
+    this.debug("System prompt updated", { length: prompt.length });
+  }
+
+  /**
    * Build the request payload
    */
   protected buildRequest() {

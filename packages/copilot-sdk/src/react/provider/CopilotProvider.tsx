@@ -113,6 +113,9 @@ export interface CopilotContextValue {
   addContext: (context: string, parentId?: string) => string;
   removeContext: (id: string) => void;
 
+  // System Prompt
+  setSystemPrompt: (prompt: string) => void;
+
   // Config
   threadId?: string;
   runtimeUrl: string;
@@ -222,6 +225,18 @@ export function CopilotProvider({
       },
     );
   }
+
+  // ============================================
+  // System Prompt Reactivity
+  // ============================================
+
+  // Watch for systemPrompt prop changes and update chat
+  useEffect(() => {
+    if (chatRef.current && systemPrompt !== undefined) {
+      chatRef.current.setSystemPrompt(systemPrompt);
+      debugLog("System prompt updated from prop");
+    }
+  }, [systemPrompt, debugLog]);
 
   // Subscribe to chat state with useSyncExternalStore
   const messages = useSyncExternalStore(
@@ -338,6 +353,18 @@ export function CopilotProvider({
   );
 
   // ============================================
+  // System Prompt
+  // ============================================
+
+  const setSystemPrompt = useCallback(
+    (prompt: string): void => {
+      chatRef.current?.setSystemPrompt(prompt);
+      debugLog("System prompt updated via function");
+    },
+    [debugLog],
+  );
+
+  // ============================================
   // Chat Actions
   // ============================================
 
@@ -438,6 +465,9 @@ export function CopilotProvider({
       addContext,
       removeContext,
 
+      // System Prompt
+      setSystemPrompt,
+
       // Config
       threadId,
       runtimeUrl,
@@ -465,6 +495,7 @@ export function CopilotProvider({
       registeredActions,
       addContext,
       removeContext,
+      setSystemPrompt,
       threadId,
       runtimeUrl,
       toolsConfig,
