@@ -186,6 +186,135 @@ Use `toDataStreamResponse()` when using tools to stream structured events includ
 
 ---
 
+## Runtime API (Advanced)
+
+For more control over the server, use `createRuntime()` instead of `streamText()`:
+
+```ts title="app/api/chat/route.ts"
+import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+  systemPrompt: 'You are a helpful assistant.',
+  agentLoop: {
+    maxIterations: 20,  // Max tool call cycles
+    debug: true,        // Enable debug logging
+  },
+  tools: [/* server-side tools */],
+});
+
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
+}
+```
+
+### Runtime Configuration
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `provider` | `AIProvider` | Provider instance from `createOpenAI()`, `createAnthropic()`, etc. |
+| `model` | `string` | Model ID (e.g., `'gpt-4o'`, `'claude-sonnet-4-20250514'`) |
+| `systemPrompt` | `string` | Default system prompt |
+| `agentLoop.maxIterations` | `number` | Max tool execution cycles (default: 20) |
+| `agentLoop.debug` | `boolean` | Enable debug logging |
+| `tools` | `ToolDefinition[]` | Server-side tools |
+| `toolContext` | `Record<string, unknown>` | Context data passed to all tool handlers |
+| `debug` | `boolean` | Enable request/response logging |
+
+### Server-Side Persistence
+
+Use the `onFinish` callback to persist messages after each request:
+
+```ts title="app/api/chat/route.ts"
+export async function POST(request: Request) {
+  return runtime.handleRequest(request, {
+    onFinish: async ({ messages, threadId }) => {
+      // Save to your database
+      await db.thread.upsert({
+        where: { id: threadId },
+        update: { messages, updatedAt: new Date() },
+        create: { id: threadId, messages },
+      });
+    },
+  });
+}
+```
+
+### Tool Context
+
+Pass authentication or context data to all tool handlers:
+
+```ts
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+  toolContext: {
+    userId: 'user_123',
+    tenantId: 'tenant_456',
+  },
+  tools: [
+    {
+      name: 'get_user_data',
+      description: 'Get data for the current user',
+      location: 'server',
+      inputSchema: { type: 'object', properties: {}, required: [] },
+      handler: async (args, context) => {
+        // Access context.data.userId, context.data.tenantId
+        // Also available: context.headers, context.request, context.threadId
+        const user = await db.user.findById(context.data.userId);
+        return { success: true, data: user };
+      },
+    },
+  ],
+});
+```
+
+### Provider Examples
+
+<Tabs items={['OpenAI', 'Anthropic', 'Google']}>
+  <Tab value="OpenAI">
+    ```ts
+    import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+    });
+    ```
+  </Tab>
+  <Tab value="Anthropic">
+    ```ts
+    import { createRuntime, createAnthropic } from '@yourgpt/llm-sdk';
+
+    const runtime = createRuntime({
+      provider: createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY }),
+      model: 'claude-sonnet-4-20250514',
+    });
+    ```
+
+    <Callout type="info">
+    Requires `@anthropic-ai/sdk` package: `npm install @anthropic-ai/sdk`
+    </Callout>
+  </Tab>
+  <Tab value="Google">
+    ```ts
+    import { createRuntime, createGoogle } from '@yourgpt/llm-sdk';
+
+    const runtime = createRuntime({
+      provider: createGoogle({ apiKey: process.env.GOOGLE_API_KEY }),
+      model: 'gemini-2.0-flash',
+    });
+    ```
+
+    <Callout type="info">
+    Google uses OpenAI-compatible API. Requires `openai` package.
+    </Callout>
+  </Tab>
+</Tabs>
+
+---
+
 ## Environment Variables
 
 Store your API keys in environment variables:
