@@ -73,7 +73,7 @@ The SDK supports two response formats:
 
 ## Framework Examples
 
-<Tabs items={['Next.js', 'Node.js']}>
+<Tabs items={['Next.js', 'Express', 'Node.js']}>
   <Tab value="Next.js">
     ```ts title="app/api/chat/route.ts"
     import { streamText } from '@yourgpt/llm-sdk';
@@ -90,6 +90,53 @@ The SDK supports two response formats:
 
       return result.toTextStreamResponse();
     }
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="server.ts"
+    import express from 'express';
+    import cors from 'cors';
+    import { createRuntime, createOpenAI } from '@yourgpt/llm-sdk';
+
+    const app = express();
+    app.use(cors());
+    app.use(express.json());
+
+    // Create runtime once at startup
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    // Chat endpoint
+    app.post('/api/chat', async (req, res) => {
+      // Convert Express request to Web Request
+      const webRequest = new Request('http://localhost/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(req.body),
+      });
+
+      // Handle with runtime
+      const response = await runtime.handleRequest(webRequest);
+
+      // Stream response back to client
+      response.headers.forEach((value, key) => res.setHeader(key, value));
+      res.status(response.status);
+
+      if (response.body) {
+        const reader = response.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(new TextDecoder().decode(value));
+        }
+      }
+      res.end();
+    });
+
+    app.listen(3001, () => console.log('Server on http://localhost:3001'));
     ```
   </Tab>
   <Tab value="Node.js">
