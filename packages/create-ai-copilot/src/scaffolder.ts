@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs-extra";
 import { fileURLToPath } from "url";
-import type { UserChoices, Provider } from "./prompts.js";
+import type { UserChoices, Provider, Framework } from "./prompts.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -71,6 +71,16 @@ export async function scaffoldProject(choices: UserChoices): Promise<void> {
   if (fs.existsSync(gitignorePath)) {
     await fs.rename(gitignorePath, path.join(targetDir, ".gitignore"));
   }
+
+  // Apply feature-specific modifications (only for frontend frameworks)
+  if (choices.framework !== "express") {
+    if (choices.features.tools) {
+      await addToolsSetup(targetDir, choices.framework);
+    }
+    if (choices.features.persistence) {
+      await addPersistenceSetup(targetDir, choices.framework);
+    }
+  }
 }
 
 async function processTemplateFiles(
@@ -85,7 +95,12 @@ async function processTemplateFiles(
 
     if (file.isDirectory()) {
       await processTemplateFiles(filePath, choices, config);
-    } else if (file.name.endsWith(".ts") || file.name.endsWith(".tsx")) {
+    } else if (
+      file.name.endsWith(".ts") ||
+      file.name.endsWith(".tsx") ||
+      file.name.endsWith(".md") ||
+      file.name.endsWith(".html")
+    ) {
       let content = await fs.readFile(filePath, "utf-8");
 
       // Replace placeholders
@@ -134,4 +149,79 @@ ${config.envKey}=your_api_key_here
     envExampleContent,
     "utf-8",
   );
+}
+
+async function addToolsSetup(dir: string, framework: Framework): Promise<void> {
+  // Determine the API route file path
+  const routeFile =
+    framework === "nextjs"
+      ? path.join(dir, "app", "api", "chat", "route.ts")
+      : path.join(dir, "server", "index.ts");
+
+  if (!fs.existsSync(routeFile)) return;
+
+  let content = await fs.readFile(routeFile, "utf-8");
+
+  // Update import to include tool
+  content = content.replace(
+    /import { createRuntime } from '@yourgpt\/llm-sdk';/,
+    `import { createRuntime, tool } from '@yourgpt/llm-sdk';`,
+  );
+
+  // Add sample weather tool before the runtime creation
+  const weatherTool = `
+const weatherTool = tool({
+  description: 'Get current weather for a city',
+  parameters: z.object({
+    city: z.string().describe('City name'),
+  }),
+  execute: async ({ city }) => {
+    // Demo implementation - replace with real weather API
+    return { temperature: 22, condition: 'sunny', city };
+  },
+});
+
+`;
+
+  // Find the runtime creation and add tools config
+  content = content.replace(
+    /const runtime = createRuntime\(\{/,
+    `${weatherTool}const runtime = createRuntime({`,
+  );
+
+  // Add tools to runtime config
+  content = content.replace(
+    /systemPrompt: 'You are a helpful AI assistant.',\n\}\);/,
+    `systemPrompt: 'You are a helpful AI assistant.',
+  tools: { getWeather: weatherTool },
+});`,
+  );
+
+  await fs.writeFile(routeFile, content, "utf-8");
+}
+
+async function addPersistenceSetup(
+  dir: string,
+  framework: Framework,
+): Promise<void> {
+  // Determine the page file path
+  const pageFile =
+    framework === "nextjs"
+      ? path.join(dir, "app", "components", "copilot-sidebar.tsx")
+      : path.join(dir, "src", "components", "copilot-sidebar.tsx");
+
+  if (!fs.existsSync(pageFile)) return;
+
+  let content = await fs.readFile(pageFile, "utf-8");
+
+  // Add persistence props to CopilotChat
+  content = content.replace(
+    /<CopilotChat\s*\n\s*className="h-full"/,
+    `<CopilotChat
+        className="h-full"
+        persistence={true}
+        showThreadPicker={true}`,
+  );
+
+  await fs.writeFile(pageFile, content, "utf-8");
 }

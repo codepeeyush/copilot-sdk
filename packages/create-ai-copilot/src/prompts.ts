@@ -3,14 +3,20 @@ import pc from "picocolors";
 import path from "path";
 import fs from "fs-extra";
 
-export type Framework = "nextjs" | "vite-react";
+export type Framework = "nextjs" | "vite-react" | "express";
 export type Provider = "openai" | "anthropic" | "google" | "xai";
+
+export interface Features {
+  tools: boolean;
+  persistence: boolean;
+}
 
 export interface UserChoices {
   projectName: string;
   framework: Framework;
   provider: Provider;
   apiKey?: string;
+  features: Features;
 }
 
 export async function getPrompts(): Promise<UserChoices | null> {
@@ -47,6 +53,11 @@ export async function getPrompts(): Promise<UserChoices | null> {
         value: "vite-react" as Framework,
         label: "Vite + React",
         hint: "Client-side with Hono server",
+      },
+      {
+        value: "express" as Framework,
+        label: "Express",
+        hint: "Backend API only (no frontend)",
       },
     ],
   });
@@ -108,11 +119,42 @@ export async function getPrompts(): Promise<UserChoices | null> {
     }
   }
 
+  // Feature selection (only for frontend frameworks)
+  let features: Features = { tools: false, persistence: false };
+
+  if (framework !== "express") {
+    const selectedFeatures = await p.multiselect({
+      message: "Select features (space to toggle):",
+      options: [
+        {
+          value: "tools" as const,
+          label: "Tool Calling",
+          hint: "AI can call functions",
+        },
+        {
+          value: "persistence" as const,
+          label: "Chat Persistence",
+          hint: "Save conversation history",
+        },
+      ],
+      required: false,
+      initialValues: [],
+    });
+
+    if (p.isCancel(selectedFeatures)) return null;
+
+    features = {
+      tools: (selectedFeatures as string[]).includes("tools"),
+      persistence: (selectedFeatures as string[]).includes("persistence"),
+    };
+  }
+
   return {
     projectName: projectName as string,
     framework: framework as Framework,
     provider: provider as Provider,
     apiKey,
+    features,
   };
 }
 
