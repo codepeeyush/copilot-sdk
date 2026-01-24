@@ -1,6 +1,6 @@
 {
   "name": "@yourgpt/llm-sdk",
-  "version": "1.2.0",
+  "version": "1.3.1",
   "description": "LLM SDK for YourGPT - Multi-provider LLM integration",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -66,13 +66,17 @@
   },
   "peerDependencies": {
     "openai": "^4.0.0",
-    "@anthropic-ai/sdk": "^0.20.0"
+    "@anthropic-ai/sdk": "^0.20.0",
+    "@google/generative-ai": "^0.21.0"
   },
   "peerDependenciesMeta": {
     "openai": {
       "optional": true
     },
     "@anthropic-ai/sdk": {
+      "optional": true
+    },
+    "@google/generative-ai": {
       "optional": true
     }
   },

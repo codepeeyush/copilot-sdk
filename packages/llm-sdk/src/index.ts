@@ -3,20 +3,24 @@
  *
  * LLM SDK for YourGPT - Multi-provider LLM integration
  *
- * Modern usage:
+ * Tree-shakeable imports:
  * ```ts
- * import { generateText, streamText, tool } from '@yourgpt/llm-sdk';
- * import { openai } from '@yourgpt/llm-sdk/openai';
+ * // Core functions from root (no adapters bundled)
+ * import { createRuntime, generateText, streamText, tool } from '@yourgpt/llm-sdk';
  *
- * const result = await generateText({
- *   model: openai('gpt-4o'),
- *   prompt: 'Hello!',
+ * // Provider from subpath (only that provider bundled)
+ * import { createAnthropic } from '@yourgpt/llm-sdk/anthropic';
+ * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+ *
+ * const runtime = createRuntime({
+ *   provider: createAnthropic(),
+ *   model: 'claude-3-5-sonnet-20241022',
  * });
  * ```
  */
 
 // ============================================
-// NEW: Core Functions (Modern API)
+// Core Functions (Modern API)
 // ============================================
 
 export { generateText } from "./core/generate-text";
@@ -78,17 +82,7 @@ export type {
 export { DEFAULT_CAPABILITIES } from "./core/types";
 
 // ============================================
-// NEW: Provider Re-exports (for convenience)
-// Users should import from subpaths for tree-shaking
-// ============================================
-
-export { openai } from "./providers/openai/provider";
-export { anthropic } from "./providers/anthropic/provider";
-export { xai } from "./providers/xai/provider";
-export { google } from "./providers/google/provider";
-
-// ============================================
-// LEGACY: Server (still works, but prefer core functions)
+// Server Runtime
 // ============================================
 
 // Server
@@ -124,80 +118,18 @@ export {
   type AgentLoopOptions,
 } from "./server";
 
-// Adapters
+// ============================================
+// Types Only (for advanced use cases)
+// ============================================
+
+// Adapter types (no implementations - use subpath imports)
 export type {
   LLMAdapter,
   ChatCompletionRequest,
   AdapterFactory,
-} from "./adapters";
+} from "./adapters/base";
 
-export {
-  // OpenAI
-  OpenAIAdapter,
-  createOpenAIAdapter,
-  type OpenAIAdapterConfig,
-  // Anthropic
-  AnthropicAdapter,
-  createAnthropicAdapter,
-  type AnthropicAdapterConfig,
-  // Ollama
-  OllamaAdapter,
-  createOllamaAdapter,
-  type OllamaAdapterConfig,
-  // Google Gemini
-  GoogleAdapter,
-  createGoogleAdapter,
-  type GoogleAdapterConfig,
-  // xAI Grok
-  XAIAdapter,
-  createXAIAdapter,
-  type XAIAdapterConfig,
-  // Azure OpenAI
-  AzureAdapter,
-  createAzureAdapter,
-  type AzureAdapterConfig,
-} from "./adapters";
-
-// Provider formatters (for agentic loop)
-export {
-  getFormatter,
-  isProviderSupported,
-  getSupportedProviders,
-  anthropicFormatter,
-  openaiFormatter,
-  geminiFormatter,
-} from "./providers";
-
-export type {
-  ProviderFormatter,
-  AnthropicTool,
-  AnthropicToolUse,
-  AnthropicToolResult,
-  OpenAITool,
-  OpenAIToolCall,
-  OpenAIToolResult,
-  GeminiFunctionDeclaration,
-  GeminiFunctionCall,
-  GeminiFunctionResponse,
-} from "./providers";
-
-// Provider factories (multi-provider architecture)
-export {
-  createOpenAI,
-  createAnthropic,
-  createGoogle,
-  createOllama,
-  createXAI,
-  createAzure,
-  // Provider registry
-  registerProvider,
-  getProvider,
-  hasProvider,
-  listProviders,
-  getAvailableProviders,
-  getModelCapabilities,
-} from "./providers";
-
+// Provider types (no implementations - use subpath imports)
 export type {
   AIProvider,
   ProviderCapabilities,
@@ -208,16 +140,24 @@ export type {
   XAIProviderConfig,
   AzureProviderConfig,
   OllamaProviderConfig,
-} from "./providers";
+  ProviderFormatter,
+  AnthropicTool,
+  AnthropicToolUse,
+  AnthropicToolResult,
+  OpenAITool,
+  OpenAIToolCall,
+  OpenAIToolResult,
+  GeminiFunctionDeclaration,
+  GeminiFunctionCall,
+  GeminiFunctionResponse,
+} from "./providers/types";
 
-// Re-export core types
+// Re-export core types from copilot-sdk
 export type {
   Message,
   ActionDefinition,
   StreamEvent,
   LLMConfig,
-  LLMProvider,
-  // Tool types (AIProvider is exported from ./providers above)
   ToolDefinition,
   ToolLocation,
   ToolResponse,

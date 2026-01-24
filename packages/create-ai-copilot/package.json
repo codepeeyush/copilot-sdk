@@ -1,6 +1,6 @@
 {
   "name": "create-ai-copilot",
-  "version": "0.1.1",
+  "version": "1.2.0",
   "description": "CLI to scaffold AI Copilot projects with @yourgpt/copilot-sdk",
   "type": "module",
   "bin": {

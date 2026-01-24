@@ -47,12 +47,21 @@ interface ToolExecution {
   id: string;
   name: string;
   args: Record<string, unknown>;
-  status: 'pending' | 'executing' | 'completed' | 'error';
+  status: 'pending' | 'executing' | 'completed' | 'error' | 'failed' | 'rejected';
   result?: unknown;
   error?: string;
   approvalStatus?: 'required' | 'approved' | 'rejected';
 }
 ```
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Waiting to start |
+| `executing` | Currently running |
+| `completed` | Finished successfully |
+| `error` | Failed with error |
+| `failed` | Handler threw exception |
+| `rejected` | User rejected approval |
 
 ### ToolDefinition
 

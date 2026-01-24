@@ -6,9 +6,11 @@ import { formatMessages } from "./base";
 /**
  * Ollama adapter configuration
  */
-export interface OllamaAdapterConfig extends Partial<LLMConfig> {
+export interface OllamaAdapterConfig {
   model?: string;
   baseUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 /**

@@ -1,4 +1,5 @@
-import { createAnthropic, createRuntime } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createAnthropic } from "@yourgpt/llm-sdk/anthropic";
 
 const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,

@@ -27,10 +27,12 @@ import { formatMessagesForOpenAI, formatTools } from "./base";
 /**
  * xAI adapter configuration
  */
-export interface XAIAdapterConfig extends Partial<LLMConfig> {
+export interface XAIAdapterConfig {
   apiKey: string;
   model?: string;
   baseUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 // Default xAI API endpoint

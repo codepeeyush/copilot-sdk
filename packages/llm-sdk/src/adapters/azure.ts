@@ -27,7 +27,7 @@ import { formatMessagesForOpenAI, formatTools } from "./base";
 /**
  * Azure OpenAI adapter configuration
  */
-export interface AzureAdapterConfig extends Partial<LLMConfig> {
+export interface AzureAdapterConfig {
   /** Azure OpenAI API key */
   apiKey: string;
   /** Azure resource name (e.g., 'my-resource') */
@@ -36,6 +36,8 @@ export interface AzureAdapterConfig extends Partial<LLMConfig> {
   deploymentName: string;
   /** API version (default: 2024-08-01-preview) */
   apiVersion?: string;
+  temperature?: number;
+  maxTokens?: number;
   /** Custom endpoint URL (optional, overrides resourceName) */
   baseUrl?: string;
 }

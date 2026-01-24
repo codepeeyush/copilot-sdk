@@ -107,6 +107,17 @@ export class ReactChatState<
     this.notify();
   }
 
+  updateMessageById(id: string, updater: (message: T) => T): boolean {
+    const index = this._messages.findIndex((m) => m.id === id);
+    if (index === -1) return false;
+
+    this._messages = this._messages.map((m, i) =>
+      i === index ? updater(m) : m,
+    );
+    this.notify();
+    return true;
+  }
+
   setMessages(messages: T[]): void {
     this._messages = messages;
     this.notify();

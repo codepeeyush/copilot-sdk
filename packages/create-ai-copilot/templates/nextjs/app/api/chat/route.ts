@@ -1,14 +1,16 @@
-import { streamText } from '@yourgpt/llm-sdk';
-import { {{provider}} } from '@yourgpt/llm-sdk/{{provider}}';
+import { createRuntime } from '@yourgpt/llm-sdk';
+import { create{{providerClass}} } from '@yourgpt/llm-sdk/{{provider}}';
 
-export async function POST(req: Request) {
-  const { messages } = await req.json();
+const {{provider}} = create{{providerClass}}({
+  apiKey: process.env.{{envKey}},
+});
 
-  const result = await streamText({
-    model: {{provider}}('{{model}}'),
-    system: 'You are a helpful AI assistant.',
-    messages,
-  });
+const runtime = createRuntime({
+  provider: {{provider}},
+  model: '{{model}}',
+  systemPrompt: 'You are a helpful AI assistant.',
+});
 
-  return result.toTextStreamResponse();
+export async function POST(request: Request) {
+  return runtime.handleRequest(request);
 }

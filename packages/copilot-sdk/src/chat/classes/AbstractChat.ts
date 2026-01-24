@@ -224,15 +224,35 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
   // ============================================
 
   /**
+   * Check if a request is currently in progress
+   */
+  get isBusy(): boolean {
+    return (
+      this.state.status === "submitted" || this.state.status === "streaming"
+    );
+  }
+
+  /**
    * Send a message
+   * Returns false if a request is already in progress
    */
   async sendMessage(
     content: string,
     attachments?: MessageAttachment[],
-  ): Promise<void> {
+  ): Promise<boolean> {
+    // Guard: Don't send if already processing
+    if (this.isBusy) {
+      this.debug("sendMessage", "Blocked - request already in progress");
+      return false;
+    }
+
     this.debug("sendMessage", { content, attachments });
 
     try {
+      // IMPORTANT: Resolve any pending tool_calls before sending
+      // This prevents Anthropic API errors: "tool_use without tool_result"
+      this.resolveUnresolvedToolCalls();
+
       // Create user message
       const userMessage = createUserMessage(content, attachments) as T;
 
@@ -250,8 +270,65 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
 
       // Send request
       await this.processRequest();
+      return true;
     } catch (error) {
       this.handleError(error as Error);
+      return false;
+    }
+  }
+
+  /**
+   * Resolve any tool_calls that don't have corresponding tool_results.
+   * This prevents Anthropic API errors when tool_use has no tool_result.
+   * Can happen when max iterations is reached or tool execution is interrupted.
+   */
+  private resolveUnresolvedToolCalls(): void {
+    const messages = this.state.messages;
+
+    // Collect all tool_call IDs from assistant messages
+    const allToolCallIds = new Set<string>();
+    // Collect resolved tool_call IDs from tool messages
+    const resolvedIds = new Set<string>();
+
+    for (const msg of messages) {
+      if (msg.role === "assistant" && msg.toolCalls?.length) {
+        for (const tc of msg.toolCalls) {
+          allToolCallIds.add(tc.id);
+        }
+      }
+      if (msg.role === "tool" && msg.toolCallId) {
+        resolvedIds.add(msg.toolCallId);
+      }
+    }
+
+    // Find unresolved tool_calls
+    const unresolvedIds = [...allToolCallIds].filter(
+      (id) => !resolvedIds.has(id),
+    );
+
+    if (unresolvedIds.length > 0) {
+      this.debug(
+        "resolveUnresolvedToolCalls",
+        `Adding ${unresolvedIds.length} missing tool results`,
+      );
+
+      // Add error result for each unresolved tool_call
+      for (const toolCallId of unresolvedIds) {
+        const toolMessage = {
+          id: generateMessageId(),
+          role: "tool" as const,
+          content: JSON.stringify({
+            success: false,
+            error: "Tool execution was interrupted. Please try again.",
+          }),
+          toolCallId,
+          createdAt: new Date(),
+        } as T;
+
+        this.state.pushMessage(toolMessage);
+      }
+
+      this.callbacks.onMessagesChange?.(this.state.messages);
     }
   }
 
@@ -477,6 +554,15 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
   }
 
   /**
+   * Set system prompt dynamically
+   * This allows updating the system prompt after initialization
+   */
+  setSystemPrompt(prompt: string): void {
+    this.config.systemPrompt = prompt;
+    this.debug("System prompt updated", { length: prompt.length });
+  }
+
+  /**
    * Build the request payload
    */
   protected buildRequest() {
@@ -615,9 +701,14 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
       // Update stream state (pure function)
       this.streamState = processStreamChunk(chunk, this.streamState);
 
-      // Update message in state
+      // Update message in state BY ID (not last position)
+      // This is critical: when tool calls trigger nested streams,
+      // updateLastMessage would update the wrong message
       const updatedMessage = streamStateToMessage(this.streamState) as T;
-      this.state.updateLastMessage(() => updatedMessage);
+      this.state.updateMessageById(
+        this.streamState.messageId,
+        () => updatedMessage,
+      );
 
       // Notify delta callback
       if (chunk.type === "message:delta") {
@@ -640,10 +731,12 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
 
     this.debug("handleStreamResponse", `Processed ${chunkCount} chunks`);
 
-    // Finalize
+    // Finalize - update by ID to ensure we update the correct message
     const finalMessage = streamStateToMessage(this.streamState) as T;
-    this.state.updateLastMessage(() => finalMessage);
-    this.state.status = "ready";
+    this.state.updateMessageById(
+      this.streamState.messageId,
+      () => finalMessage,
+    );
 
     // Check if we got any content
     if (
@@ -654,9 +747,16 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
     }
 
     this.callbacks.onMessageFinish?.(finalMessage);
-    this.callbacks.onStatusChange?.("ready");
     this.callbacks.onMessagesChange?.(this.state.messages);
-    this.callbacks.onFinish?.(this.state.messages);
+
+    // Only set status to "ready" if NO tool calls were emitted
+    // If tool calls were emitted, the async handler will manage status
+    // (it will set "submitted" then "streaming" for the continuation)
+    if (!toolCallsEmitted) {
+      this.state.status = "ready";
+      this.callbacks.onStatusChange?.("ready");
+      this.callbacks.onFinish?.(this.state.messages);
+    }
 
     this.emit("done", {});
     this.streamState = null;
@@ -679,17 +779,23 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
       this.state.pushMessage(message);
     }
 
-    this.state.status = "ready";
-    this.callbacks.onStatusChange?.("ready");
     this.callbacks.onMessagesChange?.(this.state.messages);
-    this.callbacks.onFinish?.(this.state.messages);
 
-    // Check for tool calls (with bounds check)
-    if (response.requiresAction && this.state.messages.length > 0) {
+    // Check for tool calls BEFORE setting status to ready
+    // If tool calls exist, the async handler will manage status
+    const hasToolCalls =
+      response.requiresAction &&
+      this.state.messages.length > 0 &&
+      this.state.messages[this.state.messages.length - 1]?.toolCalls?.length;
+
+    if (hasToolCalls) {
       const lastMessage = this.state.messages[this.state.messages.length - 1];
-      if (lastMessage?.toolCalls?.length) {
-        this.emit("toolCalls", { toolCalls: lastMessage.toolCalls });
-      }
+      this.emit("toolCalls", { toolCalls: lastMessage.toolCalls });
+    } else {
+      // Only set ready if no tool calls
+      this.state.status = "ready";
+      this.callbacks.onStatusChange?.("ready");
+      this.callbacks.onFinish?.(this.state.messages);
     }
 
     this.emit("done", {});

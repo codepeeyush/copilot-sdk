@@ -20,7 +20,6 @@ import React, {
 
 import type {
   Message,
-  CopilotConfig,
   ToolsConfig,
   ToolDefinition,
   ActionDefinition,
@@ -47,19 +46,28 @@ import {
 
 export interface CopilotProviderProps {
   children: React.ReactNode;
+  /** Runtime API endpoint URL */
   runtimeUrl: string;
-  config?: CopilotConfig["config"];
-  cloud?: CopilotConfig["cloud"];
+  /** System prompt sent with each request */
   systemPrompt?: string;
   /** @deprecated Use useTools() hook instead */
   tools?: ToolsConfig;
+  /** Thread ID for conversation persistence */
   threadId?: string;
+  /** Initial messages to populate the chat */
   initialMessages?: Message[];
+  /** Callback when messages change */
   onMessagesChange?: (messages: Message[]) => void;
+  /** Callback when an error occurs */
   onError?: (error: Error) => void;
   /** Enable/disable streaming (default: true) */
   streaming?: boolean;
+  /** Enable debug logging */
   debug?: boolean;
+  /** Max tool execution iterations (default: 20) */
+  maxIterations?: number;
+  /** Custom message when max iterations reached (sent to AI as tool result) */
+  maxIterationsMessage?: string;
 }
 
 export interface CopilotContextValue {
@@ -105,6 +113,9 @@ export interface CopilotContextValue {
   addContext: (context: string, parentId?: string) => string;
   removeContext: (id: string) => void;
 
+  // System Prompt
+  setSystemPrompt: (prompt: string) => void;
+
   // Config
   threadId?: string;
   runtimeUrl: string;
@@ -132,8 +143,6 @@ export function useCopilot(): CopilotContextValue {
 export function CopilotProvider({
   children,
   runtimeUrl,
-  config,
-  cloud,
   systemPrompt,
   tools: toolsConfig,
   threadId,
@@ -142,6 +151,8 @@ export function CopilotProvider({
   onError,
   streaming,
   debug = false,
+  maxIterations,
+  maxIterationsMessage,
 }: CopilotProviderProps) {
   // Debug logger
   const debugLog = useCallback(
@@ -192,12 +203,13 @@ export function CopilotProvider({
     chatRef.current = new ReactChatWithTools(
       {
         runtimeUrl,
-        llm: config,
         systemPrompt,
         threadId,
         initialMessages: uiInitialMessages,
         streaming,
         debug,
+        maxIterations,
+        maxIterationsMessage,
       },
       {
         onToolExecutionsChange: (executions) => {
@@ -213,6 +225,18 @@ export function CopilotProvider({
       },
     );
   }
+
+  // ============================================
+  // System Prompt Reactivity
+  // ============================================
+
+  // Watch for systemPrompt prop changes and update chat
+  useEffect(() => {
+    if (chatRef.current && systemPrompt !== undefined) {
+      chatRef.current.setSystemPrompt(systemPrompt);
+      debugLog("System prompt updated from prop");
+    }
+  }, [systemPrompt, debugLog]);
 
   // Subscribe to chat state with useSyncExternalStore
   const messages = useSyncExternalStore(
@@ -329,6 +353,18 @@ export function CopilotProvider({
   );
 
   // ============================================
+  // System Prompt
+  // ============================================
+
+  const setSystemPrompt = useCallback(
+    (prompt: string): void => {
+      chatRef.current?.setSystemPrompt(prompt);
+      debugLog("System prompt updated via function");
+    },
+    [debugLog],
+  );
+
+  // ============================================
   // Chat Actions
   // ============================================
 
@@ -429,6 +465,9 @@ export function CopilotProvider({
       addContext,
       removeContext,
 
+      // System Prompt
+      setSystemPrompt,
+
       // Config
       threadId,
       runtimeUrl,
@@ -456,6 +495,7 @@ export function CopilotProvider({
       registeredActions,
       addContext,
       removeContext,
+      setSystemPrompt,
       threadId,
       runtimeUrl,
       toolsConfig,

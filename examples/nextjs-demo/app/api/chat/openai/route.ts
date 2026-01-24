@@ -1,4 +1,5 @@
-import { createOpenAI, createRuntime } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createOpenAI } from "@yourgpt/llm-sdk/openai";
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -10,6 +11,10 @@ const runtime = createRuntime({
   systemPrompt:
     "You are a helpful assistant powered by OpenAI GPT-4o. Be concise and helpful.",
   debug: process.env.NODE_ENV === "development",
+  // For testing max iterations - set to 2 to easily trigger the limit
+  agentLoop: {
+    maxIterations: 2,
+  },
 });
 
 export async function POST(request: Request) {

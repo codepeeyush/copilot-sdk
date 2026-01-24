@@ -23,11 +23,15 @@ export interface ThinkingConfig {
 /**
  * Anthropic adapter configuration
  */
-export interface AnthropicAdapterConfig extends Partial<LLMConfig> {
+export interface AnthropicAdapterConfig {
   apiKey: string;
   model?: string;
+  /** Base URL for API endpoint */
+  baseUrl?: string;
   /** Enable extended thinking (for Claude 3.7 Sonnet, Claude 4) */
   thinking?: ThinkingConfig;
+  temperature?: number;
+  maxTokens?: number;
 }
 
 /**

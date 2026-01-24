@@ -14,12 +14,12 @@ import type {
 } from "@yourgpt/copilot-sdk/core";
 import type { AIProvider } from "../providers/types";
 import { createMessage } from "@yourgpt/copilot-sdk/core";
-import type { LLMAdapter, ChatCompletionRequest } from "../adapters";
-import {
-  createOpenAIAdapter,
-  createAnthropicAdapter,
-  createOllamaAdapter,
-} from "../adapters";
+import type { LLMAdapter, ChatCompletionRequest } from "../adapters/base";
+// Legacy imports - only used for legacy llm config
+// These are the most common adapters, kept for backward compatibility
+import { createOpenAIAdapter } from "../adapters/openai";
+import { createAnthropicAdapter } from "../adapters/anthropic";
+import { createOllamaAdapter } from "../adapters/ollama";
 import type {
   RuntimeConfig,
   ChatRequest,
@@ -381,9 +381,14 @@ export class Runtime {
       }
 
       // STREAMING: Process chat and return SSE response
-      const generator = useAgentLoop
-        ? this.processChatWithLoop(body, signal, undefined, undefined, request)
-        : this.processChat(body, signal);
+      // Always use processChatWithLoop for consistent message handling
+      const generator = this.processChatWithLoop(
+        body,
+        signal,
+        undefined,
+        undefined,
+        request,
+      );
 
       // Wrap generator to intercept done event for onFinish callback
       const wrappedGenerator = this.wrapGeneratorWithOnFinish(
@@ -447,20 +452,19 @@ export class Runtime {
   private async handleNonStreamingRequest(
     body: ChatRequest,
     signal: AbortSignal | undefined,
-    useAgentLoop: boolean,
+    _useAgentLoop: boolean, // Kept for backward compatibility, always uses agent loop now
     httpRequest: Request,
     options?: HandleRequestOptions,
   ): Promise<Response> {
     try {
-      const generator = useAgentLoop
-        ? this.processChatWithLoop(
-            body,
-            signal,
-            undefined,
-            undefined,
-            httpRequest,
-          )
-        : this.processChat(body, signal);
+      // Always use processChatWithLoop for consistent message handling
+      const generator = this.processChatWithLoop(
+        body,
+        signal,
+        undefined,
+        undefined,
+        httpRequest,
+      );
 
       // Collect all events
       const events: StreamEvent[] = [];

@@ -48,6 +48,8 @@ export interface ChatWithToolsConfig {
   tools?: ToolDefinition[];
   /** Max tool execution iterations (default: 20) */
   maxIterations?: number;
+  /** Custom error message when max iterations reached (sent to AI as tool result) */
+  maxIterationsMessage?: string;
   /** State implementation (injected by framework adapter) */
   state?: ChatState<UIMessage>;
   /** Transport implementation */
@@ -197,6 +199,27 @@ export class ChatWithTools {
           }));
 
           await this.chat.continueWithToolResults(toolResults);
+        } else if (
+          this.agentLoop.maxIterationsReached &&
+          toolCallInfos.length > 0
+        ) {
+          // Max iterations reached - still need to add tool_result to prevent API errors
+          // Without this, the conversation has tool_use without tool_result
+          this.debug("Max iterations reached, adding blocked tool results");
+
+          const errorMessage =
+            this.config.maxIterationsMessage ||
+            "Tool execution paused: iteration limit reached. User can say 'continue' to resume.";
+
+          const blockedResults = toolCallInfos.map((tc) => ({
+            toolCallId: tc.id,
+            result: {
+              success: false,
+              error: errorMessage,
+            },
+          }));
+
+          await this.chat.continueWithToolResults(blockedResults);
         }
       } catch (error) {
         this.debug("Error executing tools:", error);
@@ -230,6 +253,28 @@ export class ChatWithTools {
     return this.chat.isStreaming;
   }
 
+  /**
+   * Whether any operation is in progress (chat or tools)
+   * Use this to show loading indicators and disable send button
+   */
+  get isLoading(): boolean {
+    const chatBusy = this.status === "submitted" || this.status === "streaming";
+    const toolsBusy = this.agentLoop.isProcessing;
+    const hasPendingApprovals =
+      this.agentLoop.pendingApprovalExecutions.length > 0;
+    return chatBusy || toolsBusy || hasPendingApprovals;
+  }
+
+  /**
+   * Check if a request is currently in progress (excludes pending approvals)
+   * Use this to prevent sending new messages
+   */
+  get isBusy(): boolean {
+    const chatBusy = this.status === "submitted" || this.status === "streaming";
+    const toolsBusy = this.agentLoop.isProcessing;
+    return chatBusy || toolsBusy;
+  }
+
   // ============================================
   // Tool Execution Getters
   // ============================================
@@ -260,19 +305,34 @@ export class ChatWithTools {
 
   /**
    * Send a message
+   * Returns false if a request is already in progress
    */
   async sendMessage(
     content: string,
     attachments?: MessageAttachment[],
-  ): Promise<void> {
-    await this.chat.sendMessage(content, attachments);
+  ): Promise<boolean> {
+    // Guard: Don't send if already processing
+    if (this.isLoading) {
+      this.debug("sendMessage blocked - request already in progress");
+      return false;
+    }
+
+    // Reset iteration counter so user can continue after max iterations
+    this.agentLoop.resetIterations();
+    return await this.chat.sendMessage(content, attachments);
   }
 
   /**
-   * Stop generation
+   * Stop generation and cancel any running tools
    */
   stop(): void {
+    // 1. Cancel all pending/executing tools
+    this.agentLoop.cancel();
+
+    // 2. Stop the HTTP stream
     this.chat.stop();
+
+    this.debug("Stopped - cancelled tools and aborted stream");
   }
 
   /**
@@ -309,6 +369,13 @@ export class ChatWithTools {
    */
   setContext(context: string): void {
     this.chat.setContext(context);
+  }
+
+  /**
+   * Set system prompt dynamically
+   */
+  setSystemPrompt(prompt: string): void {
+    this.chat.setSystemPrompt(prompt);
   }
 
   // ============================================

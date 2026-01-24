@@ -46,7 +46,11 @@ export function runInstall(
   return new Promise((resolve, reject) => {
     const cwd = path.join(process.cwd(), projectName);
 
-    const child = spawn(pm, ["install"], {
+    // Use --ignore-workspace for pnpm to avoid workspace hoisting issues
+    const args =
+      pm === "pnpm" ? ["install", "--ignore-workspace"] : ["install"];
+
+    const child = spawn(pm, args, {
       cwd,
       stdio: "inherit",
       shell: true,

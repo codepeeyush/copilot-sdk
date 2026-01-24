@@ -57,10 +57,10 @@ export type MessageContentProps = {
 } & React.ComponentProps<typeof Markdown> &
   Omit<React.HTMLProps<HTMLDivElement>, "size">;
 
-const proseSizeMap = {
-  sm: "prose-sm",
-  base: "prose-base",
-  lg: "prose-lg",
+const textSizeMap = {
+  sm: "text-sm",
+  base: "text-base",
+  lg: "text-lg",
 };
 
 const MessageContent = ({
@@ -71,9 +71,17 @@ const MessageContent = ({
   ...props
 }: MessageContentProps) => {
   const classNames = cn(
-    "rounded-lg p-2 bg-secondary prose break-words whitespace-normal max-w-none",
-    "text-foreground prose-headings:text-foreground prose-p:text-foreground prose-strong:text-foreground prose-li:text-foreground prose-a:text-foreground prose-ol:text-foreground prose-ul:text-foreground prose-code:text-foreground",
-    proseSizeMap[size],
+    "rounded-lg p-2 break-words whitespace-normal max-w-none leading-relaxed",
+    // Typography - simple Tailwind utilities (no prose)
+    "[&_p]:my-1 [&_p]:leading-relaxed",
+    "[&_ul]:my-1 [&_ul]:pl-4 [&_ul]:list-disc [&_ul]:list-outside",
+    "[&_ol]:my-1 [&_ol]:pl-4 [&_ol]:list-decimal [&_ol]:list-outside",
+    "[&_li]:my-0.5 [&_li]:pl-0",
+    "[&_pre]:my-2 [&_blockquote]:my-2 [&_blockquote]:pl-3 [&_blockquote]:border-l-2 [&_blockquote]:border-current/30",
+    "[&_code]:bg-current/10 [&_code]:px-1 [&_code]:rounded [&_code]:text-[0.9em]",
+    "[&_a]:underline",
+    "[&_strong]:font-semibold",
+    textSizeMap[size],
     className,
   );
 

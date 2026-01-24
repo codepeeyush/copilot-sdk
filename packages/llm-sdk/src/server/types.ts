@@ -1,5 +1,4 @@
 import type {
-  LLMConfig,
   ActionDefinition,
   KnowledgeBaseConfig,
   ToolDefinition,
@@ -9,11 +8,40 @@ import type { LLMAdapter } from "../adapters";
 import type { AIProvider } from "../providers/types";
 
 /**
+ * LLM provider type for server-side configuration
+ */
+export type LLMProvider =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "ollama"
+  | "xai"
+  | "azure";
+
+/**
+ * Server-side LLM configuration (complete config for runtime)
+ */
+export interface ServerLLMConfig {
+  /** LLM provider */
+  provider: LLMProvider;
+  /** API key for the provider */
+  apiKey: string;
+  /** Model name */
+  model?: string;
+  /** Base URL for custom/self-hosted models */
+  baseUrl?: string;
+  /** Temperature (0-2) */
+  temperature?: number;
+  /** Maximum tokens in response */
+  maxTokens?: number;
+}
+
+/**
  * Runtime configuration with LLM config
  */
 export interface RuntimeConfigWithLLM {
   /** LLM configuration */
-  llm: LLMConfig & { apiKey: string };
+  llm: ServerLLMConfig;
   /** Custom LLM adapter (overrides llm config) */
   adapter?: LLMAdapter;
   /** System prompt */
@@ -50,7 +78,7 @@ export interface RuntimeConfigWithAdapter {
   /** Custom LLM adapter */
   adapter: LLMAdapter;
   /** LLM configuration (optional when adapter provided) */
-  llm?: LLMConfig & { apiKey: string };
+  llm?: ServerLLMConfig;
   /** System prompt */
   systemPrompt?: string;
   /** Available actions (legacy) */
@@ -144,7 +172,7 @@ export interface ChatRequest {
   /** Bot ID (for cloud) */
   botId?: string;
   /** LLM config overrides */
-  config?: Partial<LLMConfig>;
+  config?: { temperature?: number; maxTokens?: number };
   /** System prompt override */
   systemPrompt?: string;
   /** Actions from client (legacy) */

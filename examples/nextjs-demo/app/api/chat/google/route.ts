@@ -1,4 +1,5 @@
-import { createGoogle, createRuntime } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createGoogle } from "@yourgpt/llm-sdk/google";
 
 const google = createGoogle({
   apiKey: process.env.GOOGLE_API_KEY,
