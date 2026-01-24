@@ -2,7 +2,8 @@
  * Test route with SERVER-SIDE tools and low maxIterations
  * Used to test server-side max iterations handling
  */
-import { createOpenAI, createRuntime } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createOpenAI } from "@yourgpt/llm-sdk/openai";
 import type { ToolDefinition } from "@yourgpt/copilot-sdk/core";
 
 const openai = createOpenAI({

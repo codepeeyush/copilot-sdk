@@ -1,8 +1,18 @@
 import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { streamText } from '@yourgpt/llm-sdk';
-import { {{provider}} } from '@yourgpt/llm-sdk/{{provider}}';
+import { createRuntime } from '@yourgpt/llm-sdk';
+import { create{{providerClass}} } from '@yourgpt/llm-sdk/{{provider}}';
+
+const {{provider}} = create{{providerClass}}({
+  apiKey: process.env.{{envKey}},
+});
+
+const runtime = createRuntime({
+  provider: {{provider}},
+  model: '{{model}}',
+  systemPrompt: 'You are a helpful AI assistant.',
+});
 
 const app = new Hono();
 
@@ -11,15 +21,7 @@ app.use('/*', cors());
 
 // Chat endpoint
 app.post('/api/chat', async (c) => {
-  const { messages } = await c.req.json();
-
-  const result = await streamText({
-    model: {{provider}}('{{model}}'),
-    system: 'You are a helpful AI assistant.',
-    messages,
-  });
-
-  return result.toTextStreamResponse();
+  return runtime.handleRequest(c.req.raw);
 });
 
 // Health check

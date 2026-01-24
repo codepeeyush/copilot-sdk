@@ -8,7 +8,8 @@
  * providing the assistant's messages for you to persist.
  */
 
-import { createOpenAI, createRuntime } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createOpenAI } from "@yourgpt/llm-sdk/openai";
 import { threads } from "../threads/_store";
 
 const openai = createOpenAI({

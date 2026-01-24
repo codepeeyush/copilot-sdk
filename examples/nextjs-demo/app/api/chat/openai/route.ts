@@ -1,4 +1,5 @@
-import { createOpenAI, createRuntime } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createOpenAI } from "@yourgpt/llm-sdk/openai";
 
 const openai = createOpenAI({
   apiKey: process.env.OPENAI_API_KEY,

@@ -14,12 +14,12 @@ import type {
 } from "@yourgpt/copilot-sdk/core";
 import type { AIProvider } from "../providers/types";
 import { createMessage } from "@yourgpt/copilot-sdk/core";
-import type { LLMAdapter, ChatCompletionRequest } from "../adapters";
-import {
-  createOpenAIAdapter,
-  createAnthropicAdapter,
-  createOllamaAdapter,
-} from "../adapters";
+import type { LLMAdapter, ChatCompletionRequest } from "../adapters/base";
+// Legacy imports - only used for legacy llm config
+// These are the most common adapters, kept for backward compatibility
+import { createOpenAIAdapter } from "../adapters/openai";
+import { createAnthropicAdapter } from "../adapters/anthropic";
+import { createOllamaAdapter } from "../adapters/ollama";
 import type {
   RuntimeConfig,
   ChatRequest,

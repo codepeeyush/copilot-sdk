@@ -9,6 +9,9 @@ interface ProviderConfig {
   envKey: string;
   defaultModel: string;
   importName: string;
+  className: string;
+  sdkPackage: string;
+  sdkVersion: string;
 }
 
 const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
@@ -16,21 +19,33 @@ const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
     envKey: "OPENAI_API_KEY",
     defaultModel: "gpt-4o-mini",
     importName: "openai",
+    className: "OpenAI",
+    sdkPackage: "openai",
+    sdkVersion: "^4.77.0",
   },
   anthropic: {
     envKey: "ANTHROPIC_API_KEY",
-    defaultModel: "claude-3-5-sonnet-20241022",
+    defaultModel: "claude-haiku-4-5",
     importName: "anthropic",
+    className: "Anthropic",
+    sdkPackage: "@anthropic-ai/sdk",
+    sdkVersion: "^0.39.0",
   },
   google: {
     envKey: "GOOGLE_API_KEY",
     defaultModel: "gemini-2.0-flash",
     importName: "google",
+    className: "Google",
+    sdkPackage: "@google/generative-ai",
+    sdkVersion: "^0.21.0",
   },
   xai: {
     envKey: "XAI_API_KEY",
     defaultModel: "grok-3-fast-beta",
     importName: "xai",
+    className: "XAI",
+    sdkPackage: "openai",
+    sdkVersion: "^4.77.0",
   },
 };
 
@@ -62,6 +77,9 @@ export async function scaffoldProject(choices: UserChoices): Promise<void> {
 
   // Update package.json
   await updatePackageJson(targetDir, choices.projectName);
+
+  // Add provider SDK dependency
+  await addProviderDependency(targetDir, providerConfig);
 
   // Create .env file
   await createEnvFile(targetDir, choices, providerConfig);
@@ -106,6 +124,7 @@ async function processTemplateFiles(
       // Replace placeholders
       content = content
         .replace(/\{\{provider\}\}/g, config.importName)
+        .replace(/\{\{providerClass\}\}/g, config.className)
         .replace(/\{\{model\}\}/g, config.defaultModel)
         .replace(/\{\{envKey\}\}/g, config.envKey)
         .replace(/\{\{projectName\}\}/g, choices.projectName);
@@ -149,6 +168,19 @@ ${config.envKey}=your_api_key_here
     envExampleContent,
     "utf-8",
   );
+}
+
+async function addProviderDependency(
+  dir: string,
+  config: ProviderConfig,
+): Promise<void> {
+  const packageJsonPath = path.join(dir, "package.json");
+
+  if (fs.existsSync(packageJsonPath)) {
+    const pkg = await fs.readJson(packageJsonPath);
+    pkg.dependencies[config.sdkPackage] = config.sdkVersion;
+    await fs.writeJson(packageJsonPath, pkg, { spaces: 2 });
+  }
 }
 
 async function addToolsSetup(dir: string, framework: Framework): Promise<void> {
