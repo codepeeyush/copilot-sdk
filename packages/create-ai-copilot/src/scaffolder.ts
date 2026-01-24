@@ -194,24 +194,32 @@ async function addToolsSetup(dir: string, framework: Framework): Promise<void> {
 
   let content = await fs.readFile(routeFile, "utf-8");
 
-  // Update import to include tool
+  // Add ToolDefinition import
   content = content.replace(
     /import { createRuntime } from '@yourgpt\/llm-sdk';/,
-    `import { createRuntime, tool } from '@yourgpt/llm-sdk';`,
+    `import { createRuntime } from '@yourgpt/llm-sdk';\nimport type { ToolDefinition } from '@yourgpt/copilot-sdk/core';`,
   );
 
   // Add sample weather tool before the runtime creation
   const weatherTool = `
-const weatherTool = tool({
-  description: 'Get current weather for a city',
-  parameters: z.object({
-    city: z.string().describe('City name'),
-  }),
-  execute: async ({ city }) => {
-    // Demo implementation - replace with real weather API
-    return { temperature: 22, condition: 'sunny', city };
+const serverTools: ToolDefinition[] = [
+  {
+    name: 'getWeather',
+    description: 'Get current weather for a city',
+    location: 'server',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        city: { type: 'string', description: 'City name' },
+      },
+      required: ['city'],
+    },
+    handler: async (args: { city: string }) => {
+      // Demo implementation - replace with real weather API
+      return { temperature: 22, condition: 'sunny', city: args.city };
+    },
   },
-});
+];
 
 `;
 
@@ -225,7 +233,7 @@ const weatherTool = tool({
   content = content.replace(
     /systemPrompt: 'You are a helpful AI assistant.',\n\}\);/,
     `systemPrompt: 'You are a helpful AI assistant.',
-  tools: { getWeather: weatherTool },
+  tools: serverTools,
 });`,
   );
 
