@@ -1,6 +1,6 @@
 {
   "name": "@yourgpt/copilot-sdk",
-  "version": "1.2.11",
+  "version": "1.3.0",
   "description": "Build AI copilots with app context awareness",
   "type": "module",
   "exports": {
@@ -19,7 +19,15 @@
       "import": "./dist/ui/index.js",
       "require": "./dist/ui/index.cjs"
     },
-    "./ui/styles.css": "./dist/styles.css"
+    "./ui/styles.css": "./dist/styles.css",
+    "./ui/themes/vercel.css": "./dist/themes/vercel.css",
+    "./ui/themes/posthog.css": "./dist/themes/posthog.css",
+    "./ui/themes/linear.css": "./dist/themes/linear.css",
+    "./ui/themes/claude.css": "./dist/themes/claude.css",
+    "./ui/themes/supabase.css": "./dist/themes/supabase.css",
+    "./ui/themes/twitter.css": "./dist/themes/twitter.css",
+    "./ui/themes/catppuccin.css": "./dist/themes/catppuccin.css",
+    "./ui/themes/modern-minimal.css": "./dist/themes/modern-minimal.css"
   },
   "files": [
     "dist",

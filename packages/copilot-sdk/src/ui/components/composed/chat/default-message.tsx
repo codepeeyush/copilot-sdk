@@ -109,7 +109,7 @@ export function DefaultMessage({
           {message.content && (
             <MessageContent
               className={cn(
-                "rounded-lg px-4 py-2 bg-primary text-primary-foreground",
+                "csdk-message-user rounded-lg px-4 py-2 bg-primary text-primary-foreground",
                 userMessageClassName,
               )}
               markdown
@@ -200,7 +200,7 @@ export function DefaultMessage({
         {cleanContent?.trim() && (
           <MessageContent
             className={cn(
-              "rounded-lg px-4 py-2 bg-muted",
+              "csdk-message-assistant rounded-lg px-4 py-2 bg-muted",
               assistantMessageClassName,
             )}
             markdown

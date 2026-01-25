@@ -14,7 +14,7 @@ export type MessageProps = {
 } & React.HTMLProps<HTMLDivElement>;
 
 const Message = ({ children, className, ...props }: MessageProps) => (
-  <div className={cn("flex gap-3", className)} {...props}>
+  <div className={cn("csdk-message flex gap-3", className)} {...props}>
     {children}
   </div>
 );
@@ -39,7 +39,7 @@ const MessageAvatar = ({
   className,
 }: MessageAvatarProps) => {
   return (
-    <Avatar className={cn("size-7 shrink-0", className)}>
+    <Avatar className={cn("csdk-avatar size-7 shrink-0", className)}>
       <AvatarImage src={src} alt={alt} />
       <AvatarFallback delayMs={delayMs}>
         {fallbackIcon || fallback}
@@ -71,7 +71,7 @@ const MessageContent = ({
   ...props
 }: MessageContentProps) => {
   const classNames = cn(
-    "rounded-lg p-2 break-words whitespace-normal max-w-none leading-relaxed",
+    "csdk-message-content rounded-lg p-2 break-words whitespace-normal max-w-none leading-relaxed",
     // Typography - simple Tailwind utilities (no prose)
     "[&_p]:my-1 [&_p]:leading-relaxed",
     "[&_ul]:my-1 [&_ul]:pl-4 [&_ul]:list-disc [&_ul]:list-outside",
@@ -107,7 +107,10 @@ const MessageActions = ({
   ...props
 }: MessageActionsProps) => (
   <div
-    className={cn("text-muted-foreground flex items-center gap-2", className)}
+    className={cn(
+      "csdk-message-actions text-muted-foreground flex items-center gap-2",
+      className,
+    )}
     {...props}
   >
     {children}

@@ -653,7 +653,7 @@ export function Chat({
                       <label
                         htmlFor={fileInputId}
                         className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-2xl",
+                          "csdk-button-attach flex h-8 w-8 items-center justify-center rounded-2xl",
                           attachmentsEnabled
                             ? "hover:bg-secondary-foreground/10 cursor-pointer"
                             : "opacity-50 cursor-not-allowed",
@@ -678,7 +678,7 @@ export function Chat({
                       <Button
                         size="sm"
                         variant="destructive"
-                        className="rounded-full size-9"
+                        className="csdk-button-stop rounded-full size-9"
                         onClick={onStop}
                       >
                         <StopIcon className="h-4 w-4" />
@@ -686,7 +686,7 @@ export function Chat({
                     ) : (
                       <Button
                         size="sm"
-                        className="rounded-full size-9"
+                        className="csdk-button-send rounded-full size-9"
                         onClick={handleSubmit}
                         disabled={
                           !input.trim() &&

@@ -1,0 +1,68 @@
+/* Supabase Theme - Green, developer-focused */
+
+.csdk-theme-supabase,
+[data-csdk-theme="supabase"] {
+  --background: hsl(0 0% 99%);
+  --foreground: hsl(0 0% 9%);
+
+  --card: hsl(0 0% 99%);
+  --card-foreground: hsl(0 0% 9%);
+
+  --popover: hsl(0 0% 99%);
+  --popover-foreground: hsl(0 0% 32%);
+
+  --primary: hsl(153 70% 67%);
+  --primary-foreground: hsl(150 15% 13%);
+
+  --secondary: hsl(0 0% 99%);
+  --secondary-foreground: hsl(0 0% 9%);
+
+  --muted: hsl(0 0% 93%);
+  --muted-foreground: hsl(0 0% 13%);
+
+  --accent: hsl(0 0% 93%);
+  --accent-foreground: hsl(0 0% 13%);
+
+  --destructive: hsl(11 83% 44%);
+  --destructive-foreground: hsl(0 100% 99%);
+
+  --border: hsl(0 0% 87%);
+  --input: hsl(0 0% 96%);
+  --ring: hsl(153 70% 67%);
+
+  --radius: 0.5rem;
+}
+
+/* Dark mode */
+.dark.csdk-theme-supabase,
+.dark .csdk-theme-supabase,
+.dark[data-csdk-theme="supabase"],
+.dark [data-csdk-theme="supabase"] {
+  --background: hsl(0 0% 7%);
+  --foreground: hsl(210 40% 93%);
+
+  --card: hsl(0 0% 9%);
+  --card-foreground: hsl(210 40% 93%);
+
+  --popover: hsl(0 0% 14%);
+  --popover-foreground: hsl(0 0% 66%);
+
+  --primary: hsl(152 69% 31%);
+  --primary-foreground: hsl(147 16% 89%);
+
+  --secondary: hsl(0 0% 14%);
+  --secondary-foreground: hsl(0 0% 98%);
+
+  --muted: hsl(0 0% 12%);
+  --muted-foreground: hsl(0 0% 64%);
+
+  --accent: hsl(0 0% 19%);
+  --accent-foreground: hsl(0 0% 98%);
+
+  --destructive: hsl(7 76% 20%);
+  --destructive-foreground: hsl(8 12% 92%);
+
+  --border: hsl(0 0% 16%);
+  --input: hsl(0 0% 14%);
+  --ring: hsl(142 69% 58%);
+}

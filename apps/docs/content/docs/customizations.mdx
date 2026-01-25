@@ -10,29 +10,213 @@ Customize the appearance, behavior, and branding of your AI copilot.
 
 ---
 
-## Theme
+## Styling (Tailwind CSS v4)
 
-### Colors
+Add the SDK source to your Tailwind config:
 
-```tsx
-<CopilotChat
-  theme={{
-    primaryColor: '#6366f1',
-    backgroundColor: '#ffffff',
-    textColor: '#1f2937',
-    borderRadius: '12px',
-  }}
-/>
+```css
+/* app/globals.css */
+@import "tailwindcss";
+
+@source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
+
+@custom-variant dark (&:is(.dark *));
 ```
 
-### Dark Mode
+---
+
+## Theming
+
+The SDK supports flexible theming with CSS variables. Choose the approach that fits your setup:
+
+### Option 1: Use Your Existing shadcn/ui Setup
+
+If you already have shadcn/ui configured with CSS variables, the SDK works automatically - no additional imports needed.
 
 ```tsx
-<CopilotChat
-  theme={{
-    mode: 'dark', // 'light' | 'dark' | 'system'
-  }}
-/>
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
+
+// Uses your existing --background, --primary, etc. variables
+<CopilotChat />
+```
+
+### Option 2: Use SDK Base Styles (No shadcn)
+
+If you don't have shadcn/ui, import the SDK's base styles for default theming:
+
+```tsx
+import "@yourgpt/copilot-sdk/ui/styles.css";
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
+
+<CopilotChat />
+```
+
+### Option 3: Use a Theme Preset
+
+Apply one of 8 built-in theme presets:
+
+```tsx
+import "@yourgpt/copilot-sdk/ui/styles.css";
+import "@yourgpt/copilot-sdk/ui/themes/claude.css";
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
+
+<div className="csdk-theme-claude">
+  <CopilotChat />
+</div>
+```
+
+---
+
+## Available Theme Presets
+
+| Theme | Import | Class | Style |
+|-------|--------|-------|-------|
+| **Claude** | `themes/claude.css` | `csdk-theme-claude` | Warm terra cotta, earthy |
+| **Vercel** | `themes/vercel.css` | `csdk-theme-vercel` | Monochrome, minimal |
+| **Supabase** | `themes/supabase.css` | `csdk-theme-supabase` | Green, developer-focused |
+| **Twitter** | `themes/twitter.css` | `csdk-theme-twitter` | Bold blue, rounded |
+| **Linear** | `themes/linear.css` | `csdk-theme-linear` | Purple, sophisticated |
+| **PostHog** | `themes/posthog.css` | `csdk-theme-posthog` | Yellow NeoBrutalism |
+| **Catppuccin** | `themes/catppuccin.css` | `csdk-theme-catppuccin` | Pastel community theme |
+| **Modern** | `themes/modern-minimal.css` | `csdk-theme-modern` | Clean tech blue |
+
+---
+
+## CSS Variables Reference
+
+The SDK uses standard shadcn/ui CSS variables:
+
+```css
+:root {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(0 0% 0%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(0 0% 0%);
+
+  --primary: hsl(220 90% 50%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(220 10% 95%);
+  --secondary-foreground: hsl(0 0% 0%);
+
+  --muted: hsl(220 10% 95%);
+  --muted-foreground: hsl(0 0% 45%);
+
+  --accent: hsl(220 10% 95%);
+  --accent-foreground: hsl(0 0% 0%);
+
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(220 10% 90%);
+  --input: hsl(220 10% 90%);
+  --ring: hsl(220 90% 50%);
+
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: hsl(0 0% 5%);
+  --foreground: hsl(0 0% 95%);
+  /* ... dark mode overrides */
+}
+```
+
+---
+
+## Semantic CSS Classes
+
+The SDK exposes semantic CSS classes for advanced theme customization:
+
+| Class | Element |
+|-------|---------|
+| `csdk-message` | Message container |
+| `csdk-message-user` | User message bubble |
+| `csdk-message-assistant` | Assistant message bubble |
+| `csdk-message-content` | Message text content |
+| `csdk-avatar` | Avatar container |
+| `csdk-input` | Input container |
+| `csdk-input-textarea` | Text input |
+| `csdk-button` | All buttons |
+| `csdk-button-send` | Send button |
+| `csdk-button-stop` | Stop button |
+| `csdk-button-attach` | Attachment button |
+| `csdk-followup` | Follow-up container |
+| `csdk-followup-button` | Follow-up buttons |
+
+### Example: Custom Theme with Component Styles
+
+```css
+/* my-theme.css */
+.my-theme {
+  --primary: hsl(280 80% 50%);
+  --radius: 1rem;
+}
+
+/* Target specific components */
+.my-theme .csdk-message-user {
+  border: 2px solid var(--primary);
+  box-shadow: 4px 4px 0 0 var(--primary);
+}
+
+.my-theme .csdk-button-send {
+  border-radius: 50%;
+}
+```
+
+---
+
+## Creating Custom Themes
+
+1. **Create a CSS file** with your theme class:
+
+```css
+/* themes/my-brand.css */
+.csdk-theme-mybrand,
+[data-csdk-theme="mybrand"] {
+  --background: hsl(210 20% 98%);
+  --foreground: hsl(210 40% 10%);
+  --primary: hsl(210 100% 50%);
+  --primary-foreground: hsl(0 0% 100%);
+  /* ... other variables */
+  --radius: 0.75rem;
+}
+
+/* Dark mode */
+.dark.csdk-theme-mybrand,
+.dark .csdk-theme-mybrand {
+  --background: hsl(210 30% 8%);
+  --foreground: hsl(210 20% 95%);
+  /* ... dark overrides */
+}
+```
+
+2. **Import and apply**:
+
+```tsx
+import "./themes/my-brand.css";
+
+<div className="csdk-theme-mybrand">
+  <CopilotChat />
+</div>
+```
+
+---
+
+## Dark Mode
+
+Themes automatically support dark mode when the `dark` class is on an ancestor element:
+
+```tsx
+// Works with next-themes, etc.
+<html className="dark">
+  <body>
+    <div className="csdk-theme-claude">
+      <CopilotChat />
+    </div>
+  </body>
+</html>
 ```
 
 ---
@@ -172,67 +356,37 @@ Customize the appearance, behavior, and branding of your AI copilot.
 
 ---
 
-## Custom CSS
-
-### CSS Variables
-
-```css
-:root {
-  --copilot-primary: #6366f1;
-  --copilot-bg: #ffffff;
-  --copilot-text: #1f2937;
-  --copilot-border: #e5e7eb;
-  --copilot-radius: 12px;
-}
-```
-
-### Class Names
-
-```tsx
-<CopilotChat
-  className="my-custom-chat"
-  classNames={{
-    container: 'chat-container',
-    header: 'chat-header',
-    messages: 'chat-messages',
-    input: 'chat-input',
-  }}
-/>
-```
-
----
-
 ## Full Example
 
 ```tsx
-<CopilotChat
-  // Theme
-  theme={{
-    mode: 'system',
-    primaryColor: '#6366f1',
-  }}
+import "@yourgpt/copilot-sdk/ui/styles.css";
+import "@yourgpt/copilot-sdk/ui/themes/claude.css";
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
 
-  // Branding
-  header={{
-    title: 'AI Assistant',
-    logo: '/logo.svg',
-  }}
-  welcomeMessage="How can I help you today?"
-  placeholder="Ask anything..."
+<div className="csdk-theme-claude">
+  <CopilotChat
+    // Branding
+    header={{
+      title: 'AI Assistant',
+      logo: '/logo.svg',
+    }}
+    welcomeMessage="How can I help you today?"
+    placeholder="Ask anything..."
 
-  // Layout
-  position="bottom-right"
-  width={400}
+    // Layout
+    position="bottom-right"
+    width={400}
 
-  // Features
-  attachmentsEnabled={true}
-  voiceEnabled={true}
-  persistHistory={true}
+    // Features
+    attachmentsEnabled={true}
+    voiceEnabled={true}
+    persistHistory={true}
 
-  // Avatars
-  userAvatar="/user.png"
-  assistantAvatar="/ai.png"
-/>
+    // Avatars
+    userAvatar="/user.png"
+    assistantAvatar="/ai.png"
+  />
+</div>
 ```
 
 ---

@@ -62,13 +62,13 @@ export function FollowUpQuestions({
   }
 
   return (
-    <div className={cn("flex flex-wrap gap-2 mt-2", className)}>
+    <div className={cn("csdk-followup flex flex-wrap gap-2 mt-2", className)}>
       {questions.map((question, index) => (
         <button
           key={index}
           onClick={() => onSelect(question)}
           className={cn(
-            "px-3 py-1.5 text-sm rounded-full",
+            "csdk-followup-button px-3 py-1.5 text-sm rounded-full",
             "bg-primary/10 hover:bg-primary/20 text-primary",
             "border border-primary/20 hover:border-primary/40",
             "transition-colors duration-150",

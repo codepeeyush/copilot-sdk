@@ -15,7 +15,6 @@ npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk
 ```tsx
 import { CopilotProvider } from "@yourgpt/copilot-sdk/react";
 import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
-import "@yourgpt/copilot-sdk/ui/styles.css";
 
 function App() {
   return (
@@ -37,26 +36,36 @@ function App() {
 
 ## Styling (Tailwind CSS v4)
 
-Add the SDK source to your Tailwind config:
-
 ```css
 /* app/globals.css */
 @import "tailwindcss";
-
 @source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
-
 @custom-variant dark (&:is(.dark *));
 ```
 
-For theming, optionally import the default CSS variables:
+## Theming
 
-```css
-@import "@yourgpt/copilot-sdk/ui/styles.css";
+Works automatically with existing shadcn/ui setup. For projects without shadcn:
+
+```tsx
+import "@yourgpt/copilot-sdk/ui/styles.css";
+import "@yourgpt/copilot-sdk/ui/themes/claude.css"; // Optional preset
+
+<div className="csdk-theme-claude">
+  <CopilotChat />
+</div>;
 ```
+
+**8 theme presets available:** Claude, Vercel, Supabase, Twitter, Linear, PostHog, Catppuccin, Modern
 
 ## Documentation
 
-Visit [copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)
+Visit [copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai) for full documentation including:
+
+- Theme customization & CSS variables
+- Semantic CSS classes (`csdk-*`)
+- Creating custom themes
+- Dark mode support
 
 ## License
 

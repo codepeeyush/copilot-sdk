@@ -1,68 +1,62 @@
-import { ProviderCard } from "@/components/provider-card";
+import Link from "next/link";
+
+const demos = [
+  {
+    name: "Theme Demo",
+    href: "/theme-demo",
+    description: "9 theme presets with live preview",
+  },
+  {
+    name: "Multi-Provider",
+    href: "/providers",
+    description: "OpenAI, Anthropic, Google side-by-side",
+  },
+  {
+    name: "Ticketing Demo",
+    href: "/ticketing-demo",
+    description: "Customer support copilot with tools",
+  },
+  {
+    name: "Tool Types",
+    href: "/tool-types-demo",
+    description: "Different tool rendering patterns",
+  },
+  {
+    name: "Widgets",
+    href: "/widgets",
+    description: "Standalone UI components",
+  },
+];
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-10">
-        <div className="container mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-center">
-            Multi-Provider AI Demo
-          </h1>
-          <p className="text-center text-muted-foreground text-sm mt-1">
-            Compare responses from OpenAI, Anthropic Claude, and Google Gemini
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <header className="text-center mb-8">
+          <h1 className="text-2xl font-bold">Copilot SDK</h1>
+          <p className="text-muted-foreground text-sm mt-1">Demo Collection</p>
+        </header>
 
-      {/* Main Content - 3 Column Grid */}
-      <main className="container mx-auto p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100vh-120px)]">
-          {/* OpenAI */}
-          <ProviderCard
-            name="OpenAI"
-            model="GPT-4o"
-            endpoint="/api/chat/openai"
-            color="green"
-            capabilities={{
-              supportsVision: true,
-              supportsTools: true,
-              supportsStreaming: true,
-            }}
-          />
+        <nav className="space-y-2">
+          {demos.map((demo) => (
+            <Link
+              key={demo.href}
+              href={demo.href}
+              className="block p-4 rounded-lg border bg-card hover:bg-accent transition-colors"
+            >
+              <div className="font-medium">{demo.name}</div>
+              <div className="text-sm text-muted-foreground">
+                {demo.description}
+              </div>
+            </Link>
+          ))}
+        </nav>
 
-          {/* Anthropic */}
-          <ProviderCard
-            name="Anthropic"
-            model="Claude 3.5 Sonnet"
-            endpoint="/api/chat/anthropic"
-            color="orange"
-            capabilities={{
-              supportsVision: true,
-              supportsTools: true,
-              supportsThinking: true,
-              supportsStreaming: true,
-              supportsPDF: true,
-            }}
-          />
-
-          {/* Google */}
-          <ProviderCard
-            name="Google"
-            model="Gemini 2.0 Flash"
-            endpoint="/api/chat/google"
-            color="blue"
-            capabilities={{
-              supportsVision: true,
-              supportsTools: true,
-              supportsStreaming: true,
-              supportsPDF: true,
-              supportsAudio: true,
-              supportsVideo: true,
-            }}
-          />
-        </div>
-      </main>
+        <footer className="mt-8 text-center text-xs text-muted-foreground">
+          <kbd className="px-1.5 py-0.5 bg-muted rounded border">Cmd+J</kbd>{" "}
+          toggle dark mode
+        </footer>
+      </div>
     </div>
   );
 }
