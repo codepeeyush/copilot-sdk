@@ -1,0 +1,68 @@
+/* Claude Theme - Warm, earthy, AI-focused */
+
+.csdk-theme-claude,
+[data-csdk-theme="claude"] {
+  --background: hsl(45 33% 97%);
+  --foreground: hsl(47 20% 20%);
+
+  --card: hsl(45 33% 97%);
+  --card-foreground: hsl(60 5% 8%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(50 22% 13%);
+
+  --primary: hsl(16 56% 52%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(43 20% 89%);
+  --secondary-foreground: hsl(48 7% 31%);
+
+  --muted: hsl(44 24% 90%);
+  --muted-foreground: hsl(60 1% 50%);
+
+  --accent: hsl(43 20% 89%);
+  --accent-foreground: hsl(53 22% 13%);
+
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(45 8% 84%);
+  --input: hsl(47 6% 69%);
+  --ring: hsl(16 56% 52%);
+
+  --radius: 0.5rem;
+}
+
+/* Dark mode */
+.dark.csdk-theme-claude,
+.dark .csdk-theme-claude,
+.dark[data-csdk-theme="claude"],
+.dark [data-csdk-theme="claude"] {
+  --background: hsl(60 3% 15%);
+  --foreground: hsl(44 8% 74%);
+
+  --card: hsl(60 3% 15%);
+  --card-foreground: hsl(45 33% 97%);
+
+  --popover: hsl(60 3% 18%);
+  --popover-foreground: hsl(60 3% 90%);
+
+  --primary: hsl(14 62% 60%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(45 33% 97%);
+  --secondary-foreground: hsl(60 2% 18%);
+
+  --muted: hsl(60 5% 10%);
+  --muted-foreground: hsl(46 7% 69%);
+
+  --accent: hsl(52 10% 9%);
+  --accent-foreground: hsl(50 20% 95%);
+
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(55 5% 23%);
+  --input: hsl(52 5% 31%);
+  --ring: hsl(14 62% 60%);
+}

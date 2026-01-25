@@ -1,0 +1,216 @@
+/* PostHog Theme - NeoBrutalism style */
+/* Yellow/Gold focused, bold borders, offset shadows */
+
+.csdk-theme-posthog,
+[data-csdk-theme="posthog"] {
+  /* Base colors - warm off-white with yellow tints */
+  --background: hsl(45 100% 98%);
+  --foreground: hsl(30 10% 10%);
+
+  --card: hsl(45 50% 97%);
+  --card-foreground: hsl(30 10% 10%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(30 10% 10%);
+
+  --primary: hsl(37 92% 50%);
+  --primary-foreground: hsl(0 0% 0%);
+
+  --secondary: hsl(45 40% 92%);
+  --secondary-foreground: hsl(30 10% 15%);
+
+  --muted: hsl(45 30% 94%);
+  --muted-foreground: hsl(30 10% 40%);
+
+  --accent: hsl(45 60% 88%);
+  --accent-foreground: hsl(30 10% 10%);
+
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(30 15% 20%);
+  --input: hsl(30 15% 20%);
+  --ring: hsl(37 92% 50%);
+
+  --radius: 0.625rem;
+}
+
+/* Dark mode - subtle warm yellows on dark surface */
+.dark.csdk-theme-posthog,
+.dark .csdk-theme-posthog,
+.dark[data-csdk-theme="posthog"],
+.dark [data-csdk-theme="posthog"] {
+  --background: hsl(30 15% 8%);
+  --foreground: hsl(45 20% 90%);
+
+  --card: hsl(30 15% 10%);
+  --card-foreground: hsl(45 20% 90%);
+
+  --popover: hsl(30 15% 12%);
+  --popover-foreground: hsl(45 20% 90%);
+
+  --primary: hsl(40 85% 55%);
+  --primary-foreground: hsl(30 15% 8%);
+
+  --secondary: hsl(35 20% 18%);
+  --secondary-foreground: hsl(45 20% 90%);
+
+  --muted: hsl(35 15% 15%);
+  --muted-foreground: hsl(40 10% 60%);
+
+  --accent: hsl(40 25% 20%);
+  --accent-foreground: hsl(45 20% 90%);
+
+  --destructive: hsl(0 70% 45%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(40 30% 65%);
+  --input: hsl(40 30% 65%);
+  --ring: hsl(40 85% 55%);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NeoBrutalism Component Styles
+   ═══════════════════════════════════════════════════════════ */
+
+/* User message bubble - transparent yellow in light, subtle solid in dark */
+.csdk-theme-posthog .csdk-message-user,
+[data-csdk-theme="posthog"] .csdk-message-user {
+  background: hsl(45 90% 88% / 0.7) !important;
+  color: hsl(30 15% 10%) !important;
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+.dark.csdk-theme-posthog .csdk-message-user,
+.dark .csdk-theme-posthog .csdk-message-user,
+.dark[data-csdk-theme="posthog"] .csdk-message-user,
+.dark [data-csdk-theme="posthog"] .csdk-message-user {
+  background: hsl(40 40% 22%) !important;
+  color: hsl(45 30% 92%) !important;
+}
+
+/* Assistant message bubble - light yellow tint in light, warm surface in dark */
+.csdk-theme-posthog .csdk-message-assistant,
+[data-csdk-theme="posthog"] .csdk-message-assistant {
+  background: hsl(48 50% 94% / 0.8) !important;
+  color: hsl(30 15% 15%) !important;
+  border: 2px solid var(--border);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+.dark.csdk-theme-posthog .csdk-message-assistant,
+.dark .csdk-theme-posthog .csdk-message-assistant,
+.dark[data-csdk-theme="posthog"] .csdk-message-assistant,
+.dark [data-csdk-theme="posthog"] .csdk-message-assistant {
+  background: hsl(35 25% 16%) !important;
+  color: hsl(45 20% 88%) !important;
+}
+
+/* Input container with brutal shadow */
+.csdk-theme-posthog .csdk-input,
+[data-csdk-theme="posthog"] .csdk-input {
+  border: 2px solid var(--border) !important;
+  box-shadow: 4px 4px 0 0 var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.csdk-theme-posthog .csdk-input:focus-within,
+[data-csdk-theme="posthog"] .csdk-input:focus-within {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 0 var(--border);
+}
+
+/* Send button with brutal style */
+.csdk-theme-posthog .csdk-button-send,
+[data-csdk-theme="posthog"] .csdk-button-send {
+  border: 2px solid var(--border) !important;
+  box-shadow: 2px 2px 0 0 var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.csdk-theme-posthog .csdk-button-send:hover,
+[data-csdk-theme="posthog"] .csdk-button-send:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+.csdk-theme-posthog .csdk-button-send:active,
+[data-csdk-theme="posthog"] .csdk-button-send:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 0 var(--border);
+}
+
+/* Stop button with brutal style */
+.csdk-theme-posthog .csdk-button-stop,
+[data-csdk-theme="posthog"] .csdk-button-stop {
+  border: 2px solid var(--border) !important;
+  box-shadow: 2px 2px 0 0 var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.csdk-theme-posthog .csdk-button-stop:hover,
+[data-csdk-theme="posthog"] .csdk-button-stop:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+/* Attach button with brutal style */
+.csdk-theme-posthog .csdk-button-attach,
+[data-csdk-theme="posthog"] .csdk-button-attach {
+  border: 2px solid var(--border);
+  box-shadow: 2px 2px 0 0 var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.csdk-theme-posthog .csdk-button-attach:hover,
+[data-csdk-theme="posthog"] .csdk-button-attach:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+/* Follow-up buttons with brutal style */
+.csdk-theme-posthog .csdk-followup-button,
+[data-csdk-theme="posthog"] .csdk-followup-button {
+  border: 2px solid var(--border) !important;
+  box-shadow: 2px 2px 0 0 var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.csdk-theme-posthog .csdk-followup-button:hover,
+[data-csdk-theme="posthog"] .csdk-followup-button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+/* Avatar with brutal border */
+.csdk-theme-posthog .csdk-avatar,
+[data-csdk-theme="posthog"] .csdk-avatar {
+  border: 2px solid var(--border);
+  border-radius: 0.375rem;
+}
+
+.csdk-theme-posthog .csdk-avatar-fallback,
+[data-csdk-theme="posthog"] .csdk-avatar-fallback {
+  border-radius: 0.25rem;
+}
+
+/* General button styling for brutal theme */
+.csdk-theme-posthog .csdk-button,
+[data-csdk-theme="posthog"] .csdk-button {
+  border: 2px solid var(--border) !important;
+  box-shadow: 2px 2px 0 0 var(--border);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.csdk-theme-posthog .csdk-button:hover,
+[data-csdk-theme="posthog"] .csdk-button:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: 3px 3px 0 0 var(--border);
+}
+
+.csdk-theme-posthog .csdk-button:active,
+[data-csdk-theme="posthog"] .csdk-button:active {
+  transform: translate(1px, 1px);
+  box-shadow: 1px 1px 0 0 var(--border);
+}

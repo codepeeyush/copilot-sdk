@@ -1,0 +1,68 @@
+/* Twitter/X Theme - Bold blue, high contrast, rounded */
+
+.csdk-theme-twitter,
+[data-csdk-theme="twitter"] {
+  --background: hsl(0 0% 100%);
+  --foreground: hsl(206 24% 8%);
+
+  --card: hsl(200 7% 97%);
+  --card-foreground: hsl(206 24% 8%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(206 24% 8%);
+
+  --primary: hsl(201 89% 53%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(206 24% 8%);
+  --secondary-foreground: hsl(0 0% 100%);
+
+  --muted: hsl(240 2% 90%);
+  --muted-foreground: hsl(206 24% 8%);
+
+  --accent: hsl(207 52% 92%);
+  --accent-foreground: hsl(201 89% 53%);
+
+  --destructive: hsl(356 92% 57%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(199 35% 92%);
+  --input: hsl(200 20% 97%);
+  --ring: hsl(204 88% 53%);
+
+  --radius: 1.25rem;
+}
+
+/* Dark mode */
+.dark.csdk-theme-twitter,
+.dark .csdk-theme-twitter,
+.dark[data-csdk-theme="twitter"],
+.dark [data-csdk-theme="twitter"] {
+  --background: hsl(0 0% 0%);
+  --foreground: hsl(200 12% 91%);
+
+  --card: hsl(228 9% 10%);
+  --card-foreground: hsl(0 0% 85%);
+
+  --popover: hsl(0 0% 0%);
+  --popover-foreground: hsl(200 12% 91%);
+
+  --primary: hsl(201 89% 53%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(195 13% 94%);
+  --secondary-foreground: hsl(206 24% 8%);
+
+  --muted: hsl(0 0% 9%);
+  --muted-foreground: hsl(218 4% 46%);
+
+  --accent: hsl(205 100% 7%);
+  --accent-foreground: hsl(201 89% 53%);
+
+  --destructive: hsl(356 92% 57%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(216 5% 15%);
+  --input: hsl(202 58% 18%);
+  --ring: hsl(204 88% 53%);
+}

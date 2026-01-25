@@ -1,0 +1,69 @@
+/* Catppuccin Theme - Popular community theme, pastel colors */
+
+.csdk-theme-catppuccin,
+[data-csdk-theme="catppuccin"] {
+  /* Latte (Light) */
+  --background: hsl(220 23% 95%);
+  --foreground: hsl(234 16% 35%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(234 16% 35%);
+
+  --popover: hsl(223 16% 83%);
+  --popover-foreground: hsl(234 16% 35%);
+
+  --primary: hsl(267 84% 58%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(223 16% 83%);
+  --secondary-foreground: hsl(234 16% 35%);
+
+  --muted: hsl(220 17% 88%);
+  --muted-foreground: hsl(233 10% 47%);
+
+  --accent: hsl(189 71% 46%);
+  --accent-foreground: hsl(0 0% 100%);
+
+  --destructive: hsl(347 87% 44%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(225 14% 77%);
+  --input: hsl(223 16% 83%);
+  --ring: hsl(267 84% 58%);
+
+  --radius: 0.35rem;
+}
+
+/* Dark mode - Mocha */
+.dark.csdk-theme-catppuccin,
+.dark .csdk-theme-catppuccin,
+.dark[data-csdk-theme="catppuccin"],
+.dark [data-csdk-theme="catppuccin"] {
+  --background: hsl(240 21% 12%);
+  --foreground: hsl(227 70% 87%);
+
+  --card: hsl(240 21% 15%);
+  --card-foreground: hsl(227 70% 87%);
+
+  --popover: hsl(233 14% 31%);
+  --popover-foreground: hsl(227 70% 87%);
+
+  --primary: hsl(267 83% 80%);
+  --primary-foreground: hsl(240 21% 15%);
+
+  --secondary: hsl(234 13% 39%);
+  --secondary-foreground: hsl(227 70% 87%);
+
+  --muted: hsl(235 20% 21%);
+  --muted-foreground: hsl(228 24% 72%);
+
+  --accent: hsl(189 71% 73%);
+  --accent-foreground: hsl(240 21% 15%);
+
+  --destructive: hsl(351 74% 73%);
+  --destructive-foreground: hsl(240 21% 15%);
+
+  --border: hsl(237 16% 23%);
+  --input: hsl(237 16% 23%);
+  --ring: hsl(267 83% 80%);
+}

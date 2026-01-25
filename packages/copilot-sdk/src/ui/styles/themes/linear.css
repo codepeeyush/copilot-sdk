@@ -1,0 +1,68 @@
+/* Linear Theme - Refined purple, sophisticated */
+
+.csdk-theme-linear,
+[data-csdk-theme="linear"] {
+  --background: hsl(260 20% 99%);
+  --foreground: hsl(260 25% 12%);
+
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(260 25% 12%);
+
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(260 25% 12%);
+
+  --primary: hsl(260 75% 50%);
+  --primary-foreground: hsl(0 0% 100%);
+
+  --secondary: hsl(260 15% 95%);
+  --secondary-foreground: hsl(260 25% 12%);
+
+  --muted: hsl(260 12% 94%);
+  --muted-foreground: hsl(260 10% 45%);
+
+  --accent: hsl(195 70% 55%);
+  --accent-foreground: hsl(260 25% 12%);
+
+  --destructive: hsl(0 75% 55%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(260 12% 90%);
+  --input: hsl(260 12% 90%);
+  --ring: hsl(260 75% 50%);
+
+  --radius: 0.5rem;
+}
+
+/* Dark mode */
+.dark.csdk-theme-linear,
+.dark .csdk-theme-linear,
+.dark[data-csdk-theme="linear"],
+.dark [data-csdk-theme="linear"] {
+  --background: hsl(260 30% 7%);
+  --foreground: hsl(260 10% 95%);
+
+  --card: hsl(260 28% 10%);
+  --card-foreground: hsl(260 10% 95%);
+
+  --popover: hsl(260 28% 10%);
+  --popover-foreground: hsl(260 10% 95%);
+
+  --primary: hsl(260 65% 58%);
+  --primary-foreground: hsl(260 30% 7%);
+
+  --secondary: hsl(260 22% 15%);
+  --secondary-foreground: hsl(260 10% 95%);
+
+  --muted: hsl(260 20% 15%);
+  --muted-foreground: hsl(260 10% 55%);
+
+  --accent: hsl(195 55% 55%);
+  --accent-foreground: hsl(260 30% 7%);
+
+  --destructive: hsl(0 62% 35%);
+  --destructive-foreground: hsl(0 0% 100%);
+
+  --border: hsl(260 22% 18%);
+  --input: hsl(260 22% 18%);
+  --ring: hsl(260 65% 58%);
+}

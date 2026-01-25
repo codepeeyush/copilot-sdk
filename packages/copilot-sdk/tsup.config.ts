@@ -1,6 +1,5 @@
 import { defineConfig } from "tsup";
 import { copyFileSync, mkdirSync } from "fs";
-import { dirname } from "path";
 
 export default defineConfig({
   entry: {
@@ -16,8 +15,30 @@ export default defineConfig({
   treeshake: true,
   splitting: true,
   onSuccess: async () => {
-    // Copy CSS file for theming
-    mkdirSync("dist", { recursive: true });
-    copyFileSync("src/ui/styles/globals.css", "dist/styles.css");
+    mkdirSync("dist/themes", { recursive: true });
+
+    // Copy CSS files
+    copyFileSync("src/ui/styles/base.css", "dist/styles.css");
+
+    // Copy theme files
+    copyFileSync("src/ui/styles/themes/vercel.css", "dist/themes/vercel.css");
+    copyFileSync("src/ui/styles/themes/posthog.css", "dist/themes/posthog.css");
+    copyFileSync("src/ui/styles/themes/linear.css", "dist/themes/linear.css");
+    copyFileSync("src/ui/styles/themes/claude.css", "dist/themes/claude.css");
+    copyFileSync(
+      "src/ui/styles/themes/supabase.css",
+      "dist/themes/supabase.css",
+    );
+    copyFileSync("src/ui/styles/themes/twitter.css", "dist/themes/twitter.css");
+    copyFileSync(
+      "src/ui/styles/themes/catppuccin.css",
+      "dist/themes/catppuccin.css",
+    );
+    copyFileSync(
+      "src/ui/styles/themes/modern-minimal.css",
+      "dist/themes/modern-minimal.css",
+    );
+
+    console.log("✓ CSS files copied");
   },
 });
