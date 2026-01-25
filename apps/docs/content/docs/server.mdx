@@ -97,7 +97,7 @@ The SDK supports two response formats:
     import express from 'express';
     import cors from 'cors';
     import { createRuntime } from '@yourgpt/llm-sdk';
-import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
 
     const app = express();
     app.use(cors());
@@ -110,31 +110,9 @@ import { createOpenAI } from '@yourgpt/llm-sdk/openai';
       systemPrompt: 'You are a helpful assistant.',
     });
 
-    // Chat endpoint
+    // Chat endpoint - one-liner with StreamResult API!
     app.post('/api/chat', async (req, res) => {
-      // Convert Express request to Web Request
-      const webRequest = new Request('http://localhost/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(req.body),
-      });
-
-      // Handle with runtime
-      const response = await runtime.handleRequest(webRequest);
-
-      // Stream response back to client
-      response.headers.forEach((value, key) => res.setHeader(key, value));
-      res.status(response.status);
-
-      if (response.body) {
-        const reader = response.body.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(new TextDecoder().decode(value));
-        }
-      }
-      res.end();
+      await runtime.stream(req.body).pipeToResponse(res);
     });
 
     app.listen(3001, () => console.log('Server on http://localhost:3001'));
@@ -364,6 +342,76 @@ import { createOpenAI } from '@yourgpt/llm-sdk/openai';
     </Callout>
   </Tab>
 </Tabs>
+
+---
+
+## StreamResult API
+
+The `runtime.stream()` method returns a `StreamResult` object with multiple ways to consume the response:
+
+### Response Methods
+
+| Method | Framework | Description |
+|--------|-----------|-------------|
+| `toResponse()` | Next.js, Cloudflare, Deno | Returns Web `Response` with SSE |
+| `toTextResponse()` | Next.js, Cloudflare, Deno | Returns text-only `Response` |
+| `pipeToResponse(res)` | Express, Node.js | Pipes SSE to ServerResponse |
+| `pipeTextToResponse(res)` | Express, Node.js | Pipes text to ServerResponse |
+| `toReadableStream()` | Any | Returns raw ReadableStream |
+| `collect()` | Any | Collects full result (non-streaming) |
+
+### Express Example
+
+```ts title="server.ts"
+import express from 'express';
+import { createRuntime } from '@yourgpt/llm-sdk';
+import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+const app = express();
+app.use(express.json());
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+});
+
+// One-liner streaming
+app.post('/api/chat', async (req, res) => {
+  await runtime.stream(req.body).pipeToResponse(res);
+});
+
+// Or use the built-in handler
+app.post('/api/chat-alt', runtime.expressHandler());
+```
+
+### Collecting Results
+
+For non-streaming use cases or logging:
+
+```ts
+app.post('/api/chat', async (req, res) => {
+  const { text, messages, toolCalls } = await runtime.stream(req.body).collect();
+
+  console.log('Response:', text);
+  console.log('Tool calls:', toolCalls);
+
+  res.json({ response: text });
+});
+```
+
+### Event Handlers
+
+Process events as they stream (similar to Anthropic SDK):
+
+```ts
+const result = runtime.stream(body)
+  .on('text', (text) => console.log('Text:', text))
+  .on('toolCall', (call) => console.log('Tool:', call.name))
+  .on('done', (final) => console.log('Done:', final.text))
+  .on('error', (err) => console.error('Error:', err));
+
+await result.pipeToResponse(res);
+```
 
 ---
 

@@ -146,19 +146,28 @@ const OPENAI_MODELS: Record<string, ModelCapabilities> = {
 // ============================================
 
 /**
- * Create an OpenAI provider (Legacy API)
- *
- * @deprecated Use `import { openai } from '@yourgpt/llm-sdk/openai'` instead.
+ * Create an OpenAI provider for use with createRuntime()
  *
  * @example
  * ```typescript
- * // OLD (deprecated):
- * const provider = createOpenAI({ apiKey: '...' });
- * const adapter = provider.languageModel('gpt-4o');
+ * import { createRuntime } from '@yourgpt/llm-sdk';
+ * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
  *
- * // NEW (recommended):
+ * const runtime = createRuntime({
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+ *   model: 'gpt-4o',
+ * });
+ * ```
+ *
+ * For streamText/generateText, use the simpler openai() function:
+ * ```typescript
+ * import { streamText } from '@yourgpt/llm-sdk';
  * import { openai } from '@yourgpt/llm-sdk/openai';
- * const model = openai('gpt-4o');
+ *
+ * const result = await streamText({
+ *   model: openai('gpt-4o'),
+ *   messages,
+ * });
  * ```
  */
 export function createOpenAI(config: OpenAIProviderConfig = {}): AIProvider {

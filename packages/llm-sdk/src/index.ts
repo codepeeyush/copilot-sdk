@@ -95,20 +95,33 @@ export {
   type RequestContext,
 } from "./server";
 
+// StreamResult (Industry Standard Pattern)
+export {
+  StreamResult,
+  createStreamResult,
+  type StreamResultOptions,
+  type CollectedResult,
+} from "./server";
+
 // Framework integrations
 export {
   createHonoApp,
   createNextHandler,
   createExpressMiddleware,
+  createExpressHandler,
   createNodeHandler,
 } from "./server";
 
 // Streaming utilities
 export {
   createSSEHeaders,
+  createTextStreamHeaders,
   formatSSEData,
   createEventStream,
   createSSEResponse,
+  createTextStreamResponse,
+  pipeSSEToResponse,
+  pipeTextToResponse,
 } from "./server";
 
 // Agent loop

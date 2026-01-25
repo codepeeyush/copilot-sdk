@@ -17,29 +17,15 @@ const runtime = createRuntime({
   systemPrompt: 'You are a helpful AI assistant.',
 });
 
+// ✨ Simple one-liner with StreamResult API
 app.post('/api/chat', async (req, res) => {
-  const webRequest = new Request('http://localhost/api/chat', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(req.body),
-  });
-
-  const response = await runtime.handleRequest(webRequest);
-
-  response.headers.forEach((value, key) => res.setHeader(key, value));
-  res.status(response.status);
-
-  if (response.body) {
-    const reader = response.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      res.write(value);
-    }
-  }
-  res.end();
+  await runtime.stream(req.body).pipeToResponse(res);
 });
 
+// Alternative: Use the expressHandler() method
+// app.post('/api/chat', runtime.expressHandler());
+
+// Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok' });
 });

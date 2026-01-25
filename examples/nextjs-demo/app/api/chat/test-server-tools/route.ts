@@ -25,7 +25,8 @@ const serverTools: ToolDefinition[] = [
       },
       required: ["min", "max"],
     },
-    handler: async (args: { min: number; max: number }) => {
+    handler: async (params) => {
+      const args = params as { min: number; max: number };
       const num =
         Math.floor(Math.random() * (args.max - args.min + 1)) + args.min;
       console.log(
