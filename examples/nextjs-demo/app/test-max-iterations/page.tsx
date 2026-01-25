@@ -47,6 +47,7 @@ function TestTools() {
     // Step 1: Initialize a process
     step1_initialize: {
       name: "step1_initialize",
+      location: "client",
       description:
         "Step 1: Initialize a multi-step process. MUST be called first before step2.",
       inputSchema: {
@@ -56,7 +57,8 @@ function TestTools() {
         },
         required: ["task"],
       },
-      handler: async (args: { task: string }) => {
+      handler: async (params) => {
+        const args = params as { task: string };
         await new Promise((r) => setTimeout(r, 500));
         return {
           success: true,
@@ -70,6 +72,7 @@ function TestTools() {
     // Step 2: Process
     step2_process: {
       name: "step2_process",
+      location: "client",
       description:
         "Step 2: Process the initialized task. Call this after step1_initialize.",
       inputSchema: {
@@ -79,7 +82,8 @@ function TestTools() {
         },
         required: ["data"],
       },
-      handler: async (args: { data: string }) => {
+      handler: async (params) => {
+        const args = params as { data: string };
         await new Promise((r) => setTimeout(r, 500));
         return {
           success: true,
@@ -93,6 +97,7 @@ function TestTools() {
     // Step 3: Finalize
     step3_finalize: {
       name: "step3_finalize",
+      location: "client",
       description:
         "Step 3: Finalize and complete the process. Call this after step2_process.",
       inputSchema: {
@@ -102,7 +107,8 @@ function TestTools() {
         },
         required: ["summary"],
       },
-      handler: async (args: { summary: string }) => {
+      handler: async (params) => {
+        const args = params as { summary: string };
         await new Promise((r) => setTimeout(r, 500));
         return {
           success: true,

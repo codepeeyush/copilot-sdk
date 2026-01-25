@@ -81,6 +81,40 @@ const result = await streamText({
 return result.toDataStreamResponse();
 ```
 
+## Express Integration
+
+Use the `createRuntime()` API with the new `stream()` method for Express:
+
+```ts
+import express from "express";
+import { createRuntime } from "@yourgpt/llm-sdk";
+import { createOpenAI } from "@yourgpt/llm-sdk/openai";
+
+const app = express();
+app.use(express.json());
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: "gpt-4o",
+});
+
+// One-liner streaming endpoint
+app.post("/api/chat", async (req, res) => {
+  await runtime.stream(req.body).pipeToResponse(res);
+});
+
+app.listen(3001);
+```
+
+### Available Response Methods
+
+| Method                     | Framework     | Description                 |
+| -------------------------- | ------------- | --------------------------- |
+| `.toResponse()`            | Next.js, Deno | Returns Web Response        |
+| `.pipeToResponse(res)`     | Express, Node | Pipes SSE to ServerResponse |
+| `.pipeTextToResponse(res)` | Express, Node | Pipes text only             |
+| `.collect()`               | Any           | Collects full response      |
+
 ## Supported Providers
 
 | Provider      | Import                       | SDK Required        |

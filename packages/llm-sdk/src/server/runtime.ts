@@ -27,6 +27,7 @@ import type {
   HandleRequestResult,
 } from "./types";
 import { createSSEResponse } from "./streaming";
+import { StreamResult, type CollectedResult } from "./stream-result";
 
 // ============================================
 // AI Response Control
@@ -1468,6 +1469,113 @@ export class Runtime {
     }
 
     return parameters;
+  }
+
+  // ============================================
+  // StreamResult API (Industry Standard Pattern)
+  // ============================================
+
+  /**
+   * Stream chat and return StreamResult with helper methods
+   *
+   * This is the recommended API for new projects. It returns a StreamResult
+   * object with multiple ways to consume the response:
+   * - `pipeToResponse(res)` for Express/Node.js
+   * - `toResponse()` for Next.js/Web API
+   * - `collect()` for non-streaming use cases
+   *
+   * @example
+   * ```typescript
+   * // Express - one-liner
+   * app.post('/chat', async (req, res) => {
+   *   await runtime.stream(req.body).pipeToResponse(res);
+   * });
+   *
+   * // Next.js App Router
+   * export async function POST(req: Request) {
+   *   const body = await req.json();
+   *   return runtime.stream(body).toResponse();
+   * }
+   *
+   * // With event handlers
+   * const result = runtime.stream(body)
+   *   .on('text', (text) => console.log(text))
+   *   .on('done', (result) => console.log('Done:', result.text));
+   * await result.pipeToResponse(res);
+   * ```
+   */
+  stream(
+    request: ChatRequest,
+    options?: { signal?: AbortSignal },
+  ): StreamResult {
+    const generator = this.processChatWithLoop(request, options?.signal);
+    return new StreamResult(generator);
+  }
+
+  /**
+   * Chat and collect the full response (non-streaming)
+   *
+   * Convenience method that calls stream().collect() for you.
+   * Use this when you need the complete response before responding.
+   *
+   * @example
+   * ```typescript
+   * const { text, messages, toolCalls } = await runtime.chat(body);
+   * console.log('Response:', text);
+   * res.json({ response: text });
+   * ```
+   */
+  async chat(
+    request: ChatRequest,
+    options?: { signal?: AbortSignal },
+  ): Promise<CollectedResult> {
+    return this.stream(request, options).collect();
+  }
+
+  /**
+   * Create Express-compatible handler middleware
+   *
+   * Returns a function that can be used directly as Express middleware.
+   *
+   * @example
+   * ```typescript
+   * // Simple usage
+   * app.post('/chat', runtime.expressHandler());
+   *
+   * // With options
+   * app.post('/chat', runtime.expressHandler({ format: 'text' }));
+   * ```
+   */
+  expressHandler(options?: {
+    /** Response format: 'sse' (default) or 'text' */
+    format?: "sse" | "text";
+    /** Additional headers to include */
+    headers?: Record<string, string>;
+  }) {
+    return async (
+      req: { body: ChatRequest },
+      res: {
+        setHeader(name: string, value: string): void;
+        write(chunk: string): boolean;
+        end(): void;
+        status(code: number): { json(data: unknown): void };
+      },
+    ) => {
+      try {
+        const result = this.stream(req.body);
+
+        if (options?.format === "text") {
+          await result.pipeTextToResponse(res, { headers: options?.headers });
+        } else {
+          await result.pipeToResponse(res, { headers: options?.headers });
+        }
+      } catch (error) {
+        console.error("[Runtime] Express handler error:", error);
+        res.status(500).json({
+          error: error instanceof Error ? error.message : "Unknown error",
+        });
+      }
+    };
   }
 }
 

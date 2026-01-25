@@ -136,75 +136,120 @@ export function createNextHandler(config: RuntimeConfig) {
 }
 
 /**
- * Express middleware
+ * Express middleware (Simplified with StreamResult)
+ *
+ * Creates an Express-compatible middleware that uses the new StreamResult API.
+ * Much simpler internally - no more manual request/response conversion.
  *
  * @example
  * ```ts
  * import express from 'express';
  * import { createExpressMiddleware } from '@yourgpt/llm-sdk';
+ * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
  *
  * const app = express();
+ * app.use(express.json());
  *
- * app.use('/api/chat', createExpressMiddleware({
- *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
+ * // Simple usage
+ * app.post('/api/chat', createExpressMiddleware({
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+ *   model: 'gpt-4o',
  * }));
+ *
+ * // With options
+ * app.post('/api/chat', createExpressMiddleware({
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+ *   model: 'gpt-4o',
+ * }, { format: 'text' }));
  * ```
  */
-export function createExpressMiddleware(config: RuntimeConfig) {
+export function createExpressMiddleware(
+  config: RuntimeConfig,
+  options?: {
+    /** Response format: 'sse' (default) or 'text' */
+    format?: "sse" | "text";
+    /** Additional headers to include */
+    headers?: Record<string, string>;
+  },
+) {
   const runtime = createRuntime(config);
-  const app = createHonoApp(runtime);
 
-  // Return Hono's fetch handler wrapped for Express
-  return async (
-    req: {
-      method: string;
-      url: string;
-      headers: Record<string, string>;
-      body: unknown;
-    },
-    res: {
-      status: (code: number) => { json: (data: unknown) => void };
-      setHeader: (name: string, value: string) => void;
-      write: (data: string) => void;
-      end: () => void;
-    },
-  ) => {
+  // Express response type - more permissive to work with different Express versions
+  type ExpressResponse = {
+    status: (code: number) => { json: (data: unknown) => void };
+    setHeader: (
+      name: string,
+      value: string | number | readonly string[],
+    ) => unknown;
+    write: (data: string | Buffer) => boolean;
+    end: () => unknown;
+  };
+
+  return async (req: { body: unknown }, res: ExpressResponse) => {
     try {
-      // Convert Express request to Fetch Request
-      const url = new URL(req.url, "http://localhost");
-      const request = new Request(url, {
-        method: req.method,
-        headers: req.headers,
-        body: req.method !== "GET" ? JSON.stringify(req.body) : undefined,
-      });
+      // Use the new StreamResult API - much simpler!
+      const result = runtime.stream(req.body as import("./types").ChatRequest);
 
-      // Handle with runtime
-      const response = await runtime.handleRequest(request);
+      // Cast to the interface expected by pipeToResponse
+      // This is safe because Express response satisfies these methods
+      const nodeRes = res as unknown as {
+        setHeader(
+          name: string,
+          value: string | number | readonly string[],
+        ): void;
+        write(chunk: string | Buffer): boolean;
+        end(): void;
+      };
 
-      // Set response headers
-      response.headers.forEach((value, key) => {
-        res.setHeader(key, value);
-      });
-
-      // Stream response body
-      if (response.body) {
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(decoder.decode(value));
-        }
+      if (options?.format === "text") {
+        await result.pipeTextToResponse(nodeRes, { headers: options?.headers });
+      } else {
+        await result.pipeToResponse(nodeRes, { headers: options?.headers });
       }
-
-      res.end();
     } catch (error) {
+      console.error("[Express Middleware] Error:", error);
       res.status(500).json({
         error: error instanceof Error ? error.message : "Unknown error",
       });
     }
   };
+}
+
+/**
+ * Create Express handler from existing Runtime instance
+ *
+ * Use this when you already have a Runtime instance and want to create
+ * an Express handler from it.
+ *
+ * @example
+ * ```ts
+ * import express from 'express';
+ * import { createRuntime, createExpressHandler } from '@yourgpt/llm-sdk';
+ * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+ *
+ * const runtime = createRuntime({
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+ *   model: 'gpt-4o',
+ * });
+ *
+ * const app = express();
+ * app.use(express.json());
+ *
+ * // Use with existing runtime
+ * app.post('/api/chat', createExpressHandler(runtime));
+ *
+ * // Or use runtime.expressHandler() directly
+ * app.post('/api/chat', runtime.expressHandler());
+ * ```
+ */
+export function createExpressHandler(
+  runtime: Runtime,
+  options?: {
+    format?: "sse" | "text";
+    headers?: Record<string, string>;
+  },
+) {
+  return runtime.expressHandler(options);
 }
 
 /**
