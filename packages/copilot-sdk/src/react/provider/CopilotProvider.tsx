@@ -62,6 +62,8 @@ export interface CopilotProviderProps {
   onError?: (error: Error) => void;
   /** Enable/disable streaming (default: true) */
   streaming?: boolean;
+  /** Custom headers to send with each request */
+  headers?: Record<string, string>;
   /** Enable debug logging */
   debug?: boolean;
   /** Max tool execution iterations (default: 20) */
@@ -150,6 +152,7 @@ export function CopilotProvider({
   onMessagesChange,
   onError,
   streaming,
+  headers,
   debug = false,
   maxIterations,
   maxIterationsMessage,
@@ -207,6 +210,7 @@ export function CopilotProvider({
         threadId,
         initialMessages: uiInitialMessages,
         streaming,
+        headers,
         debug,
         maxIterations,
         maxIterationsMessage,
