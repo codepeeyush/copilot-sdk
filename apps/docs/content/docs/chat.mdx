@@ -85,6 +85,89 @@ Tool renderers receive the tool result `data` as props. Return any React compone
 
 ---
 
+## Compound Components
+
+For full layout control, use the compound component pattern:
+
+### Basic Structure
+
+```tsx
+import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
+
+<CopilotChat.Root className="h-[600px]">
+  {/* Custom home screen */}
+  <CopilotChat.HomeView className="gap-6 p-6">
+    <h1>Welcome!</h1>
+    <CopilotChat.Input placeholder="Ask anything..." />
+    <CopilotChat.Suggestions items={["Help", "Pricing"]} />
+  </CopilotChat.HomeView>
+
+  {/* Chat view uses default UI */}
+  <CopilotChat.ChatView />
+</CopilotChat.Root>
+```
+
+### Available Components
+
+| Component | Description |
+|-----------|-------------|
+| `CopilotChat.Root` | Root container (alias for CopilotChat) |
+| `CopilotChat.HomeView` | Shows when no messages (home screen) |
+| `CopilotChat.ChatView` | Shows when there are messages |
+| `CopilotChat.Header` | Header slot (view-specific when nested) |
+| `CopilotChat.Footer` | Footer slot |
+| `CopilotChat.Input` | Auto-connected input |
+| `CopilotChat.Suggestions` | Suggestion buttons |
+| `CopilotChat.BackButton` | Starts new chat (requires persistence) |
+| `CopilotChat.ThreadPicker` | Thread switcher (requires persistence) |
+
+### View-Specific Headers
+
+Place `Header` inside `ChatView` to show it only in chat view:
+
+```tsx
+<CopilotChat.Root persistence={true}>
+  {/* Home - no header */}
+  <CopilotChat.HomeView>
+    <h1>Welcome!</h1>
+    <CopilotChat.Input />
+  </CopilotChat.HomeView>
+
+  {/* Chat - header with navigation */}
+  <CopilotChat.ChatView>
+    <CopilotChat.Header className="flex items-center justify-between p-3 border-b">
+      <CopilotChat.BackButton />
+      <span>Conversation</span>
+      <CopilotChat.ThreadPicker />
+    </CopilotChat.Header>
+    {/* Default messages + input render automatically */}
+  </CopilotChat.ChatView>
+</CopilotChat.Root>
+```
+
+### Custom BackButton
+
+```tsx
+<CopilotChat.BackButton>
+  ← Back to Home
+</CopilotChat.BackButton>
+```
+
+### Context Hook
+
+Access chat context in custom components:
+
+```tsx
+import { useCopilotChatContext } from '@yourgpt/copilot-sdk/ui';
+
+function CustomComponent() {
+  const { view, send, isLoading } = useCopilotChatContext();
+  return <button onClick={() => send("Hello!")}>Say Hi</button>;
+}
+```
+
+---
+
 ## Build Your Own Chat
 
 Use hooks for full control:
