@@ -214,6 +214,13 @@ export type ChatProps = {
   /** Whether AI is currently generating */
   isLoading?: boolean;
 
+  // === Compound Components ===
+  /**
+   * Children for compound component pattern.
+   * Use Chat.Home, Chat.Input, Chat.Suggestions as children for custom home screens.
+   */
+  children?: React.ReactNode;
+
   // === Labels/Text ===
   /** Placeholder text for input */
   placeholder?: string;
@@ -382,4 +389,16 @@ export type ChatProps = {
     suggestions?: string;
     footer?: string;
   };
+
+  // === Thread Management (for compound components) ===
+  /** Called when starting a new chat (clears messages, returns to home) */
+  onNewChat?: () => void;
+  /** Available threads (passed from connected-chat when persistence enabled) */
+  threads?: Thread[];
+  /** Current thread ID */
+  currentThreadId?: string | null;
+  /** Called when switching to a different thread */
+  onSwitchThread?: (threadId: string) => void;
+  /** Whether a thread operation is in progress (disables controls) */
+  isThreadBusy?: boolean;
 };

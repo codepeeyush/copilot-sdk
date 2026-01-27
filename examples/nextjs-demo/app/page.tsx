@@ -12,6 +12,11 @@ const demos = [
     description: "OpenAI, Anthropic, Google side-by-side",
   },
   {
+    name: "Compound Components",
+    href: "/compound-test",
+    description: "Custom home screen with Chat.Home, Chat.Input",
+  },
+  {
     name: "Ticketing Demo",
     href: "/ticketing-demo",
     description: "Customer support copilot with tools",
