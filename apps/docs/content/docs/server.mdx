@@ -39,9 +39,9 @@ The Copilot SDK frontend connects to your backend API endpoint. Your server:
 
 ### Response
 
-The SDK supports two response formats:
+The SDK supports three response formats:
 
-<Tabs items={['Text Stream', 'Data Stream']}>
+<Tabs items={['Text Stream', 'Data Stream', 'JSON (Non-Streaming)']}>
   <Tab value="Text Stream">
     Simple text streaming for basic chat (no tools).
 
@@ -67,11 +67,29 @@ The SDK supports two response formats:
 
     Use `result.toDataStreamResponse()` to return this format.
   </Tab>
+  <Tab value="JSON (Non-Streaming)">
+    Complete response in a single JSON object. Use for batch processing, logging, or simpler integrations.
+
+    **Content-Type:** `application/json`
+
+    ```json
+    {
+      "text": "Hello! How can I help you today?",
+      "usage": {
+        "promptTokens": 10,
+        "completionTokens": 8,
+        "totalTokens": 18
+      }
+    }
+    ```
+
+    Use `generateText()` or `runtime.chat()` to return this format.
+  </Tab>
 </Tabs>
 
 ---
 
-## Framework Examples
+## Framework Examples (Streaming)
 
 <Tabs items={['Next.js', 'Express', 'Node.js']}>
   <Tab value="Next.js">
@@ -161,54 +179,344 @@ The SDK supports two response formats:
 
 ---
 
+## Framework Examples (Non-Streaming)
+
+For use cases where you need the complete response before returning (batch processing, logging, simpler integration), use the non-streaming approach.
+
+### Response Format
+
+**Content-Type:** `application/json`
+
+```json
+{
+  "text": "Hello! How can I help you today?",
+  "usage": {
+    "promptTokens": 10,
+    "completionTokens": 8,
+    "totalTokens": 18
+  }
+}
+```
+
+### Using generateText
+
+<Tabs items={['Next.js', 'Express', 'Node.js']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { generateText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await generateText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        messages,
+      });
+
+      return Response.json({
+        text: result.text,
+        usage: result.usage,
+      });
+    }
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="server.ts"
+    import express from 'express';
+    import cors from 'cors';
+    import { generateText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(cors());
+    app.use(express.json());
+
+    app.post('/api/chat', async (req, res) => {
+      const { messages } = req.body;
+
+      const result = await generateText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        messages,
+      });
+
+      res.json({
+        text: result.text,
+        usage: result.usage,
+      });
+    });
+
+    app.listen(3001, () => console.log('Server on http://localhost:3001'));
+    ```
+  </Tab>
+  <Tab value="Node.js">
+    ```ts title="server.ts"
+    import { createServer } from 'http';
+    import { generateText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    createServer(async (req, res) => {
+      if (req.method === 'POST' && req.url === '/api/chat') {
+        const body = await getBody(req);
+        const { messages } = JSON.parse(body);
+
+        const result = await generateText({
+          model: openai('gpt-4o'),
+          system: 'You are a helpful assistant.',
+          messages,
+        });
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          text: result.text,
+          usage: result.usage,
+        }));
+      }
+    }).listen(3001);
+
+    function getBody(req: any): Promise<string> {
+      return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk: any) => data += chunk);
+        req.on('end', () => resolve(data));
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Using Runtime chat()
+
+The runtime also provides a `chat()` method for non-streaming:
+
+<Tabs items={['Next.js', 'Express', 'Node.js']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export async function POST(req: Request) {
+      const body = await req.json();
+
+      const { text, messages, toolCalls } = await runtime.chat(body);
+
+      return Response.json({
+        text,
+        messages,
+        toolCalls,
+      });
+    }
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="server.ts"
+    import express from 'express';
+    import cors from 'cors';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(cors());
+    app.use(express.json());
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    app.post('/api/chat', async (req, res) => {
+      const { text, messages, toolCalls } = await runtime.chat(req.body);
+
+      res.json({
+        text,
+        messages,
+        toolCalls,
+      });
+    });
+
+    app.listen(3001, () => console.log('Server on http://localhost:3001'));
+    ```
+  </Tab>
+  <Tab value="Node.js">
+    ```ts title="server.ts"
+    import { createServer } from 'http';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    createServer(async (req, res) => {
+      if (req.method === 'POST' && req.url === '/api/chat') {
+        const body = await getBody(req);
+        const chatRequest = JSON.parse(body);
+
+        const { text, messages, toolCalls } = await runtime.chat(chatRequest);
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ text, messages, toolCalls }));
+      }
+    }).listen(3001);
+
+    function getBody(req: any): Promise<string> {
+      return new Promise((resolve) => {
+        let data = '';
+        req.on('data', (chunk: any) => data += chunk);
+        req.on('end', () => resolve(data));
+      });
+    }
+    ```
+  </Tab>
+</Tabs>
+
+### Using stream().collect()
+
+You can also collect a stream into a single response:
+
+```ts
+app.post('/api/chat', async (req, res) => {
+  const { text, messages, toolCalls } = await runtime.stream(req.body).collect();
+
+  res.json({ text, messages, toolCalls });
+});
+```
+
+<Callout type="info">
+**When to use non-streaming:**
+- Background processing or batch operations
+- When you need the full response before taking action
+- Simpler integration without SSE handling
+- Logging or analytics that need complete responses
+</Callout>
+
+---
+
 ## With Tools
 
 Add tools to let the AI call functions on your server:
 
-```ts title="app/api/chat/route.ts"
-import { streamText, tool } from '@yourgpt/llm-sdk';
-import { openai } from '@yourgpt/llm-sdk/openai';
-import { z } from 'zod';
+<Tabs items={['Streaming', 'Non-Streaming']}>
+  <Tab value="Streaming">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText, tool } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+    import { z } from 'zod';
 
-export async function POST(req: Request) {
-  const { messages } = await req.json();
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
 
-  const result = await streamText({
-    model: openai('gpt-4o'),
-    system: 'You are a helpful assistant.',
-    messages,
-    tools: {
-      getWeather: tool({
-        description: 'Get current weather for a city',
-        parameters: z.object({
-          city: z.string().describe('City name'),
-        }),
-        execute: async ({ city }) => {
-          const data = await fetchWeatherAPI(city);
-          return { temperature: data.temp, condition: data.condition };
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        messages,
+        tools: {
+          getWeather: tool({
+            description: 'Get current weather for a city',
+            parameters: z.object({
+              city: z.string().describe('City name'),
+            }),
+            execute: async ({ city }) => {
+              const data = await fetchWeatherAPI(city);
+              return { temperature: data.temp, condition: data.condition };
+            },
+          }),
+          searchProducts: tool({
+            description: 'Search the product database',
+            parameters: z.object({
+              query: z.string(),
+              limit: z.number().optional().default(10),
+            }),
+            execute: async ({ query, limit }) => {
+              return await db.products.search(query, limit);
+            },
+          }),
         },
-      }),
-      searchProducts: tool({
-        description: 'Search the product database',
-        parameters: z.object({
-          query: z.string(),
-          limit: z.number().optional().default(10),
-        }),
-        execute: async ({ query, limit }) => {
-          return await db.products.search(query, limit);
+        maxSteps: 5,
+      });
+
+      return result.toDataStreamResponse();
+    }
+    ```
+
+    <Callout type="info">
+    Use `toDataStreamResponse()` when using tools to stream structured events including tool calls and results.
+    </Callout>
+  </Tab>
+  <Tab value="Non-Streaming">
+    ```ts title="app/api/chat/route.ts"
+    import { generateText, tool } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+    import { z } from 'zod';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await generateText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        messages,
+        tools: {
+          getWeather: tool({
+            description: 'Get current weather for a city',
+            parameters: z.object({
+              city: z.string().describe('City name'),
+            }),
+            execute: async ({ city }) => {
+              const data = await fetchWeatherAPI(city);
+              return { temperature: data.temp, condition: data.condition };
+            },
+          }),
+          searchProducts: tool({
+            description: 'Search the product database',
+            parameters: z.object({
+              query: z.string(),
+              limit: z.number().optional().default(10),
+            }),
+            execute: async ({ query, limit }) => {
+              return await db.products.search(query, limit);
+            },
+          }),
         },
-      }),
-    },
-    maxSteps: 5,
-  });
+        maxSteps: 5,
+      });
 
-  return result.toDataStreamResponse();
-}
-```
+      return Response.json({
+        text: result.text,
+        toolCalls: result.toolCalls,
+        toolResults: result.toolResults,
+        usage: result.usage,
+      });
+    }
+    ```
 
-<Callout type="info">
-Use `toDataStreamResponse()` when using tools to stream structured events including tool calls and results.
-</Callout>
+    The response includes all tool calls and results:
+
+    ```json
+    {
+      "text": "The weather in Tokyo is 22°C and sunny.",
+      "toolCalls": [
+        { "id": "call_123", "name": "getWeather", "args": { "city": "Tokyo" } }
+      ],
+      "toolResults": [
+        { "toolCallId": "call_123", "result": { "temperature": 22, "condition": "sunny" } }
+      ],
+      "usage": { "promptTokens": 50, "completionTokens": 25, "totalTokens": 75 }
+    }
+    ```
+  </Tab>
+</Tabs>
 
 ---
 
