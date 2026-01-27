@@ -41,7 +41,7 @@ app.post("/api/chat/text", async (req, res) => {
 app.post("/api/chat/handler", runtime.expressHandler());
 
 // ============================================
-// Method 4: Collect result (non-streaming)
+// Method 4: Collect result (streams internally, returns JSON)
 // ============================================
 app.post("/api/chat/collect", async (req, res) => {
   console.log("[/api/chat/collect] Using collect()");
@@ -53,6 +53,31 @@ app.post("/api/chat/collect", async (req, res) => {
     text,
     messageCount: messages.length,
     toolCallCount: toolCalls.length,
+  });
+});
+
+// ============================================
+// Method 4b: Non-streaming with generate() - CopilotChat format
+// ============================================
+app.post("/api/chat/generate", async (req, res) => {
+  console.log("[/api/chat/generate] Using runtime.generate()");
+  const result = await runtime.generate(req.body);
+  res.json(result.toResponse()); // CopilotChat-compatible format
+});
+
+// ============================================
+// Method 4c: Non-streaming with generate() - Raw access
+// ============================================
+app.post("/api/chat/generate-raw", async (req, res) => {
+  console.log(
+    "[/api/chat/generate-raw] Using runtime.generate() with raw access",
+  );
+  const result = await runtime.generate(req.body);
+  res.json({
+    text: result.text,
+    success: result.success,
+    toolCalls: result.toolCalls,
+    messageCount: result.messages.length,
   });
 });
 
@@ -111,10 +136,12 @@ app.get("/api/health", (req, res) => {
   res.json({
     status: "ok",
     endpoints: [
-      "POST /api/chat - SSE streaming with pipeToResponse()",
+      "POST /api/chat - SSE streaming (works with CopilotChat)",
       "POST /api/chat/text - Text-only streaming",
       "POST /api/chat/handler - Using expressHandler()",
-      "POST /api/chat/collect - Non-streaming, returns JSON",
+      "POST /api/chat/collect - Streams internally, returns raw JSON",
+      "POST /api/chat/generate - Non-streaming (works with CopilotChat)",
+      "POST /api/chat/generate-raw - Non-streaming raw access",
       "POST /api/chat/events - With event handlers",
       "POST /api/chat/web - Using toResponse()",
     ],
@@ -127,16 +154,27 @@ app.listen(port, () => {
 Express Demo Server running on http://localhost:${port}
 
 Available endpoints:
-  GET  /api/health        - Health check
-  POST /api/chat          - SSE streaming (pipeToResponse)
-  POST /api/chat/text     - Text-only streaming
-  POST /api/chat/handler  - Using expressHandler()
-  POST /api/chat/collect  - Non-streaming JSON
-  POST /api/chat/events   - With event handlers
-  POST /api/chat/web      - Using toResponse()
+  GET  /api/health            - Health check
 
-Test with:
+  STREAMING:
+  POST /api/chat              - SSE streaming (works with CopilotChat)
+  POST /api/chat/text         - Text-only streaming
+  POST /api/chat/handler      - Using expressHandler()
+  POST /api/chat/collect      - Streams internally, returns raw JSON
+  POST /api/chat/events       - With event handlers
+  POST /api/chat/web          - Using toResponse()
+
+  NON-STREAMING:
+  POST /api/chat/generate     - CopilotChat format (works with CopilotChat)
+  POST /api/chat/generate-raw - Raw format (text, toolCalls, etc.)
+
+Test streaming:
   curl -X POST http://localhost:${port}/api/chat \\
+    -H "Content-Type: application/json" \\
+    -d '{"messages":[{"role":"user","content":"Say hello in 3 words"}]}'
+
+Test non-streaming:
+  curl -X POST http://localhost:${port}/api/chat/generate \\
     -H "Content-Type: application/json" \\
     -d '{"messages":[{"role":"user","content":"Say hello in 3 words"}]}'
   `);

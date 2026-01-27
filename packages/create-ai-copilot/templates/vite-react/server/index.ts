@@ -19,9 +19,15 @@ const app = new Hono();
 // Enable CORS for development
 app.use('/*', cors());
 
-// Chat endpoint
+// ✨ Streaming - SSE response (works with CopilotChat)
 app.post('/api/chat', async (c) => {
-  return runtime.handleRequest(c.req.raw);
+  return runtime.stream(await c.req.json()).toResponse();
+});
+
+// ✨ Non-streaming - JSON response (works with CopilotChat)
+app.post('/api/chat/generate', async (c) => {
+  const result = await runtime.generate(await c.req.json());
+  return c.json(result.toResponse());
 });
 
 // Health check

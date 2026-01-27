@@ -17,12 +17,18 @@ const runtime = createRuntime({
   systemPrompt: 'You are a helpful AI assistant.',
 });
 
-// ✨ Simple one-liner with StreamResult API
+// ✨ Streaming - SSE response (works with CopilotChat)
 app.post('/api/chat', async (req, res) => {
   await runtime.stream(req.body).pipeToResponse(res);
 });
 
-// Alternative: Use the expressHandler() method
+// ✨ Non-streaming - JSON response (works with CopilotChat)
+app.post('/api/chat/generate', async (req, res) => {
+  const result = await runtime.generate(req.body);
+  res.json(result.toResponse());
+});
+
+// Alternative: Use the expressHandler() middleware
 // app.post('/api/chat', runtime.expressHandler());
 
 // Health check endpoint

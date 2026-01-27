@@ -103,6 +103,13 @@ export {
   type CollectedResult,
 } from "./server";
 
+// GenerateResult (Non-streaming)
+export {
+  GenerateResult,
+  type GenerateResultData,
+  type CopilotChatResponse,
+} from "./server";
+
 // Framework integrations
 export {
   createHonoApp,
