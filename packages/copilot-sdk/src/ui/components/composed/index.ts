@@ -5,6 +5,16 @@ export {
   Suggestions,
   DefaultMessage,
   ToolExecutionMessage,
+  // Compound component hook
+  useCopilotChatContext,
+  // Compound component types
+  type HomeViewProps,
+  type HomeProps,
+  type ChatViewProps,
+  type HeaderProps,
+  type FooterProps,
+  type BackButtonProps,
+  type ThreadPickerCompoundProps,
   type ChatProps,
   type ChatMessage,
   type ToolRendererProps,

@@ -291,13 +291,16 @@ function parsePersistenceConfig(
   };
 }
 
-export function CopilotChat(props: CopilotChatProps) {
+function CopilotChatBase(
+  props: CopilotChatProps & { children?: React.ReactNode },
+) {
   const {
     persistence,
     showThreadPicker = false,
     onThreadChange,
     classNames,
     header,
+    children,
     ...chatProps
   } = props;
 
@@ -563,9 +566,32 @@ export function CopilotChat(props: CopilotChatProps) {
       recentThreads={isPersistenceEnabled ? threadManager.threads : undefined}
       onSelectThread={isPersistenceEnabled ? handleSwitchThread : undefined}
       onDeleteThread={isPersistenceEnabled ? handleDeleteThread : undefined}
-    />
+      // Thread management for compound components
+      onNewChat={handleNewThread}
+      threads={isPersistenceEnabled ? threadManager.threads : undefined}
+      currentThreadId={threadManager.currentThreadId}
+      onSwitchThread={isPersistenceEnabled ? handleSwitchThread : undefined}
+      isThreadBusy={isBusy}
+    >
+      {children}
+    </Chat>
   );
 }
+
+// Attach compound components from Chat to CopilotChat
+// This allows: <CopilotChat.Root>, <CopilotChat.HomeView>, <CopilotChat.ChatView>, etc.
+export const CopilotChat = Object.assign(CopilotChatBase, {
+  Root: CopilotChatBase, // Alias for layout composition pattern
+  Home: Chat.Home, // Backward compat alias
+  HomeView: Chat.HomeView, // New name
+  ChatView: Chat.ChatView,
+  Header: Chat.Header,
+  Footer: Chat.Footer,
+  Input: Chat.Input,
+  Suggestions: Chat.Suggestions,
+  BackButton: Chat.BackButton, // Navigation: start new chat
+  ThreadPicker: Chat.ThreadPicker, // Thread switching
+});
 
 // Alias for backwards compatibility
 export const ConnectedChat = CopilotChat;
