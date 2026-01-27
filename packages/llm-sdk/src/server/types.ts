@@ -273,3 +273,27 @@ export interface HandleRequestOptions {
    */
   onFinish?: (result: HandleRequestResult) => Promise<void> | void;
 }
+
+/**
+ * Options for runtime.generate()
+ *
+ * @example
+ * ```typescript
+ * const result = await runtime.generate(body, {
+ *   onFinish: async ({ messages }) => {
+ *     await db.saveMessages(messages);
+ *   },
+ * });
+ * ```
+ */
+export interface GenerateOptions {
+  /** AbortSignal for cancellation */
+  signal?: AbortSignal;
+  /** HTTP request for extracting headers (auth context) */
+  httpRequest?: Request;
+  /**
+   * Called after generation completes successfully.
+   * Use for server-side persistence.
+   */
+  onFinish?: (result: HandleRequestResult) => Promise<void> | void;
+}
