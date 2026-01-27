@@ -170,11 +170,21 @@ export {
   ConnectedChat, // Alias for CopilotChat (backwards compatibility)
   ToolExecutionMessage,
   PoweredBy,
+  // Compound component hook
+  useCopilotChatContext,
   type ChatProps,
   type ChatMessage,
   type CopilotChatProps,
   type ConnectedChatProps, // Alias for CopilotChatProps
   type PoweredByProps,
+  // Compound component types (layout composition)
+  type HomeViewProps,
+  type HomeProps,
+  type ChatViewProps,
+  type HeaderProps,
+  type FooterProps,
+  type BackButtonProps,
+  type ThreadPickerCompoundProps,
   // Generative UI types (for custom tool renderers)
   type ToolRendererProps,
   type ToolRenderers,
@@ -198,6 +208,7 @@ export {
   CloseIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ChevronLeftIcon,
   CopyIcon,
   CheckIcon,
   ThumbsUpIcon,

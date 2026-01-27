@@ -1,4 +1,13 @@
-export { Chat } from "./chat";
+export { Chat, useCopilotChatContext } from "./chat";
+export type {
+  HomeViewProps,
+  HomeProps,
+  ChatViewProps,
+  HeaderProps,
+  FooterProps,
+  BackButtonProps,
+  ThreadPickerCompoundProps,
+} from "./chat";
 export { ChatHeader } from "./chat-header";
 export { ChatWelcome } from "./chat-welcome";
 export { Suggestions } from "./suggestions";
