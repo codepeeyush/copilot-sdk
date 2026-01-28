@@ -5,15 +5,8 @@
  * Features: Vision, Audio, Video, PDF, Tools/Function Calling
  */
 
-import type {
-  LLMConfig,
-  StreamEvent,
-  Message,
-} from "@yourgpt/copilot-sdk/core";
-import {
-  generateMessageId,
-  generateToolCallId,
-} from "@yourgpt/copilot-sdk/core";
+import type { LLMConfig, StreamEvent, Message } from "../core/stream-events";
+import { generateMessageId, generateToolCallId } from "../core/utils";
 import type {
   LLMAdapter,
   ChatCompletionRequest,

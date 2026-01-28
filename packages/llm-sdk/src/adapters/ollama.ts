@@ -1,5 +1,5 @@
-import type { LLMConfig, StreamEvent } from "@yourgpt/copilot-sdk/core";
-import { generateMessageId } from "@yourgpt/copilot-sdk/core";
+import type { LLMConfig, StreamEvent } from "../core/stream-events";
+import { generateMessageId } from "../core/utils";
 import type { LLMAdapter, ChatCompletionRequest } from "./base";
 import { formatMessages } from "./base";
 

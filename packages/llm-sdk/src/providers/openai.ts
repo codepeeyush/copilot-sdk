@@ -9,7 +9,7 @@ import type {
   ToolDefinition,
   UnifiedToolCall,
   UnifiedToolResult,
-} from "@yourgpt/copilot-sdk/core";
+} from "../core/stream-events";
 import type {
   ProviderFormatter,
   OpenAITool,

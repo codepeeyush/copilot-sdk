@@ -1,4 +1,4 @@
-import type { StreamEvent } from "@yourgpt/copilot-sdk/core";
+import type { StreamEvent } from "../core/stream-events";
 
 /**
  * Node.js ServerResponse interface (minimal subset for type safety)

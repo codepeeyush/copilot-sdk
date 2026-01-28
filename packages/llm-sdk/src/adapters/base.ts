@@ -4,7 +4,7 @@ import type {
   ActionDefinition,
   StreamEvent,
   LLMConfig,
-} from "@yourgpt/copilot-sdk/core";
+} from "../core/stream-events";
 import type { TokenUsage } from "../core/types";
 
 /**

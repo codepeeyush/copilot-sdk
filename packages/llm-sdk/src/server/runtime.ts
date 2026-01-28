@@ -11,9 +11,9 @@ import type {
   AIResponseMode,
   AIContent,
   ToolContext,
-} from "@yourgpt/copilot-sdk/core";
+} from "../core/stream-events";
 import type { AIProvider } from "../providers/types";
-import { createMessage } from "@yourgpt/copilot-sdk/core";
+import { createMessage } from "../core/stream-events";
 import type { LLMAdapter, ChatCompletionRequest } from "../adapters/base";
 // Legacy imports - only used for legacy llm config
 // These are the most common adapters, kept for backward compatibility
@@ -1538,6 +1538,10 @@ export class Runtime {
     schema: ToolDefinition["inputSchema"],
   ): Record<string, ActionParameter> {
     const parameters: Record<string, ActionParameter> = {};
+
+    if (!schema?.properties) {
+      return parameters;
+    }
 
     for (const [name, prop] of Object.entries(schema.properties)) {
       const converted = this.convertSchemaProperty(prop);

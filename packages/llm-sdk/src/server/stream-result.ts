@@ -29,8 +29,8 @@ import type {
   StreamEvent,
   DoneEventMessage,
   ToolCallInfo,
-  TokenUsage,
-} from "@yourgpt/copilot-sdk/core";
+  TokenUsageRaw,
+} from "../core/stream-events";
 import {
   createSSEHeaders,
   formatSSEData,
@@ -43,6 +43,13 @@ import {
 export interface StreamResultOptions {
   /** Additional headers to include in response */
   headers?: Record<string, string>;
+  /**
+   * Include token usage in response (default: false)
+   * Set to true for raw API access where you need usage data.
+   * When false, usage is stripped from client-facing responses
+   * but still available in onFinish callback for billing.
+   */
+  includeUsage?: boolean;
 }
 
 /**
@@ -83,7 +90,7 @@ export interface CollectedResult {
   /** Whether client action is required (client-side tools) */
   requiresAction: boolean;
   /** Token usage for billing/tracking */
-  usage?: TokenUsage;
+  usage?: TokenUsageRaw;
   /** Raw events (for debugging) */
   events: StreamEvent[];
 }
@@ -280,16 +287,23 @@ export class StreamResult {
     // Collect result while streaming
     const collected = this.createCollector();
 
+    const includeUsage = options?.includeUsage ?? false;
+
     try {
       for await (const event of this.generator) {
-        // Collect event
+        // Collect event (captures usage for onFinish)
         this.collectEvent(event, collected);
 
         // Call event handlers
         this.callEventHandlers(event, collected);
 
-        // Write to response
-        res.write(formatSSEData(event));
+        // Write to response (conditionally strip usage from done event)
+        if (!includeUsage && event.type === "done" && "usage" in event) {
+          const { usage: _usage, ...clientEvent } = event;
+          res.write(formatSSEData(clientEvent as StreamEvent));
+        } else {
+          res.write(formatSSEData(event));
+        }
       }
     } catch (error) {
       // Send error event
@@ -315,10 +329,11 @@ export class StreamResult {
       doneHandler(collected);
     }
 
-    // Call onFinish callback
+    // Call onFinish callback (has access to usage)
     await this.callOnFinish(collected);
 
-    return collected;
+    // Return result (strip usage unless includeUsage is true)
+    return includeUsage ? collected : this.stripUsageFromResult(collected);
   }
 
   /**
@@ -380,10 +395,12 @@ export class StreamResult {
       doneHandler(collected);
     }
 
-    // Call onFinish callback
+    // Call onFinish callback (has access to usage)
     await this.callOnFinish(collected);
 
-    return collected;
+    // Return result (strip usage unless includeUsage is true)
+    const includeUsage = options?.includeUsage ?? false;
+    return includeUsage ? collected : this.stripUsageFromResult(collected);
   }
 
   // ============================================
@@ -395,11 +412,14 @@ export class StreamResult {
    *
    * @example
    * ```typescript
+   * // Default: usage stripped for client-facing responses
    * const { text, messages, toolCalls } = await runtime.stream(body).collect();
-   * console.log('Response:', text);
+   *
+   * // Raw: include usage for server-side processing
+   * const { text, usage } = await runtime.stream(body).collect({ includeUsage: true });
    * ```
    */
-  async collect(): Promise<CollectedResult> {
+  async collect(options?: StreamResultOptions): Promise<CollectedResult> {
     this.ensureNotConsumed();
 
     const collected = this.createCollector();
@@ -415,10 +435,12 @@ export class StreamResult {
       doneHandler(collected);
     }
 
-    // Call onFinish callback
+    // Call onFinish callback (has access to usage)
     await this.callOnFinish(collected);
 
-    return collected;
+    // Return result (strip usage unless includeUsage is true)
+    const includeUsage = options?.includeUsage ?? false;
+    return includeUsage ? collected : this.stripUsageFromResult(collected);
   }
 
   /**
@@ -584,6 +606,23 @@ export class StreamResult {
         break;
       }
     }
+  }
+
+  /**
+   * Strip usage from result (usage is server-side only for billing)
+   * Client-facing APIs should not expose token usage
+   */
+  private stripUsageFromResult(collected: CollectedResult): CollectedResult {
+    const { usage: _usage, events, ...clientResult } = collected;
+    // Also strip usage from done event in events array
+    const cleanedEvents = events.map((event) => {
+      if (event.type === "done" && "usage" in event) {
+        const { usage: _eventUsage, ...cleanEvent } = event;
+        return cleanEvent as StreamEvent;
+      }
+      return event;
+    });
+    return { ...clientResult, events: cleanedEvents } as CollectedResult;
   }
 }
 

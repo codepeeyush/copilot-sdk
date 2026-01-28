@@ -8,11 +8,8 @@
  * Features: Vision, Tools/Function Calling
  */
 
-import type { LLMConfig, StreamEvent } from "@yourgpt/copilot-sdk/core";
-import {
-  generateMessageId,
-  generateToolCallId,
-} from "@yourgpt/copilot-sdk/core";
+import type { LLMConfig, StreamEvent } from "../core/stream-events";
+import { generateMessageId, generateToolCallId } from "../core/utils";
 import type {
   LLMAdapter,
   ChatCompletionRequest,

@@ -116,15 +116,15 @@ app.post("/api/raw/generate/text", async (req, res) => {
 });
 
 /**
- * Generate full response
- * Returns: { text, messages, toolCalls }
+ * Generate full response (raw - includes usage)
+ * Returns: { text, messages, toolCalls, usage }
  */
 app.post("/api/raw/generate/full", async (req, res) => {
   console.log("[/api/raw/generate/full] Full response data");
-  const { text, messages, toolCalls } = await runtime
+  const { text, messages, toolCalls, usage } = await runtime
     .stream(req.body)
-    .collect();
-  res.json({ text, messages, toolCalls });
+    .collect({ includeUsage: true });
+  res.json({ text, messages, toolCalls, usage });
 });
 
 /**
