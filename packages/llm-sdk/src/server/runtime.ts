@@ -423,13 +423,29 @@ export class Runtime {
     options?: HandleRequestOptions,
   ): AsyncGenerator<StreamEvent> {
     let doneMessages: DoneEventMessage[] | undefined;
+    let doneUsage:
+      | {
+          prompt_tokens: number;
+          completion_tokens: number;
+          total_tokens?: number;
+        }
+      | undefined;
 
     for await (const event of generator) {
-      // Capture messages from done event
-      if (event.type === "done" && event.messages) {
-        doneMessages = event.messages;
+      // Capture messages and usage from done event
+      if (event.type === "done") {
+        if (event.messages) {
+          doneMessages = event.messages;
+        }
+        if (event.usage) {
+          doneUsage = event.usage;
+        }
+        // Strip usage from client-facing event (usage is server-side only for billing)
+        const { usage: _usage, ...clientEvent } = event;
+        yield clientEvent as StreamEvent;
+      } else {
+        yield event;
       }
-      yield event;
     }
 
     // Call onFinish after stream completes
@@ -438,7 +454,15 @@ export class Runtime {
         const result: HandleRequestResult = {
           messages: doneMessages,
           threadId,
-          // TODO: Add usage tracking when available from adapter
+          usage: doneUsage
+            ? {
+                promptTokens: doneUsage.prompt_tokens,
+                completionTokens: doneUsage.completion_tokens,
+                totalTokens:
+                  doneUsage.total_tokens ??
+                  doneUsage.prompt_tokens + doneUsage.completion_tokens,
+              }
+            : undefined,
         };
         await options.onFinish(result);
       } catch (error) {
@@ -475,6 +499,13 @@ export class Runtime {
       let messages: DoneEventMessage[] | undefined;
       let requiresAction = false;
       let error: { message: string; code?: string } | undefined;
+      let doneUsage:
+        | {
+            prompt_tokens: number;
+            completion_tokens: number;
+            total_tokens?: number;
+          }
+        | undefined;
 
       for await (const event of generator) {
         events.push(event);
@@ -508,6 +539,9 @@ export class Runtime {
           case "done":
             messages = event.messages;
             requiresAction = event.requiresAction || false;
+            if (event.usage) {
+              doneUsage = event.usage;
+            }
             break;
           case "error":
             error = { message: event.message, code: event.code };
@@ -521,6 +555,15 @@ export class Runtime {
           const result: HandleRequestResult = {
             messages,
             threadId: body.threadId,
+            usage: doneUsage
+              ? {
+                  promptTokens: doneUsage.prompt_tokens,
+                  completionTokens: doneUsage.completion_tokens,
+                  totalTokens:
+                    doneUsage.total_tokens ??
+                    doneUsage.prompt_tokens + doneUsage.completion_tokens,
+                }
+              : undefined,
           };
           await options.onFinish(result);
         } catch (callbackError) {
@@ -745,6 +788,14 @@ export class Runtime {
     const toolCalls: ToolCallInfo[] = [];
     let currentToolCall: { id: string; name: string; args: string } | null =
       null;
+    // Capture usage from adapter for onFinish callback (server-side only)
+    let adapterUsage:
+      | {
+          prompt_tokens: number;
+          completion_tokens: number;
+          total_tokens?: number;
+        }
+      | undefined;
 
     // Create completion request
     // Use rawMessages if provided (when client sends tool results in messages)
@@ -818,7 +869,11 @@ export class Runtime {
           return; // Exit on error
 
         case "done":
-          // Don't yield done yet - we need to check for tool calls first
+          // Capture usage from adapter's done event (for onFinish callback)
+          // We don't yield done yet - we need to check for tool calls first
+          if (event.usage) {
+            adapterUsage = event.usage;
+          }
           break;
 
         default:
@@ -1017,10 +1072,12 @@ export class Runtime {
 
         // Signal that client needs to execute tools and send results
         // Include accumulated messages so client can update state
+        // Include usage for onFinish callback (will be stripped before sending to client)
         yield {
           type: "done",
           requiresAction: true,
           messages: newMessages,
+          usage: adapterUsage,
         } as StreamEvent;
         return;
       }
@@ -1041,9 +1098,11 @@ export class Runtime {
     }
 
     // Return all accumulated messages for client to append
+    // Include usage for onFinish callback (will be stripped before sending to client)
     yield {
       type: "done",
       messages: newMessages.length > 0 ? newMessages : undefined,
+      usage: adapterUsage,
     } as StreamEvent;
   }
 
@@ -1065,6 +1124,12 @@ export class Runtime {
     const newMessages: DoneEventMessage[] = _accumulatedMessages || [];
     const debug = this.config.debug || this.config.agentLoop?.debug;
     const maxIterations = this.config.agentLoop?.maxIterations || 20;
+    // Track accumulated usage across iterations (for onFinish callback)
+    let accumulatedUsage: {
+      prompt_tokens: number;
+      completion_tokens: number;
+      total_tokens: number;
+    } = { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
 
     // Collect all tools (server + client from request)
     const allTools: ToolDefinition[] = [...this.tools.values()];
@@ -1142,6 +1207,13 @@ export class Runtime {
       try {
         // Call the non-streaming complete method
         const result = await this.adapter.complete(completionRequest);
+
+        // Capture usage from adapter response (convert camelCase to snake_case)
+        if (result.usage) {
+          accumulatedUsage.prompt_tokens += result.usage.promptTokens;
+          accumulatedUsage.completion_tokens += result.usage.completionTokens;
+          accumulatedUsage.total_tokens += result.usage.totalTokens;
+        }
 
         if (debug) {
           console.log(
@@ -1345,6 +1417,10 @@ export class Runtime {
               type: "done",
               requiresAction: true,
               messages: newMessages,
+              usage:
+                accumulatedUsage.total_tokens > 0
+                  ? accumulatedUsage
+                  : undefined,
             } as StreamEvent;
             return;
           }
@@ -1365,6 +1441,8 @@ export class Runtime {
         yield {
           type: "done",
           messages: newMessages.length > 0 ? newMessages : undefined,
+          usage:
+            accumulatedUsage.total_tokens > 0 ? accumulatedUsage : undefined,
         } as StreamEvent;
         return;
       } catch (error) {
@@ -1385,6 +1463,7 @@ export class Runtime {
     yield {
       type: "done",
       messages: newMessages.length > 0 ? newMessages : undefined,
+      usage: accumulatedUsage.total_tokens > 0 ? accumulatedUsage : undefined,
     } as StreamEvent;
   }
 
@@ -1502,14 +1581,35 @@ export class Runtime {
    *   .on('text', (text) => console.log(text))
    *   .on('done', (result) => console.log('Done:', result.text));
    * await result.pipeToResponse(res);
+   *
+   * // With onFinish for usage tracking
+   * await runtime.stream(body, {
+   *   onFinish: ({ messages, usage }) => {
+   *     console.log('Tokens used:', usage?.totalTokens);
+   *   }
+   * }).pipeToResponse(res);
    * ```
    */
   stream(
     request: ChatRequest,
-    options?: { signal?: AbortSignal },
+    options?: {
+      signal?: AbortSignal;
+      /**
+       * Called after stream completes (for persistence, billing, etc.)
+       * Usage data is only available server-side and is not exposed to clients.
+       */
+      onFinish?: (result: {
+        messages: DoneEventMessage[];
+        usage?: {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        };
+      }) => Promise<void> | void;
+    },
   ): StreamResult {
     const generator = this.processChatWithLoop(request, options?.signal);
-    return new StreamResult(generator);
+    return new StreamResult(generator, { onFinish: options?.onFinish });
   }
 
   /**
@@ -1523,11 +1623,26 @@ export class Runtime {
    * const { text, messages, toolCalls } = await runtime.chat(body);
    * console.log('Response:', text);
    * res.json({ response: text });
+   *
+   * // With onFinish for usage tracking
+   * const result = await runtime.chat(body, {
+   *   onFinish: ({ usage }) => console.log('Tokens:', usage?.totalTokens)
+   * });
    * ```
    */
   async chat(
     request: ChatRequest,
-    options?: { signal?: AbortSignal },
+    options?: {
+      signal?: AbortSignal;
+      onFinish?: (result: {
+        messages: DoneEventMessage[];
+        usage?: {
+          promptTokens: number;
+          completionTokens: number;
+          totalTokens: number;
+        };
+      }) => Promise<void> | void;
+    },
   ): Promise<CollectedResult> {
     return this.stream(request, options).collect();
   }

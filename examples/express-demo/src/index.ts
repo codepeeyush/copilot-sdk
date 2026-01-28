@@ -20,35 +20,122 @@ const runtime = createRuntime({
 });
 
 // ============================================
-// Method 1: One-liner with pipeToResponse()
+// COPILOT SDK COMPATIBLE ENDPOINTS
+// Use these with CopilotProvider
 // ============================================
-app.post("/api/chat", async (req, res) => {
-  console.log("[/api/chat] Using pipeToResponse()");
-  await runtime.stream(req.body).pipeToResponse(res);
+
+/**
+ * Streaming (SSE) - Primary endpoint for Copilot SDK
+ * Returns: text/event-stream with SSE events
+ */
+app.post("/api/copilot/stream", async (req, res) => {
+  console.log("[/api/copilot/stream] SSE streaming");
+  //log headers
+  console.log("Headers:", req.headers);
+
+  await runtime
+    .stream(req.body, {
+      onFinish: ({ messages, usage }) => {
+        console.log("\n=== onFinish ===");
+        console.log("Messages:", messages.length);
+        console.log("Usage:", usage);
+      },
+    })
+    .pipeToResponse(res);
 });
 
+/**
+ * Non-streaming - For Copilot SDK with streaming={false}
+ * Returns: { text, messages, toolCalls }
+ */
+app.post("/api/copilot/chat", async (req, res) => {
+  console.log("[/api/copilot/chat] Non-streaming JSON");
+  const result = await runtime.chat(req.body);
+  console.log("[/api/copilot/chat] Result:", result);
+  res.json(result);
+});
+
+/**
+ * Express handler - One-liner alternative
+ * Returns: text/event-stream with SSE events
+ */
+app.post("/api/copilot/handler", runtime.expressHandler());
+
 // ============================================
-// Method 2: Text-only streaming (no SSE events)
+// RAW STREAMING ENDPOINTS
+// For custom clients (NOT Copilot SDK)
 // ============================================
-app.post("/api/chat/text", async (req, res) => {
-  console.log("[/api/chat/text] Using pipeTextToResponse()");
+
+/**
+ * Raw text stream - Plain text chunks
+ * Returns: text/plain stream
+ */
+app.post("/api/raw/stream/text", async (req, res) => {
+  console.log("[/api/raw/stream/text] Plain text streaming");
   await runtime.stream(req.body).pipeTextToResponse(res);
 });
 
-// ============================================
-// Method 3: Using expressHandler()
-// ============================================
-app.post("/api/chat/handler", runtime.expressHandler());
+/**
+ * Raw stream with events - Stream with logging
+ * Returns: text/event-stream (but logs events server-side)
+ */
+app.post("/api/raw/stream/events", async (req, res) => {
+  console.log("[/api/raw/stream/events] Streaming with event handlers");
+
+  const result = runtime
+    .stream(req.body)
+    .on("text", (text: string) => {
+      process.stdout.write(text);
+    })
+    .on("toolCall", (call: { name: string; args: unknown }) => {
+      console.log("\n[Tool Call]", call.name, call.args);
+    })
+    .on("done", (final: { text: string }) => {
+      console.log("\n[Done] Total length:", final.text.length);
+    })
+    .on("error", (err: Error) => {
+      console.error("\n[Error]", err.message);
+    });
+
+  await result.pipeToResponse(res);
+});
 
 // ============================================
-// Method 4: Collect result (non-streaming)
+// RAW NON-STREAMING ENDPOINTS
+// For custom clients (NOT Copilot SDK)
 // ============================================
-app.post("/api/chat/collect", async (req, res) => {
-  console.log("[/api/chat/collect] Using collect()");
+
+/**
+ * Generate text only
+ * Returns: { text: string }
+ */
+app.post("/api/raw/generate/text", async (req, res) => {
+  console.log("[/api/raw/generate/text] Text only response");
+  const text = await runtime.stream(req.body).text();
+  res.json({ text });
+});
+
+/**
+ * Generate full response
+ * Returns: { text, messages, toolCalls }
+ */
+app.post("/api/raw/generate/full", async (req, res) => {
+  console.log("[/api/raw/generate/full] Full response data");
   const { text, messages, toolCalls } = await runtime
     .stream(req.body)
     .collect();
+  res.json({ text, messages, toolCalls });
+});
 
+/**
+ * Generate with metadata
+ * Returns: { text, messageCount, toolCallCount }
+ */
+app.post("/api/raw/generate/summary", async (req, res) => {
+  console.log("[/api/raw/generate/summary] Summary response");
+  const { text, messages, toolCalls } = await runtime
+    .stream(req.body)
+    .collect();
   res.json({
     text,
     messageCount: messages.length,
@@ -57,87 +144,72 @@ app.post("/api/chat/collect", async (req, res) => {
 });
 
 // ============================================
-// Method 5: Event handlers
+// HEALTH CHECK
 // ============================================
-app.post("/api/chat/events", async (req, res) => {
-  console.log("[/api/chat/events] Using event handlers");
 
-  const result = runtime
-    .stream(req.body)
-    .on("text", (text) => {
-      process.stdout.write(text); // Log text as it streams
-    })
-    .on("toolCall", (call) => {
-      console.log("\n[Tool Call]", call.name, call.args);
-    })
-    .on("done", (final) => {
-      console.log("\n[Done] Total length:", final.text.length);
-    })
-    .on("error", (err) => {
-      console.error("\n[Error]", err.message);
-    });
-
-  await result.pipeToResponse(res);
-});
-
-// ============================================
-// Method 6: Web Response (for testing toResponse())
-// ============================================
-app.post("/api/chat/web", async (req, res) => {
-  console.log("[/api/chat/web] Using toResponse()");
-
-  // Get Web Response
-  const webResponse = runtime.stream(req.body).toResponse();
-
-  // Copy headers
-  webResponse.headers.forEach((value, key) => {
-    res.setHeader(key, value);
-  });
-
-  // Stream body
-  if (webResponse.body) {
-    const reader = webResponse.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      res.write(value);
-    }
-  }
-  res.end();
-});
-
-// Health check
-app.get("/api/health", (req, res) => {
+app.get("/api/health", (_req, res) => {
   res.json({
     status: "ok",
-    endpoints: [
-      "POST /api/chat - SSE streaming with pipeToResponse()",
-      "POST /api/chat/text - Text-only streaming",
-      "POST /api/chat/handler - Using expressHandler()",
-      "POST /api/chat/collect - Non-streaming, returns JSON",
-      "POST /api/chat/events - With event handlers",
-      "POST /api/chat/web - Using toResponse()",
+    copilotEndpoints: [
+      "POST /api/copilot/stream - SSE streaming (CopilotProvider default)",
+      "POST /api/copilot/chat - Non-streaming JSON (streaming={false})",
+      "POST /api/copilot/handler - Express handler one-liner",
+    ],
+    rawStreamEndpoints: [
+      "POST /api/raw/stream/text - Plain text stream",
+      "POST /api/raw/stream/events - Stream with server-side event logging",
+    ],
+    rawGenerateEndpoints: [
+      "POST /api/raw/generate/text - Returns { text }",
+      "POST /api/raw/generate/full - Returns { text, messages, toolCalls }",
+      "POST /api/raw/generate/summary - Returns { text, messageCount, toolCallCount }",
     ],
   });
 });
+
+// ============================================
+// SERVER START
+// ============================================
 
 const port = process.env.PORT || 3001;
 app.listen(port, () => {
   console.log(`
 Express Demo Server running on http://localhost:${port}
 
-Available endpoints:
-  GET  /api/health        - Health check
-  POST /api/chat          - SSE streaming (pipeToResponse)
-  POST /api/chat/text     - Text-only streaming
-  POST /api/chat/handler  - Using expressHandler()
-  POST /api/chat/collect  - Non-streaming JSON
-  POST /api/chat/events   - With event handlers
-  POST /api/chat/web      - Using toResponse()
+=== COPILOT SDK ENDPOINTS ===
+  POST /api/copilot/stream   - SSE streaming (default)
+  POST /api/copilot/chat     - Non-streaming JSON
+  POST /api/copilot/handler  - Express handler
 
-Test with:
-  curl -X POST http://localhost:${port}/api/chat \\
-    -H "Content-Type: application/json" \\
-    -d '{"messages":[{"role":"user","content":"Say hello in 3 words"}]}'
+=== RAW STREAMING ===
+  POST /api/raw/stream/text   - Plain text stream
+  POST /api/raw/stream/events - Stream with event logging
+
+=== RAW NON-STREAMING ===
+  POST /api/raw/generate/text    - Returns { text }
+  POST /api/raw/generate/full    - Returns { text, messages, toolCalls }
+  POST /api/raw/generate/summary - Returns { text, messageCount, toolCallCount }
+
+=== TEST CURLS ===
+
+# Copilot SDK - Streaming
+curl -X POST http://localhost:${port}/api/copilot/stream \\
+  -H "Content-Type: application/json" \\
+  -d '{"messages":[{"role":"user","content":"Say hello"}]}'
+
+# Copilot SDK - Non-streaming
+curl -X POST http://localhost:${port}/api/copilot/chat \\
+  -H "Content-Type: application/json" \\
+  -d '{"messages":[{"role":"user","content":"Say hello"}]}'
+
+# Raw - Text only
+curl -X POST http://localhost:${port}/api/raw/stream/text \\
+  -H "Content-Type: application/json" \\
+  -d '{"messages":[{"role":"user","content":"Say hello"}]}'
+
+# Raw - Generate text
+curl -X POST http://localhost:${port}/api/raw/generate/text \\
+  -H "Content-Type: application/json" \\
+  -d '{"messages":[{"role":"user","content":"Say hello"}]}'
   `);
 });

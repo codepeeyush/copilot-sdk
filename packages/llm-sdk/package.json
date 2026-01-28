@@ -1,6 +1,6 @@
 {
   "name": "@yourgpt/llm-sdk",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "LLM SDK for YourGPT - Multi-provider LLM integration",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

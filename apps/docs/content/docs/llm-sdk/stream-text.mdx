@@ -8,6 +8,10 @@ import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
 Stream text responses in real-time. Returns helpers to consume the stream or convert it to HTTP responses.
 
+<Callout type="info">
+**Using with Copilot SDK?** Use `toDataStreamResponse()` instead of `toTextStreamResponse()`. See [Response Types](#response-types) below.
+</Callout>
+
 ```ts
 import { streamText } from '@yourgpt/llm-sdk';
 import { openai } from '@yourgpt/llm-sdk/openai';
@@ -25,8 +29,8 @@ for await (const chunk of result.textStream) {
 // Option 2: Get complete text (waits for stream to finish)
 const text = await result.text;
 
-// Option 3: Return as HTTP Response
-return result.toTextStreamResponse();
+// Option 3: Return as HTTP Response (for Copilot SDK)
+return result.toDataStreamResponse();
 ```
 
 ---
@@ -93,7 +97,8 @@ result.toDataStreamResponse()   // SSE with structured events
         messages,
       });
 
-      return result.toTextStreamResponse();
+      // Use toDataStreamResponse() for Copilot SDK compatibility
+      return result.toDataStreamResponse();
     }
     ```
   </Tab>
@@ -113,7 +118,8 @@ result.toDataStreamResponse()   // SSE with structured events
         messages,
       });
 
-      const response = result.toTextStreamResponse();
+      // Use toDataStreamResponse() for Copilot SDK compatibility
+      const response = result.toDataStreamResponse();
       res.writeHead(200, Object.fromEntries(response.headers));
 
       const reader = response.body!.getReader();
@@ -136,27 +142,17 @@ result.toDataStreamResponse()   // SSE with structured events
   </Tab>
 </Tabs>
 
+<Callout type="info">
+**For Copilot SDK:** Consider using the [Runtime API](/docs/server) instead of `streamText()` directly. The Runtime provides a higher-level API with built-in support for tools, persistence, and more.
+</Callout>
+
 ---
 
 ## Response Types
 
-### Text Stream Response
+### Data Stream Response (Recommended for Copilot SDK)
 
-Simple text streaming. Best for basic chat without tools.
-
-```ts
-return result.toTextStreamResponse();
-```
-
-```
-Content-Type: text/plain; charset=utf-8
-
-Hello! How can I help you?
-```
-
-### Data Stream Response
-
-SSE format with structured events. Use when you need tool calls, usage info, or step-by-step data.
+SSE format with structured events. **Required for Copilot SDK compatibility.**
 
 ```ts
 return result.toDataStreamResponse();
@@ -172,6 +168,24 @@ data: {"type":"tool-result","toolCallId":"...","result":{...}}
 data: {"type":"finish","finishReason":"stop","usage":{...}}
 data: [DONE]
 ```
+
+### Text Stream Response
+
+Simple text streaming. **Not compatible with Copilot SDK** (use for direct streaming to other clients).
+
+```ts
+return result.toTextStreamResponse();
+```
+
+```
+Content-Type: text/plain; charset=utf-8
+
+Hello! How can I help you?
+```
+
+<Callout type="warn">
+**Copilot SDK Compatibility:** The Copilot SDK expects SSE format. Use `toDataStreamResponse()` for Copilot SDK, or `toTextStreamResponse()` only for direct streaming to non-Copilot clients.
+</Callout>
 
 ---
 
@@ -254,7 +268,7 @@ for await (const part of result.fullStream) {
 ## Custom Response Headers
 
 ```ts
-return result.toTextStreamResponse({
+return result.toDataStreamResponse({
   status: 200,
   headers: {
     'X-Custom-Header': 'value',
@@ -276,7 +290,7 @@ export async function POST(req: Request) {
     signal: req.signal, // Pass abort signal
   });
 
-  return result.toTextStreamResponse();
+  return result.toDataStreamResponse();
 }
 ```
 

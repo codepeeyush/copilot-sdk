@@ -433,9 +433,31 @@ export class GoogleAdapter implements LLMAdapter {
         }
       }
 
+      // Get usage from the final response
+      let usage:
+        | {
+            prompt_tokens: number;
+            completion_tokens: number;
+            total_tokens: number;
+          }
+        | undefined;
+
+      try {
+        const response = await result.response;
+        if (response.usageMetadata) {
+          usage = {
+            prompt_tokens: response.usageMetadata.promptTokenCount || 0,
+            completion_tokens: response.usageMetadata.candidatesTokenCount || 0,
+            total_tokens: response.usageMetadata.totalTokenCount || 0,
+          };
+        }
+      } catch {
+        // Ignore usage retrieval errors
+      }
+
       // Emit message end
       yield { type: "message:end" };
-      yield { type: "done" };
+      yield { type: "done", usage };
     } catch (error) {
       yield {
         type: "error",

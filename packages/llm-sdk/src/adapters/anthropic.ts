@@ -416,6 +416,15 @@ export class AnthropicAdapter implements LLMAdapter {
 
       let isInThinkingBlock = false;
 
+      // Track usage - Anthropic sends input_tokens in message_start and output_tokens in message_delta
+      let usage:
+        | {
+            prompt_tokens: number;
+            completion_tokens: number;
+            total_tokens: number;
+          }
+        | undefined;
+
       for await (const event of stream) {
         // Check for abort
         if (request.signal?.aborted) {
@@ -423,6 +432,26 @@ export class AnthropicAdapter implements LLMAdapter {
         }
 
         switch (event.type) {
+          case "message_start":
+            // Capture input tokens from message_start
+            if (event.message?.usage) {
+              usage = {
+                prompt_tokens: event.message.usage.input_tokens,
+                completion_tokens: 0,
+                total_tokens: event.message.usage.input_tokens,
+              };
+            }
+            break;
+
+          case "message_delta":
+            // Capture output tokens from message_delta
+            if (event.usage && usage) {
+              usage.completion_tokens = event.usage.output_tokens;
+              usage.total_tokens =
+                usage.prompt_tokens + event.usage.output_tokens;
+            }
+            break;
+
           case "content_block_start":
             if (event.content_block.type === "tool_use") {
               currentToolUse = {
@@ -478,7 +507,7 @@ export class AnthropicAdapter implements LLMAdapter {
 
       // Emit message end
       yield { type: "message:end" };
-      yield { type: "done" };
+      yield { type: "done", usage };
     } catch (error) {
       yield {
         type: "error",

@@ -6,293 +6,126 @@ icon: Server
 
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-Set up your backend API to handle chat requests from the Copilot SDK.
-
----
-
-## Overview
-
-The Copilot SDK frontend connects to your backend API endpoint. Your server:
-
-1. Receives chat messages from the frontend
-2. Calls the LLM with your configuration
-3. Streams the response back to the client
-
-<ServerFlowDiagram />
+Your server receives messages from the Copilot SDK frontend, calls the LLM, and returns the response.
 
 ---
 
-## REST API Contract
+## Quick Start
 
-### Request
+### 1. Install Dependencies
 
-**Endpoint:** `POST /api/chat`
-
-```json
-{
-  "messages": [
-    { "role": "user", "content": "Hello!" }
-  ]
-}
-```
-
-### Response
-
-The SDK supports three response formats:
-
-<Tabs items={['Text Stream', 'Data Stream', 'JSON (Non-Streaming)']}>
-  <Tab value="Text Stream">
-    Simple text streaming for basic chat (no tools).
-
-    **Content-Type:** `text/plain; charset=utf-8`
-
-    ```
-    Hello! How can I help you today?
+<Tabs items={['OpenAI', 'Anthropic', 'Google', 'xAI']}>
+  <Tab value="OpenAI">
+    ```bash
+    npm install @yourgpt/llm-sdk openai
     ```
 
-    Use `result.toTextStreamResponse()` to return this format.
+    <Callout>
+    See [OpenAI Provider](/docs/providers/openai) for all available models.
+    </Callout>
   </Tab>
-  <Tab value="Data Stream">
-    SSE format with structured events. Use when you need tools, usage info, or step-by-step data.
-
-    **Content-Type:** `text/event-stream`
-
-    ```
-    data: {"type":"text-delta","text":"Hello"}
-    data: {"type":"text-delta","text":"!"}
-    data: {"type":"finish","finishReason":"stop","usage":{"promptTokens":10,"completionTokens":5}}
-    data: [DONE]
+  <Tab value="Anthropic">
+    ```bash
+    npm install @yourgpt/llm-sdk @anthropic-ai/sdk
     ```
 
-    Use `result.toDataStreamResponse()` to return this format.
+    <Callout type="warn">
+    Anthropic requires its own SDK (`@anthropic-ai/sdk`).
+    See [Anthropic Provider](/docs/providers/anthropic) for models and extended thinking.
+    </Callout>
   </Tab>
-  <Tab value="JSON (Non-Streaming)">
-    Complete response in a single JSON object. Use for batch processing, logging, or simpler integrations.
-
-    **Content-Type:** `application/json`
-
-    ```json
-    {
-      "text": "Hello! How can I help you today?",
-      "usage": {
-        "promptTokens": 10,
-        "completionTokens": 8,
-        "totalTokens": 18
-      }
-    }
+  <Tab value="Google">
+    ```bash
+    npm install @yourgpt/llm-sdk openai
     ```
 
-    Use `generateText()` or `runtime.chat()` to return this format.
+    <Callout>
+    Google uses OpenAI-compatible API.
+    See [Google Provider](/docs/providers/google) for Gemini models.
+    </Callout>
+  </Tab>
+  <Tab value="xAI">
+    ```bash
+    npm install @yourgpt/llm-sdk openai
+    ```
+
+    <Callout>
+    xAI uses OpenAI-compatible API.
+    See [xAI Provider](/docs/providers/xai) for Grok models.
+    </Callout>
   </Tab>
 </Tabs>
 
----
+### 2. Set Environment Variables
 
-## Framework Examples (Streaming)
+```bash title=".env.local"
+OPENAI_API_KEY=sk-...
+# or ANTHROPIC_API_KEY=sk-ant-...
+# or GOOGLE_API_KEY=...
+# or XAI_API_KEY=...
+```
 
-<Tabs items={['Next.js', 'Express', 'Node.js']}>
-  <Tab value="Next.js">
-    ```ts title="app/api/chat/route.ts"
-    import { streamText } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
+### 3. Create Runtime
 
-    export async function POST(req: Request) {
-      const { messages } = await req.json();
-
-      const result = await streamText({
-        model: openai('gpt-4o'),
-        system: 'You are a helpful assistant.',
-        messages,
-      });
-
-      return result.toTextStreamResponse();
-    }
-    ```
-  </Tab>
-  <Tab value="Express">
-    ```ts title="server.ts"
-    import express from 'express';
-    import cors from 'cors';
+<Tabs items={['OpenAI', 'Anthropic', 'Google', 'xAI']}>
+  <Tab value="OpenAI">
+    ```ts
     import { createRuntime } from '@yourgpt/llm-sdk';
     import { createOpenAI } from '@yourgpt/llm-sdk/openai';
 
-    const app = express();
-    app.use(cors());
-    app.use(express.json());
-
-    // Create runtime once at startup
     const runtime = createRuntime({
       provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
       model: 'gpt-4o',
       systemPrompt: 'You are a helpful assistant.',
     });
-
-    // Chat endpoint - one-liner with StreamResult API!
-    app.post('/api/chat', async (req, res) => {
-      await runtime.stream(req.body).pipeToResponse(res);
-    });
-
-    app.listen(3001, () => console.log('Server on http://localhost:3001'));
     ```
   </Tab>
-  <Tab value="Node.js">
-    ```ts title="server.ts"
-    import { createServer } from 'http';
-    import { streamText } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
+  <Tab value="Anthropic">
+    ```ts
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createAnthropic } from '@yourgpt/llm-sdk/anthropic';
 
-    createServer(async (req, res) => {
-      if (req.method === 'POST' && req.url === '/api/chat') {
-        const body = await getBody(req);
-        const { messages } = JSON.parse(body);
+    const runtime = createRuntime({
+      provider: createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY }),
+      model: 'claude-sonnet-4-20250514',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+    ```
+  </Tab>
+  <Tab value="Google">
+    ```ts
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createGoogle } from '@yourgpt/llm-sdk/google';
 
-        const result = await streamText({
-          model: openai('gpt-4o'),
-          system: 'You are a helpful assistant.',
-          messages,
-        });
+    const runtime = createRuntime({
+      provider: createGoogle({ apiKey: process.env.GOOGLE_API_KEY }),
+      model: 'gemini-2.0-flash',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+    ```
+  </Tab>
+  <Tab value="xAI">
+    ```ts
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createXAI } from '@yourgpt/llm-sdk/xai';
 
-        const response = result.toTextStreamResponse();
-        res.writeHead(200, Object.fromEntries(response.headers));
-
-        const reader = response.body!.getReader();
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          res.write(value);
-        }
-        res.end();
-      }
-    }).listen(3001);
-
-    function getBody(req: any): Promise<string> {
-      return new Promise((resolve) => {
-        let data = '';
-        req.on('data', (chunk: any) => data += chunk);
-        req.on('end', () => resolve(data));
-      });
-    }
+    const runtime = createRuntime({
+      provider: createXAI({ apiKey: process.env.XAI_API_KEY }),
+      model: 'grok-3-fast-beta',
+      systemPrompt: 'You are a helpful assistant.',
+    });
     ```
   </Tab>
 </Tabs>
 
 ---
 
-## Framework Examples (Non-Streaming)
+## Usage
 
-For use cases where you need the complete response before returning (batch processing, logging, simpler integration), use the non-streaming approach.
-
-### Response Format
-
-**Content-Type:** `application/json`
-
-```json
-{
-  "text": "Hello! How can I help you today?",
-  "usage": {
-    "promptTokens": 10,
-    "completionTokens": 8,
-    "totalTokens": 18
-  }
-}
-```
-
-### Using generateText
-
-<Tabs items={['Next.js', 'Express', 'Node.js']}>
-  <Tab value="Next.js">
-    ```ts title="app/api/chat/route.ts"
-    import { generateText } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
-
-    export async function POST(req: Request) {
-      const { messages } = await req.json();
-
-      const result = await generateText({
-        model: openai('gpt-4o'),
-        system: 'You are a helpful assistant.',
-        messages,
-      });
-
-      return Response.json({
-        text: result.text,
-        usage: result.usage,
-      });
-    }
-    ```
-  </Tab>
-  <Tab value="Express">
-    ```ts title="server.ts"
-    import express from 'express';
-    import cors from 'cors';
-    import { generateText } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
-
-    const app = express();
-    app.use(cors());
-    app.use(express.json());
-
-    app.post('/api/chat', async (req, res) => {
-      const { messages } = req.body;
-
-      const result = await generateText({
-        model: openai('gpt-4o'),
-        system: 'You are a helpful assistant.',
-        messages,
-      });
-
-      res.json({
-        text: result.text,
-        usage: result.usage,
-      });
-    });
-
-    app.listen(3001, () => console.log('Server on http://localhost:3001'));
-    ```
-  </Tab>
-  <Tab value="Node.js">
-    ```ts title="server.ts"
-    import { createServer } from 'http';
-    import { generateText } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
-
-    createServer(async (req, res) => {
-      if (req.method === 'POST' && req.url === '/api/chat') {
-        const body = await getBody(req);
-        const { messages } = JSON.parse(body);
-
-        const result = await generateText({
-          model: openai('gpt-4o'),
-          system: 'You are a helpful assistant.',
-          messages,
-        });
-
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          text: result.text,
-          usage: result.usage,
-        }));
-      }
-    }).listen(3001);
-
-    function getBody(req: any): Promise<string> {
-      return new Promise((resolve) => {
-        let data = '';
-        req.on('data', (chunk: any) => data += chunk);
-        req.on('end', () => resolve(data));
-      });
-    }
-    ```
-  </Tab>
-</Tabs>
-
-### Using Runtime chat()
-
-The runtime also provides a `chat()` method for non-streaming:
-
-<Tabs items={['Next.js', 'Express', 'Node.js']}>
-  <Tab value="Next.js">
+<Tabs items={['Next.js / Hono', 'Express', 'Node.js']}>
+  <Tab value="Next.js / Hono">
     ```ts title="app/api/chat/route.ts"
     import { createRuntime } from '@yourgpt/llm-sdk';
     import { createOpenAI } from '@yourgpt/llm-sdk/openai';
@@ -306,25 +139,22 @@ The runtime also provides a `chat()` method for non-streaming:
     export async function POST(req: Request) {
       const body = await req.json();
 
-      const { text, messages, toolCalls } = await runtime.chat(body);
+      // Streaming - real-time response
+      return runtime.stream(body).toResponse();
 
-      return Response.json({
-        text,
-        messages,
-        toolCalls,
-      });
+      // Non-streaming - wait for complete response
+      // const result = await runtime.chat(body);
+      // return Response.json(result);
     }
     ```
   </Tab>
   <Tab value="Express">
     ```ts title="server.ts"
     import express from 'express';
-    import cors from 'cors';
     import { createRuntime } from '@yourgpt/llm-sdk';
     import { createOpenAI } from '@yourgpt/llm-sdk/openai';
 
     const app = express();
-    app.use(cors());
     app.use(express.json());
 
     const runtime = createRuntime({
@@ -333,18 +163,23 @@ The runtime also provides a `chat()` method for non-streaming:
       systemPrompt: 'You are a helpful assistant.',
     });
 
-    app.post('/api/chat', async (req, res) => {
-      const { text, messages, toolCalls } = await runtime.chat(req.body);
-
-      res.json({
-        text,
-        messages,
-        toolCalls,
-      });
+    // Copilot SDK - Streaming (SSE)
+    app.post('/api/copilot/stream', async (req, res) => {
+      await runtime.stream(req.body).pipeToResponse(res);
     });
 
-    app.listen(3001, () => console.log('Server on http://localhost:3001'));
+    // Copilot SDK - Non-streaming (JSON)
+    app.post('/api/copilot/chat', async (req, res) => {
+      const result = await runtime.chat(req.body);
+      res.json(result);
+    });
+
+    app.listen(3001);
     ```
+
+    <Callout>
+    See the full [Express Demo](https://github.com/yourgpt/copilot-sdk/tree/main/examples/express-demo) for all endpoint variations including raw streaming and text-only responses.
+    </Callout>
   </Tab>
   <Tab value="Node.js">
     ```ts title="server.ts"
@@ -359,14 +194,17 @@ The runtime also provides a `chat()` method for non-streaming:
     });
 
     createServer(async (req, res) => {
-      if (req.method === 'POST' && req.url === '/api/chat') {
-        const body = await getBody(req);
-        const chatRequest = JSON.parse(body);
+      if (req.method !== 'POST') return;
+      const body = JSON.parse(await getBody(req));
 
-        const { text, messages, toolCalls } = await runtime.chat(chatRequest);
-
+      if (req.url === '/api/copilot/stream') {
+        // Copilot SDK - Streaming (SSE)
+        await runtime.stream(body).pipeToResponse(res);
+      } else if (req.url === '/api/copilot/chat') {
+        // Copilot SDK - Non-streaming (JSON)
+        const result = await runtime.chat(body);
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({ text, messages, toolCalls }));
+        res.end(JSON.stringify(result));
       }
     }).listen(3001);
 
@@ -381,331 +219,67 @@ The runtime also provides a `chat()` method for non-streaming:
   </Tab>
 </Tabs>
 
-### Using stream().collect()
+| Method | Use Case | Returns |
+|--------|----------|---------|
+| `runtime.stream(body)` | Real-time chat, interactive UI | `StreamResult` with `.toResponse()`, `.pipeToResponse()` |
+| `runtime.chat(body)` | Background tasks, batch processing | `{ text, messages, toolCalls }` |
 
-You can also collect a stream into a single response:
+
+---
+
+## All Response Methods
+
+The `runtime.stream()` method returns a `StreamResult` with multiple ways to consume the response:
+
+### For Copilot SDK (SSE format)
+
+| Method | Returns | Framework |
+|--------|---------|-----------|
+| `toResponse()` | Web `Response` (SSE) | Next.js, Hono, Deno |
+| `pipeToResponse(res)` | Pipes SSE stream | Express, Node.js |
 
 ```ts
-app.post('/api/chat', async (req, res) => {
-  const { text, messages, toolCalls } = await runtime.stream(req.body).collect();
+// Next.js / Hono
+return runtime.stream(body).toResponse();
 
-  res.json({ text, messages, toolCalls });
-});
+// Express
+await runtime.stream(body).pipeToResponse(res);
 ```
 
-<Callout type="info">
-**When to use non-streaming:**
-- Background processing or batch operations
-- When you need the full response before taking action
-- Simpler integration without SSE handling
-- Logging or analytics that need complete responses
+### For Non-Streaming
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `collect()` | `CollectedResult` | Wait for full response |
+| `text()` | `string` | Just get the final text |
+
+```ts
+// Get full result
+const { text, messages, toolCalls } = await runtime.stream(body).collect();
+
+// Or just the text
+const text = await runtime.stream(body).text();
+
+// Or use the convenience method
+const result = await runtime.chat(body); // Same as stream().collect()
+```
+
+### For Direct Text Streaming (Not Copilot SDK)
+
+<Callout type="warn">
+These methods return plain text (`text/plain`) which the Copilot SDK **cannot parse**. Only use for direct streaming to non-Copilot clients.
 </Callout>
 
----
+| Method | Returns | Framework |
+|--------|---------|-----------|
+| `toTextResponse()` | Web `Response` (text/plain) | Next.js, Hono, Deno |
+| `pipeTextToResponse(res)` | Pipes text stream | Express, Node.js |
 
-## With Tools
+### For Custom Handling
 
-Add tools to let the AI call functions on your server:
-
-<Tabs items={['Streaming', 'Non-Streaming']}>
-  <Tab value="Streaming">
-    ```ts title="app/api/chat/route.ts"
-    import { streamText, tool } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
-    import { z } from 'zod';
-
-    export async function POST(req: Request) {
-      const { messages } = await req.json();
-
-      const result = await streamText({
-        model: openai('gpt-4o'),
-        system: 'You are a helpful assistant.',
-        messages,
-        tools: {
-          getWeather: tool({
-            description: 'Get current weather for a city',
-            parameters: z.object({
-              city: z.string().describe('City name'),
-            }),
-            execute: async ({ city }) => {
-              const data = await fetchWeatherAPI(city);
-              return { temperature: data.temp, condition: data.condition };
-            },
-          }),
-          searchProducts: tool({
-            description: 'Search the product database',
-            parameters: z.object({
-              query: z.string(),
-              limit: z.number().optional().default(10),
-            }),
-            execute: async ({ query, limit }) => {
-              return await db.products.search(query, limit);
-            },
-          }),
-        },
-        maxSteps: 5,
-      });
-
-      return result.toDataStreamResponse();
-    }
-    ```
-
-    <Callout type="info">
-    Use `toDataStreamResponse()` when using tools to stream structured events including tool calls and results.
-    </Callout>
-  </Tab>
-  <Tab value="Non-Streaming">
-    ```ts title="app/api/chat/route.ts"
-    import { generateText, tool } from '@yourgpt/llm-sdk';
-    import { openai } from '@yourgpt/llm-sdk/openai';
-    import { z } from 'zod';
-
-    export async function POST(req: Request) {
-      const { messages } = await req.json();
-
-      const result = await generateText({
-        model: openai('gpt-4o'),
-        system: 'You are a helpful assistant.',
-        messages,
-        tools: {
-          getWeather: tool({
-            description: 'Get current weather for a city',
-            parameters: z.object({
-              city: z.string().describe('City name'),
-            }),
-            execute: async ({ city }) => {
-              const data = await fetchWeatherAPI(city);
-              return { temperature: data.temp, condition: data.condition };
-            },
-          }),
-          searchProducts: tool({
-            description: 'Search the product database',
-            parameters: z.object({
-              query: z.string(),
-              limit: z.number().optional().default(10),
-            }),
-            execute: async ({ query, limit }) => {
-              return await db.products.search(query, limit);
-            },
-          }),
-        },
-        maxSteps: 5,
-      });
-
-      return Response.json({
-        text: result.text,
-        toolCalls: result.toolCalls,
-        toolResults: result.toolResults,
-        usage: result.usage,
-      });
-    }
-    ```
-
-    The response includes all tool calls and results:
-
-    ```json
-    {
-      "text": "The weather in Tokyo is 22°C and sunny.",
-      "toolCalls": [
-        { "id": "call_123", "name": "getWeather", "args": { "city": "Tokyo" } }
-      ],
-      "toolResults": [
-        { "toolCallId": "call_123", "result": { "temperature": 22, "condition": "sunny" } }
-      ],
-      "usage": { "promptTokens": 50, "completionTokens": 25, "totalTokens": 75 }
-    }
-    ```
-  </Tab>
-</Tabs>
-
----
-
-## Runtime API (Advanced)
-
-For more control over the server, use `createRuntime()` instead of `streamText()`:
-
-```ts title="app/api/chat/route.ts"
-import { createRuntime } from '@yourgpt/llm-sdk';
-import { createOpenAI } from '@yourgpt/llm-sdk/openai';
-
-const runtime = createRuntime({
-  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-  model: 'gpt-4o',
-  systemPrompt: 'You are a helpful assistant.',
-  agentLoop: {
-    maxIterations: 20,  // Max tool call cycles
-    debug: true,        // Enable debug logging
-  },
-  tools: [/* server-side tools */],
-});
-
-export async function POST(request: Request) {
-  return runtime.handleRequest(request);
-}
-```
-
-### Runtime Configuration
-
-| Option | Type | Description |
-|--------|------|-------------|
-| `provider` | `AIProvider` | Provider instance from `createOpenAI()`, `createAnthropic()`, etc. |
-| `model` | `string` | Model ID (e.g., `'gpt-4o'`, `'claude-sonnet-4-20250514'`) |
-| `systemPrompt` | `string` | Default system prompt |
-| `agentLoop.maxIterations` | `number` | Max tool execution cycles (default: 20) |
-| `agentLoop.debug` | `boolean` | Enable debug logging |
-| `tools` | `ToolDefinition[]` | Server-side tools |
-| `toolContext` | `Record<string, unknown>` | Context data passed to all tool handlers |
-| `debug` | `boolean` | Enable request/response logging |
-
-### Server-Side Persistence
-
-Use the `onFinish` callback to persist messages after each request:
-
-```ts title="app/api/chat/route.ts"
-export async function POST(request: Request) {
-  return runtime.handleRequest(request, {
-    onFinish: async ({ messages, threadId }) => {
-      // Save to your database
-      await db.thread.upsert({
-        where: { id: threadId },
-        update: { messages, updatedAt: new Date() },
-        create: { id: threadId, messages },
-      });
-    },
-  });
-}
-```
-
-### Tool Context
-
-Pass authentication or context data to all tool handlers:
-
-```ts
-const runtime = createRuntime({
-  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-  model: 'gpt-4o',
-  toolContext: {
-    userId: 'user_123',
-    tenantId: 'tenant_456',
-  },
-  tools: [
-    {
-      name: 'get_user_data',
-      description: 'Get data for the current user',
-      location: 'server',
-      inputSchema: { type: 'object', properties: {}, required: [] },
-      handler: async (args, context) => {
-        // Access context.data.userId, context.data.tenantId
-        // Also available: context.headers, context.request, context.threadId
-        const user = await db.user.findById(context.data.userId);
-        return { success: true, data: user };
-      },
-    },
-  ],
-});
-```
-
-### Provider Examples
-
-<Tabs items={['OpenAI', 'Anthropic', 'Google']}>
-  <Tab value="OpenAI">
-    ```ts
-    import { createRuntime } from '@yourgpt/llm-sdk';
-import { createOpenAI } from '@yourgpt/llm-sdk/openai';
-
-    const runtime = createRuntime({
-      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-      model: 'gpt-4o',
-    });
-    ```
-  </Tab>
-  <Tab value="Anthropic">
-    ```ts
-    import { createRuntime } from '@yourgpt/llm-sdk';
-    import { createAnthropic } from '@yourgpt/llm-sdk/anthropic';
-
-    const runtime = createRuntime({
-      provider: createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY }),
-      model: 'claude-sonnet-4-20250514',
-    });
-    ```
-
-    <Callout type="info">
-    Requires `@anthropic-ai/sdk` package: `npm install @anthropic-ai/sdk`
-    </Callout>
-  </Tab>
-  <Tab value="Google">
-    ```ts
-    import { createRuntime } from '@yourgpt/llm-sdk';
-    import { createGoogle } from '@yourgpt/llm-sdk/google';
-
-    const runtime = createRuntime({
-      provider: createGoogle({ apiKey: process.env.GOOGLE_API_KEY }),
-      model: 'gemini-2.0-flash',
-    });
-    ```
-
-    <Callout type="info">
-    Google uses OpenAI-compatible API. Requires `openai` package.
-    </Callout>
-  </Tab>
-</Tabs>
-
----
-
-## StreamResult API
-
-The `runtime.stream()` method returns a `StreamResult` object with multiple ways to consume the response:
-
-### Response Methods
-
-| Method | Framework | Description |
-|--------|-----------|-------------|
-| `toResponse()` | Next.js, Cloudflare, Deno | Returns Web `Response` with SSE |
-| `toTextResponse()` | Next.js, Cloudflare, Deno | Returns text-only `Response` |
-| `pipeToResponse(res)` | Express, Node.js | Pipes SSE to ServerResponse |
-| `pipeTextToResponse(res)` | Express, Node.js | Pipes text to ServerResponse |
-| `toReadableStream()` | Any | Returns raw ReadableStream |
-| `collect()` | Any | Collects full result (non-streaming) |
-
-### Express Example
-
-```ts title="server.ts"
-import express from 'express';
-import { createRuntime } from '@yourgpt/llm-sdk';
-import { createOpenAI } from '@yourgpt/llm-sdk/openai';
-
-const app = express();
-app.use(express.json());
-
-const runtime = createRuntime({
-  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
-  model: 'gpt-4o',
-});
-
-// One-liner streaming
-app.post('/api/chat', async (req, res) => {
-  await runtime.stream(req.body).pipeToResponse(res);
-});
-
-// Or use the built-in handler
-app.post('/api/chat-alt', runtime.expressHandler());
-```
-
-### Collecting Results
-
-For non-streaming use cases or logging:
-
-```ts
-app.post('/api/chat', async (req, res) => {
-  const { text, messages, toolCalls } = await runtime.stream(req.body).collect();
-
-  console.log('Response:', text);
-  console.log('Tool calls:', toolCalls);
-
-  res.json({ response: text });
-});
-```
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `toReadableStream()` | `ReadableStream<Uint8Array>` | Raw stream for custom processing |
 
 ### Event Handlers
 
@@ -715,7 +289,7 @@ Process events as they stream (similar to Anthropic SDK):
 const result = runtime.stream(body)
   .on('text', (text) => console.log('Text:', text))
   .on('toolCall', (call) => console.log('Tool:', call.name))
-  .on('done', (final) => console.log('Done:', final.text))
+  .on('done', (result) => console.log('Done:', result.text))
   .on('error', (err) => console.error('Error:', err));
 
 await result.pipeToResponse(res);
@@ -723,38 +297,173 @@ await result.pipeToResponse(res);
 
 ---
 
-## Environment Variables
+## Connect Frontend
 
-Store your API keys in environment variables:
+Point your Copilot SDK frontend to your API endpoint:
 
-```bash title=".env.local"
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-GOOGLE_AI_API_KEY=...
+```tsx title="app/providers.tsx"
+'use client';
+
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/copilot/stream">
+      {children}
+    </CopilotProvider>
+  );
+}
 ```
 
-Access them in your API route:
+For a separate backend server:
 
-```ts
-import { openai } from '@yourgpt/llm-sdk/openai';
+```tsx
+// Streaming (default)
+<CopilotProvider runtimeUrl="http://localhost:3001/api/copilot/stream">
 
-// API key is read from OPENAI_API_KEY automatically
-const model = openai('gpt-4o');
-
-// Or pass explicitly
-const model = openai('gpt-4o', {
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Non-streaming
+<CopilotProvider
+  runtimeUrl="http://localhost:3001/api/copilot/chat"
+  streaming={false}
+>
 ```
+
+| Mode | Endpoint | CopilotProvider |
+|------|----------|-----------------|
+| Streaming (SSE) | `/api/copilot/stream` | `streaming={true}` (default) |
+| Non-streaming (JSON) | `/api/copilot/chat` | `streaming={false}` |
 
 ---
 
-## CORS Configuration
+## Advanced
 
-For cross-origin requests (e.g., frontend on different port):
+<Accordions type="single">
+  <Accordion title="Add Tools - Let the AI call functions on your server" id="tools">
+    ```ts
+    import { createRuntime, tool } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+    import { z } from 'zod';
 
-<Tabs items={['Next.js', 'Node.js']}>
-  <Tab value="Next.js">
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+      tools: [
+        {
+          name: 'getWeather',
+          description: 'Get current weather for a city',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              city: { type: 'string', description: 'City name' },
+            },
+            required: ['city'],
+          },
+          handler: async ({ city }) => {
+            return { temperature: 72, condition: 'sunny' };
+          },
+        },
+      ],
+      agentLoop: {
+        maxIterations: 10,
+      },
+    });
+    ```
+  </Accordion>
+
+  <Accordion title="Add Persistence - Save conversations to your database" id="persistence">
+    ```ts
+    export async function POST(request: Request) {
+      return runtime.handleRequest(request, {
+        onFinish: async ({ messages, threadId }) => {
+          await db.thread.upsert({
+            where: { id: threadId },
+            update: { messages, updatedAt: new Date() },
+            create: { id: threadId, messages },
+          });
+        },
+      });
+    }
+    ```
+  </Accordion>
+
+  <Accordion title="Track Token Usage - For billing and consumption limits" id="usage">
+    Use the `onFinish` callback to track token usage for billing, credits, or consumption limits.
+    Usage data is only available server-side and is not exposed to the client.
+
+    **Option 1: With `handleRequest()` (Next.js)**
+    ```ts
+    export async function POST(request: Request) {
+      return runtime.handleRequest(request, {
+        onFinish: async ({ messages, usage }) => {
+          if (usage) {
+            await billing.recordUsage(userId, usage.totalTokens);
+          }
+        },
+      });
+    }
+    ```
+
+    **Option 2: With `stream()` (Express)**
+    ```ts
+    app.post('/api/chat', async (req, res) => {
+      await runtime.stream(req.body, {
+        onFinish: async ({ messages, usage }) => {
+          if (usage) {
+            console.log('Tokens:', usage.totalTokens);
+            await billing.recordUsage(userId, usage.totalTokens);
+          }
+        },
+      }).pipeToResponse(res);
+    });
+    ```
+
+    **Option 3: With `chat()` (Non-streaming)**
+    ```ts
+    const result = await runtime.chat(body);
+    // Usage is directly in the result for non-streaming
+    console.log('Tokens:', result.usage?.totalTokens);
+    ```
+
+    | Field | Type | Description |
+    |-------|------|-------------|
+    | `usage.promptTokens` | `number` | Input tokens (prompt + context) |
+    | `usage.completionTokens` | `number` | Output tokens (response) |
+    | `usage.totalTokens` | `number` | Total tokens used |
+
+    <Callout type="info">
+    Usage is **never** sent to the client. Use `onFinish` for streaming, or access `result.usage` directly for non-streaming.
+    </Callout>
+  </Accordion>
+
+  <Accordion title="Runtime Configuration - All options" id="config">
+    ```ts
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+      agentLoop: {
+        maxIterations: 20,  // Max tool call cycles
+        debug: true,        // Enable debug logging
+      },
+      tools: [/* server-side tools */],
+      toolContext: {
+        userId: 'user_123', // Passed to all tool handlers
+      },
+    });
+    ```
+
+    | Option | Type | Description |
+    |--------|------|-------------|
+    | `provider` | `AIProvider` | Provider instance |
+    | `model` | `string` | Model ID (e.g., `'gpt-4o'`) |
+    | `systemPrompt` | `string` | Default system prompt |
+    | `agentLoop.maxIterations` | `number` | Max tool cycles (default: 20) |
+    | `tools` | `ToolDefinition[]` | Server-side tools |
+    | `toolContext` | `object` | Context passed to tool handlers |
+  </Accordion>
+
+  <Accordion title="CORS Configuration - For cross-origin requests" id="cors">
     ```ts title="app/api/chat/route.ts"
     export async function OPTIONS() {
       return new Response(null, {
@@ -767,128 +476,68 @@ For cross-origin requests (e.g., frontend on different port):
     }
 
     export async function POST(req: Request) {
-      // ... your handler
-
-      const response = result.toTextStreamResponse();
-
-      // Add CORS headers
+      const body = await req.json();
+      const response = runtime.stream(body).toResponse();
       response.headers.set('Access-Control-Allow-Origin', '*');
-
       return response;
     }
     ```
-  </Tab>
-  <Tab value="Node.js">
-    ```ts title="server.ts"
-    createServer(async (req, res) => {
-      // Handle preflight
-      if (req.method === 'OPTIONS') {
-        res.writeHead(204, {
-          'Access-Control-Allow-Origin': '*',
-          'Access-Control-Allow-Methods': 'POST, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
-        });
-        res.end();
-        return;
+  </Accordion>
+
+  <Accordion title="Error Handling" id="errors">
+    ```ts
+    export async function POST(req: Request) {
+      try {
+        const body = await req.json();
+        return runtime.stream(body).toResponse();
+      } catch (error) {
+        console.error('Chat error:', error);
+        return Response.json({ error: 'Failed to process request' }, { status: 500 });
       }
-
-      // Add CORS headers to response
-      res.setHeader('Access-Control-Allow-Origin', '*');
-
-      // ... your handler
-    });
+    }
     ```
-  </Tab>
-</Tabs>
+  </Accordion>
+</Accordions>
 
 ---
 
-## Error Handling
+## Direct AI Functions
+
+For more control or standalone usage without the Runtime, you can use the AI functions directly:
+
+| Function | Description | Link |
+|----------|-------------|------|
+| `streamText()` | Stream text in real-time | [Documentation](/docs/llm-sdk/stream-text) |
+| `generateText()` | Generate complete text (non-streaming) | [Documentation](/docs/llm-sdk/generate-text) |
 
 ```ts
-export async function POST(req: Request) {
-  try {
-    const { messages } = await req.json();
+import { streamText, generateText } from '@yourgpt/llm-sdk';
+import { openai } from '@yourgpt/llm-sdk/openai';
 
-    const result = await streamText({
-      model: openai('gpt-4o'),
-      messages,
-    });
-
-    return result.toTextStreamResponse();
-  } catch (error) {
-    console.error('Chat error:', error);
-
-    return Response.json(
-      { error: 'Failed to process chat request' },
-      { status: 500 }
-    );
-  }
-}
-```
-
----
-
-## Request Validation
-
-Validate incoming requests with Zod:
-
-```ts
-import { z } from 'zod';
-
-const ChatRequestSchema = z.object({
-  messages: z.array(z.object({
-    role: z.enum(['user', 'assistant', 'system']),
-    content: z.string(),
-  })),
+// Streaming
+const stream = await streamText({
+  model: openai('gpt-4o'),
+  messages,
 });
+return stream.toDataStreamResponse();
 
-export async function POST(req: Request) {
-  const body = await req.json();
-
-  const parsed = ChatRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return Response.json(
-      { error: 'Invalid request', details: parsed.error.errors },
-      { status: 400 }
-    );
-  }
-
-  const { messages } = parsed.data;
-  // ... continue with validated data
-}
+// Non-streaming
+const result = await generateText({
+  model: openai('gpt-4o'),
+  messages,
+});
+return Response.json({ text: result.text });
 ```
 
----
-
-## Connecting Frontend
-
-Point your frontend to your API endpoint:
-
-```tsx title="app/providers.tsx"
-'use client';
-
-import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
-
-export function Providers({ children }: { children: React.ReactNode }) {
-  return (
-    <CopilotProvider runtimeUrl="/api/chat">
-      {children}
-    </CopilotProvider>
-  );
-}
-```
-
-For a separate backend server:
-
-```tsx
-<CopilotProvider runtimeUrl="http://localhost:3001/api/chat">
-```
+<Callout type="info">
+**Note:** When using `streamText()` with Copilot SDK, use `toDataStreamResponse()` (not `toTextStreamResponse()`). See the [streamText documentation](/docs/llm-sdk/stream-text) for details.
+</Callout>
 
 ---
 
 ## Next Steps
 
-- [LLM SDK](/docs/llm-sdk) - Core text generation functions
-- [Backend Tools](/docs/tools/backend-tools) - Add server-side tools
-- [Providers](/docs/providers) - Configure different LLM providers
+- [Tools](/docs/tools) - Learn more about frontend and backend tools
+- [Providers](/docs/providers) - Provider-specific configuration
+- [Chat History](/docs/chat-history) - Persist conversations across sessions
+- [LLM SDK](/docs/llm-sdk) - Low-level AI functions

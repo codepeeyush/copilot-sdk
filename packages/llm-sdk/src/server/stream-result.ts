@@ -29,6 +29,7 @@ import type {
   StreamEvent,
   DoneEventMessage,
   ToolCallInfo,
+  TokenUsage,
 } from "@yourgpt/copilot-sdk/core";
 import {
   createSSEHeaders,
@@ -45,6 +46,31 @@ export interface StreamResultOptions {
 }
 
 /**
+ * Result passed to onFinish callback
+ */
+export interface OnFinishResult {
+  /** All messages from the stream (for persistence) */
+  messages: DoneEventMessage[];
+  /** Token usage for billing/tracking (server-side only) */
+  usage?: {
+    promptTokens: number;
+    completionTokens: number;
+    totalTokens: number;
+  };
+}
+
+/**
+ * Options for StreamResult constructor
+ */
+export interface StreamResultConstructorOptions {
+  /**
+   * Called after stream completes (for persistence, billing, etc.)
+   * Usage data is only available server-side and is not exposed to clients.
+   */
+  onFinish?: (result: OnFinishResult) => Promise<void> | void;
+}
+
+/**
  * Collected result after consuming the stream
  */
 export interface CollectedResult {
@@ -56,6 +82,8 @@ export interface CollectedResult {
   toolCalls: ToolCallInfo[];
   /** Whether client action is required (client-side tools) */
   requiresAction: boolean;
+  /** Token usage for billing/tracking */
+  usage?: TokenUsage;
   /** Raw events (for debugging) */
   events: StreamEvent[];
 }
@@ -89,9 +117,20 @@ export class StreamResult {
   private generator: AsyncGenerator<StreamEvent>;
   private consumed = false;
   private eventHandlers = new Map<string, Function>();
+  private onFinishCallback?: StreamResultConstructorOptions["onFinish"];
+  // Store usage from done event (before it's stripped for client)
+  private capturedUsage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens?: number;
+  };
 
-  constructor(generator: AsyncGenerator<StreamEvent>) {
+  constructor(
+    generator: AsyncGenerator<StreamEvent>,
+    options?: StreamResultConstructorOptions,
+  ) {
     this.generator = generator;
+    this.onFinishCallback = options?.onFinish;
   }
 
   // ============================================
@@ -276,6 +315,9 @@ export class StreamResult {
       doneHandler(collected);
     }
 
+    // Call onFinish callback
+    await this.callOnFinish(collected);
+
     return collected;
   }
 
@@ -338,6 +380,9 @@ export class StreamResult {
       doneHandler(collected);
     }
 
+    // Call onFinish callback
+    await this.callOnFinish(collected);
+
     return collected;
   }
 
@@ -369,6 +414,9 @@ export class StreamResult {
     if (doneHandler) {
       doneHandler(collected);
     }
+
+    // Call onFinish callback
+    await this.callOnFinish(collected);
 
     return collected;
   }
@@ -439,6 +487,7 @@ export class StreamResult {
       messages: [],
       toolCalls: [],
       requiresAction: false,
+      usage: undefined,
       events: [],
     };
   }
@@ -465,7 +514,37 @@ export class StreamResult {
         if (event.requiresAction) {
           collected.requiresAction = true;
         }
+        if (event.usage) {
+          // Capture usage before it might be stripped
+          this.capturedUsage = event.usage;
+          collected.usage = event.usage;
+        }
         break;
+    }
+  }
+
+  /**
+   * Call onFinish callback with collected result
+   */
+  private async callOnFinish(collected: CollectedResult): Promise<void> {
+    if (this.onFinishCallback) {
+      try {
+        const usage = this.capturedUsage;
+        await this.onFinishCallback({
+          messages: collected.messages,
+          usage: usage
+            ? {
+                promptTokens: usage.prompt_tokens,
+                completionTokens: usage.completion_tokens,
+                totalTokens:
+                  usage.total_tokens ??
+                  usage.prompt_tokens + usage.completion_tokens,
+              }
+            : undefined,
+        });
+      } catch (error) {
+        console.error("[StreamResult] onFinish callback error:", error);
+      }
     }
   }
 
