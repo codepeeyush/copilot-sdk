@@ -264,6 +264,97 @@ const text = await runtime.stream(body).text();
 const result = await runtime.chat(body); // Same as stream().collect()
 ```
 
+### Using Runtime generate() (CopilotChat Compatible)
+
+The `generate()` method returns a `GenerateResult` with both raw access and a `toResponse()` method for CopilotChat-compatible format:
+
+<Tabs items={['Next.js', 'Express', 'Hono']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export async function POST(req: Request) {
+      const body = await req.json();
+      const result = await runtime.generate(body);
+
+      // CopilotChat-compatible format
+      return Response.json(result.toResponse());
+
+      // Or access raw properties
+      // return Response.json({ text: result.text, toolCalls: result.toolCalls });
+    }
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts title="server.ts"
+    import express from 'express';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(express.json());
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    app.post('/api/chat', async (req, res) => {
+      const result = await runtime.generate(req.body);
+      res.json(result.toResponse());
+    });
+
+    app.listen(3001);
+    ```
+  </Tab>
+  <Tab value="Hono">
+    ```ts title="server.ts"
+    import { Hono } from 'hono';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const app = new Hono();
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    app.post('/api/chat', async (c) => {
+      const result = await runtime.generate(await c.req.json());
+      return c.json(result.toResponse());
+    });
+
+    export default app;
+    ```
+  </Tab>
+</Tabs>
+
+**GenerateResult properties:**
+- `result.text` - Generated text content
+- `result.messages` - All conversation messages
+- `result.toolCalls` - Tool calls made during generation
+- `result.toolResults` - Results from tool executions
+- `result.success` - Whether generation was successful
+- `result.toResponse()` - CopilotChat-compatible JSON format
+
+<Callout type="info">
+**When to use non-streaming:**
+- Background processing or batch operations
+- When you need the full response before taking action
+- Simpler integration without SSE handling
+- Logging or analytics that need complete responses
+</Callout>
+
 ### For Direct Text Streaming (Not Copilot SDK)
 
 <Callout type="warn">

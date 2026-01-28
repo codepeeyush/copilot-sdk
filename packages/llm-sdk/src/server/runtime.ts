@@ -25,9 +25,11 @@ import type {
   ChatRequest,
   HandleRequestOptions,
   HandleRequestResult,
+  GenerateOptions,
 } from "./types";
 import { createSSEResponse } from "./streaming";
 import { StreamResult, type CollectedResult } from "./stream-result";
+import { GenerateResult } from "./generate-result";
 
 // ============================================
 // AI Response Control
@@ -1649,6 +1651,122 @@ export class Runtime {
     },
   ): Promise<CollectedResult> {
     return this.stream(request, options).collect();
+  }
+
+  /**
+   * Generate a complete response (non-streaming)
+   *
+   * Like Vercel AI SDK's generateText() - clean, non-streaming API.
+   * Returns GenerateResult with .toResponse() for CopilotChat format.
+   *
+   * @example
+   * ```typescript
+   * // Simple usage
+   * const result = await runtime.generate(body);
+   * console.log(result.text);
+   *
+   * // CopilotChat format response (Express)
+   * res.json(result.toResponse());
+   *
+   * // CopilotChat format response (Next.js)
+   * return Response.json(result.toResponse());
+   *
+   * // With persistence callback
+   * const result = await runtime.generate(body, {
+   *   onFinish: async ({ messages }) => {
+   *     await db.saveMessages(messages);
+   *   },
+   * });
+   * ```
+   */
+  async generate(
+    request: ChatRequest,
+    options?: GenerateOptions,
+  ): Promise<GenerateResult> {
+    const generator = this.processChatWithLoop(
+      { ...request, streaming: false },
+      options?.signal,
+      undefined,
+      undefined,
+      options?.httpRequest,
+    );
+
+    let text = "";
+    const toolCalls: Array<{
+      id: string;
+      name: string;
+      args: Record<string, unknown>;
+    }> = [];
+    const toolResults: Array<{ id: string; result: unknown }> = [];
+    let messages: DoneEventMessage[] = [];
+    let requiresAction = false;
+    let error: { message: string; code?: string } | undefined;
+
+    try {
+      for await (const event of generator) {
+        switch (event.type) {
+          case "message:delta":
+            text += event.content;
+            break;
+          case "action:start":
+            toolCalls.push({ id: event.id, name: event.name, args: {} });
+            break;
+          case "action:args": {
+            const tc = toolCalls.find((t) => t.id === event.id);
+            if (tc) {
+              try {
+                tc.args = JSON.parse(event.args || "{}");
+              } catch {
+                tc.args = {};
+              }
+            }
+            break;
+          }
+          case "action:end":
+            toolResults.push({
+              id: event.id,
+              result: event.result || event.error,
+            });
+            break;
+          case "done":
+            messages = event.messages || [];
+            requiresAction = event.requiresAction || false;
+            break;
+          case "error":
+            error = { message: event.message, code: event.code };
+            break;
+        }
+      }
+    } catch (err) {
+      error = {
+        message: err instanceof Error ? err.message : "Unknown error",
+        code: "GENERATION_ERROR",
+      };
+    }
+
+    // Call onFinish callback if provided and no error
+    if (options?.onFinish && messages.length > 0 && !error) {
+      try {
+        await options.onFinish({
+          messages,
+          threadId: request.threadId,
+        });
+      } catch (callbackError) {
+        console.error(
+          "[Copilot SDK] generate() onFinish callback error:",
+          callbackError,
+        );
+      }
+    }
+
+    return new GenerateResult({
+      text,
+      messages,
+      toolCalls,
+      toolResults,
+      requiresAction,
+      error,
+    });
   }
 
   /**

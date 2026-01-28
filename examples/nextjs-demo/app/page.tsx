@@ -2,6 +2,11 @@ import Link from "next/link";
 
 const demos = [
   {
+    name: "Non-Streaming",
+    href: "/non-streaming",
+    description: "runtime.generate() with CopilotChat",
+  },
+  {
     name: "Theme Demo",
     href: "/theme-demo",
     description: "9 theme presets with live preview",

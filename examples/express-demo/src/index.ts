@@ -97,7 +97,7 @@ app.post("/api/raw/stream/events", async (req, res) => {
       console.error("\n[Error]", err.message);
     });
 
-  await result.pipeToResponse(res);
+  await result.pipeToResponse(res, { includeUsage: true });
 });
 
 // ============================================
@@ -161,7 +161,7 @@ app.get("/api/health", (_req, res) => {
     ],
     rawGenerateEndpoints: [
       "POST /api/raw/generate/text - Returns { text }",
-      "POST /api/raw/generate/full - Returns { text, messages, toolCalls }",
+      "POST /api/raw/generate/full - Returns { text, messages, toolCalls, usage }",
       "POST /api/raw/generate/summary - Returns { text, messageCount, toolCallCount }",
     ],
   });
@@ -183,11 +183,11 @@ Express Demo Server running on http://localhost:${port}
 
 === RAW STREAMING ===
   POST /api/raw/stream/text   - Plain text stream
-  POST /api/raw/stream/events - Stream with event logging
+  POST /api/raw/stream/events - Stream with event logging (includes usage)
 
 === RAW NON-STREAMING ===
   POST /api/raw/generate/text    - Returns { text }
-  POST /api/raw/generate/full    - Returns { text, messages, toolCalls }
+  POST /api/raw/generate/full    - Returns { text, messages, toolCalls, usage }
   POST /api/raw/generate/summary - Returns { text, messageCount, toolCallCount }
 
 === TEST CURLS ===
@@ -202,13 +202,8 @@ curl -X POST http://localhost:${port}/api/copilot/chat \\
   -H "Content-Type: application/json" \\
   -d '{"messages":[{"role":"user","content":"Say hello"}]}'
 
-# Raw - Text only
-curl -X POST http://localhost:${port}/api/raw/stream/text \\
-  -H "Content-Type: application/json" \\
-  -d '{"messages":[{"role":"user","content":"Say hello"}]}'
-
-# Raw - Generate text
-curl -X POST http://localhost:${port}/api/raw/generate/text \\
+# Raw - Full response with usage
+curl -X POST http://localhost:${port}/api/raw/generate/full \\
   -H "Content-Type: application/json" \\
   -d '{"messages":[{"role":"user","content":"Say hello"}]}'
   `);

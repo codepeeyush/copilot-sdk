@@ -7,6 +7,7 @@ export type {
   RequestContext,
   HandleRequestOptions,
   HandleRequestResult,
+  GenerateOptions,
 } from "./types";
 
 // StreamResult (Industry Standard Pattern)
@@ -16,6 +17,13 @@ export {
   type StreamResultOptions,
   type CollectedResult,
 } from "./stream-result";
+
+// GenerateResult (Non-streaming)
+export {
+  GenerateResult,
+  type GenerateResultData,
+  type CopilotChatResponse,
+} from "./generate-result";
 
 // Streaming utilities
 export {
