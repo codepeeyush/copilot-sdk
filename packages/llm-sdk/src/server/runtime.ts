@@ -1630,27 +1630,22 @@ export class Runtime {
    * console.log('Response:', text);
    * res.json({ response: text });
    *
-   * // With onFinish for usage tracking
-   * const result = await runtime.chat(body, {
-   *   onFinish: ({ usage }) => console.log('Tokens:', usage?.totalTokens)
-   * });
+   * // Usage is included in result - strip before sending to client
+   * const { usage, ...clientResult } = await runtime.chat(body);
+   * await billing.record(usage);
+   * res.json(clientResult);
    * ```
    */
   async chat(
     request: ChatRequest,
     options?: {
       signal?: AbortSignal;
-      onFinish?: (result: {
-        messages: DoneEventMessage[];
-        usage?: {
-          promptTokens: number;
-          completionTokens: number;
-          totalTokens: number;
-        };
-      }) => Promise<void> | void;
     },
   ): Promise<CollectedResult> {
-    return this.stream(request, options).collect();
+    // Usage is included in result - user can strip before sending to client
+    return this.stream(request, { signal: options?.signal }).collect({
+      includeUsage: true,
+    });
   }
 
   /**

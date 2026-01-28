@@ -46,13 +46,21 @@ app.post("/api/copilot/stream", async (req, res) => {
 
 /**
  * Non-streaming - For Copilot SDK with streaming={false}
- * Returns: { text, messages, toolCalls }
+ * Returns: { text, messages, toolCalls } (usage stripped)
  */
 app.post("/api/copilot/chat", async (req, res) => {
   console.log("[/api/copilot/chat] Non-streaming JSON");
-  const result = await runtime.chat(req.body);
-  console.log("[/api/copilot/chat] Result:", result);
-  res.json(result);
+
+  // Usage is now included in result - strip before sending to client
+  const { usage, ...clientResult } = await runtime.chat(req.body);
+
+  // Log usage server-side for billing
+  if (usage) {
+    console.log("[/api/copilot/chat] Usage:", usage);
+  }
+
+  // Send to client without usage
+  res.json(clientResult);
 });
 
 /**
