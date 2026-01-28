@@ -420,9 +420,20 @@ For a separate backend server:
 
     **Option 3: With `chat()` (Non-streaming)**
     ```ts
-    const result = await runtime.chat(body);
-    // Usage is directly in the result for non-streaming
-    console.log('Tokens:', result.usage?.totalTokens);
+    const result = await runtime.chat(body, {
+      onFinish: async ({ usage }) => {
+        if (usage) {
+          console.log('Tokens:', usage.totalTokens);
+        }
+      },
+    });
+    ```
+
+    **Option 4: Raw access (for server-side processing)**
+    ```ts
+    // Use { includeUsage: true } when you need usage in the result
+    const { text, usage } = await runtime.stream(body).collect({ includeUsage: true });
+    console.log('Tokens:', usage?.totalTokens);
     ```
 
     | Field | Type | Description |
@@ -432,7 +443,7 @@ For a separate backend server:
     | `usage.totalTokens` | `number` | Total tokens used |
 
     <Callout type="info">
-    Usage is **never** sent to the client. Use `onFinish` for streaming, or access `result.usage` directly for non-streaming.
+    Usage is **stripped by default** from client-facing responses for security. Use `onFinish` callback to access usage server-side, or pass `{ includeUsage: true }` for raw API access.
     </Callout>
   </Accordion>
 
