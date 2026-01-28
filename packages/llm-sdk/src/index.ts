@@ -172,7 +172,7 @@ export type {
   GeminiFunctionResponse,
 } from "./providers/types";
 
-// Re-export core types from copilot-sdk
+// Re-export core types
 export type {
   Message,
   ActionDefinition,
@@ -185,4 +185,14 @@ export type {
   UnifiedToolResult,
   ToolExecution,
   AgentLoopConfig,
-} from "@yourgpt/copilot-sdk/core";
+  DoneEventMessage,
+  ToolCallInfo,
+  TokenUsageRaw,
+} from "./core/stream-events";
+
+// Re-export utility functions
+export {
+  generateMessageId,
+  generateToolCallId,
+  generateThreadId,
+} from "./core/utils";

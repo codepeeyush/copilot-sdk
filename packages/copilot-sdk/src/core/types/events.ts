@@ -171,6 +171,15 @@ export interface DoneEvent extends BaseEvent {
    * This includes: assistant messages with tool_calls, tool result messages, final response
    */
   messages?: DoneEventMessage[];
+  /**
+   * Token usage (server-side only, stripped before sending to client)
+   * @internal
+   */
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens?: number;
+  };
 }
 
 // ============================================

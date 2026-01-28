@@ -16,14 +16,11 @@ import type {
   UnifiedToolCall,
   UnifiedToolResult,
   ToolResponse,
-  AIProvider,
   AgentLoopConfig,
   Message,
-} from "@yourgpt/copilot-sdk/core";
-import {
-  generateToolCallId,
-  generateMessageId,
-} from "@yourgpt/copilot-sdk/core";
+} from "../core/stream-events";
+import type { AIProvider } from "../providers/types";
+import { generateToolCallId, generateMessageId } from "../core/utils";
 import { getFormatter } from "../providers";
 
 // ========================================
@@ -113,7 +110,7 @@ export async function* runAgentLoop(
 
   const maxIterations = config?.maxIterations ?? DEFAULT_MAX_ITERATIONS;
   const debug = config?.debug ?? false;
-  const formatter = getFormatter(provider);
+  const formatter = getFormatter(provider.name);
 
   // Separate server and client tools
   const serverTools = tools.filter((t) => t.location === "server");
@@ -368,7 +365,7 @@ async function executeToolCalls(
       if (tool.location === "server") {
         // Server-side tool
         if (tool.handler) {
-          response = await tool.handler(toolCall.input);
+          response = (await tool.handler(toolCall.input)) as ToolResponse;
         } else if (executeServerTool) {
           response = await executeServerTool(toolCall.name, toolCall.input);
         } else {

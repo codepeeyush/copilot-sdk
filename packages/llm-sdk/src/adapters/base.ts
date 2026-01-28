@@ -4,7 +4,8 @@ import type {
   ActionDefinition,
   StreamEvent,
   LLMConfig,
-} from "@yourgpt/copilot-sdk/core";
+} from "../core/stream-events";
+import type { TokenUsage } from "../core/types";
 
 /**
  * Request-level LLM configuration overrides
@@ -47,6 +48,8 @@ export interface CompletionResult {
   toolCalls: Array<{ id: string; name: string; args: Record<string, unknown> }>;
   /** Thinking content (if extended thinking enabled) */
   thinking?: string;
+  /** Token usage for billing/tracking */
+  usage?: TokenUsage;
   /** Raw provider response for debugging */
   rawResponse: Record<string, unknown>;
 }

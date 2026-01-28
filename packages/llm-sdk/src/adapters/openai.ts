@@ -1,8 +1,5 @@
-import type { LLMConfig, StreamEvent } from "@yourgpt/copilot-sdk/core";
-import {
-  generateMessageId,
-  generateToolCallId,
-} from "@yourgpt/copilot-sdk/core";
+import type { LLMConfig, StreamEvent } from "../core/stream-events";
+import { generateMessageId, generateToolCallId } from "../core/utils";
 import type { LLMAdapter, ChatCompletionRequest } from "./base";
 import { formatMessagesForOpenAI, formatTools } from "./base";
 
@@ -142,6 +139,7 @@ export class OpenAIAdapter implements LLMAdapter {
         temperature: request.config?.temperature ?? this.config.temperature,
         max_tokens: request.config?.maxTokens ?? this.config.maxTokens,
         stream: true,
+        stream_options: { include_usage: true },
       });
 
       let currentToolCall: {
@@ -149,6 +147,14 @@ export class OpenAIAdapter implements LLMAdapter {
         name: string;
         arguments: string;
       } | null = null;
+
+      let usage:
+        | {
+            prompt_tokens: number;
+            completion_tokens: number;
+            total_tokens: number;
+          }
+        | undefined;
 
       for await (const chunk of stream) {
         // Check for abort
@@ -195,6 +201,15 @@ export class OpenAIAdapter implements LLMAdapter {
           }
         }
 
+        // Capture usage from final chunk (OpenAI sends it with stream_options.include_usage)
+        if (chunk.usage) {
+          usage = {
+            prompt_tokens: chunk.usage.prompt_tokens,
+            completion_tokens: chunk.usage.completion_tokens,
+            total_tokens: chunk.usage.total_tokens,
+          };
+        }
+
         // Check for finish
         if (chunk.choices[0]?.finish_reason) {
           // Complete any pending tool call
@@ -210,7 +225,7 @@ export class OpenAIAdapter implements LLMAdapter {
 
       // Emit message end
       yield { type: "message:end" };
-      yield { type: "done" };
+      yield { type: "done", usage };
     } catch (error) {
       yield {
         type: "error",

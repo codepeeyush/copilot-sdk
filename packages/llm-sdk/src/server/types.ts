@@ -3,7 +3,7 @@ import type {
   KnowledgeBaseConfig,
   ToolDefinition,
   AgentLoopConfig,
-} from "@yourgpt/copilot-sdk/core";
+} from "../core/stream-events";
 import type { LLMAdapter } from "../adapters";
 import type { AIProvider } from "../providers/types";
 
@@ -232,7 +232,7 @@ export interface RequestContext {
 // Handle Request Options (for onFinish callback)
 // ============================================
 
-import type { DoneEventMessage } from "@yourgpt/copilot-sdk/core";
+import type { DoneEventMessage } from "../core/stream-events";
 
 /**
  * Result passed to onFinish callback after stream completes
