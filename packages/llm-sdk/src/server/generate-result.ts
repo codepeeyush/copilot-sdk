@@ -17,7 +17,7 @@
  * ```
  */
 
-import type { DoneEventMessage } from "@yourgpt/copilot-sdk/core";
+import type { DoneEventMessage } from "../core/stream-events";
 
 export interface GenerateResultData {
   text: string;

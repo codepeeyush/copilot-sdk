@@ -511,30 +511,32 @@ For a separate backend server:
 
     **Option 3: With `chat()` (Non-streaming)**
     ```ts
-    const result = await runtime.chat(body, {
-      onFinish: async ({ usage }) => {
-        if (usage) {
-          console.log('Tokens:', usage.totalTokens);
-        }
-      },
-    });
+    // Usage is included in result - strip before sending to client
+    const { usage, ...clientResult } = await runtime.chat(body);
+
+    if (usage) {
+      console.log('Tokens:', usage.total_tokens);
+      await billing.recordUsage(userId, usage.total_tokens);
+    }
+
+    res.json(clientResult); // Send without usage
     ```
 
-    **Option 4: Raw access (for server-side processing)**
+    **Option 4: Raw access with `collect()`**
     ```ts
     // Use { includeUsage: true } when you need usage in the result
     const { text, usage } = await runtime.stream(body).collect({ includeUsage: true });
-    console.log('Tokens:', usage?.totalTokens);
+    console.log('Tokens:', usage?.total_tokens);
     ```
 
     | Field | Type | Description |
     |-------|------|-------------|
-    | `usage.promptTokens` | `number` | Input tokens (prompt + context) |
-    | `usage.completionTokens` | `number` | Output tokens (response) |
-    | `usage.totalTokens` | `number` | Total tokens used |
+    | `usage.prompt_tokens` | `number` | Input tokens (prompt + context) |
+    | `usage.completion_tokens` | `number` | Output tokens (response) |
+    | `usage.total_tokens` | `number` | Total tokens used |
 
     <Callout type="info">
-    Usage is **stripped by default** from client-facing responses for security. Use `onFinish` callback to access usage server-side, or pass `{ includeUsage: true }` for raw API access.
+    For `chat()`, usage is **included in the result** - strip the `usage` key before sending to the Copilot client. For streaming, use `onFinish` callback or `{ includeUsage: true }` with `collect()`.
     </Callout>
   </Accordion>
 
