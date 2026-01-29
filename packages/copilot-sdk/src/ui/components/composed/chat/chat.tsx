@@ -103,9 +103,7 @@ function HomeView({ children, className }: HomeViewProps) {
         className,
       )}
     >
-      <div className="flex flex-col items-center my-auto w-full">
-        {children}
-      </div>
+      <div className="flex flex-col w-full">{children}</div>
     </div>
   );
 }
