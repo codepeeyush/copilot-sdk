@@ -14,9 +14,7 @@ interface Example {
   video?: string;
 }
 
-const DEMO_VIDEO_URL =
-  "https://assets.yourgpt.ai/web/copilot-sdk/copilot-sdk-demo-1.mp4";
-const DEMO_POSTER_URL = "/images/copilot-sdk-support-demo.png";
+const VIDEO_BASE_URL = "https://assets.yourgpt.ai/web/copilot-sdk";
 
 const examples: Example[] = [
   {
@@ -24,11 +22,11 @@ const examples: Example[] = [
     title: "Support Ticket System",
     description:
       "AI-powered customer support with intelligent ticket routing, automatic escalation, and context-aware responses. Handle inquiries, resolve issues, and escalate complex cases seamlessly.",
-    preview: "/examples/support-system-demo.gif",
+    preview: "/images/copilot-sdk-support-demo.png",
     tags: ["Customer Support", "Ticketing", "Escalation", "Enterprise"],
     href: "#",
     github: "https://github.com/YourGPT/copilot-sdk/tree/main/examples",
-    video: DEMO_VIDEO_URL,
+    video: `${VIDEO_BASE_URL}/copilot-sdk-demo-1.mp4`,
   },
   {
     id: "debug-assistant",
@@ -39,6 +37,7 @@ const examples: Example[] = [
     tags: ["Developer Tools", "Debugging", "Console Logs", "Screenshots"],
     github:
       "https://github.com/YourGPT/copilot-sdk/tree/main/examples/debug-assistant-demo",
+    video: `${VIDEO_BASE_URL}/support-assistant-1.mp4`,
   },
   {
     id: "saas-demo",
@@ -49,6 +48,7 @@ const examples: Example[] = [
     tags: ["SaaS", "Subscription", "Billing", "Dashboard"],
     github:
       "https://github.com/YourGPT/copilot-sdk/tree/main/examples/saas-demo",
+    video: `${VIDEO_BASE_URL}/smart-banking-assistant.mp4`,
   },
 ];
 
@@ -150,7 +150,7 @@ function ExampleCard({
         >
           {/* Thumbnail Image */}
           <img
-            src={DEMO_POSTER_URL}
+            src={example.preview}
             alt={example.title}
             className="absolute inset-0 w-full h-full object-cover"
           />
@@ -231,9 +231,11 @@ function ExampleCard({
 export function ExamplesShowcase() {
   const [videoModalOpen, setVideoModalOpen] = useState(false);
   const [activeVideoUrl, setActiveVideoUrl] = useState("");
+  const [activePosterUrl, setActivePosterUrl] = useState("");
 
-  const openVideoModal = (videoUrl: string) => {
+  const openVideoModal = (videoUrl: string, posterUrl: string) => {
     setActiveVideoUrl(videoUrl);
+    setActivePosterUrl(posterUrl);
     setVideoModalOpen(true);
   };
 
@@ -244,7 +246,7 @@ export function ExamplesShowcase() {
         isOpen={videoModalOpen}
         onClose={() => setVideoModalOpen(false)}
         videoUrl={activeVideoUrl}
-        posterUrl={DEMO_POSTER_URL}
+        posterUrl={activePosterUrl}
       />
 
       {/* Hero Header */}
@@ -304,7 +306,9 @@ export function ExamplesShowcase() {
             key={example.id}
             example={example}
             index={index}
-            onPlayClick={() => openVideoModal(example.video || DEMO_VIDEO_URL)}
+            onPlayClick={() =>
+              example.video && openVideoModal(example.video, example.preview)
+            }
           />
         ))}
       </div>
