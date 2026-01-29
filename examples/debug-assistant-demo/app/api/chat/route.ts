@@ -1,13 +1,13 @@
 import { createRuntime } from "@yourgpt/llm-sdk";
-import { createOpenAI } from "@yourgpt/llm-sdk/openai";
+import { createAnthropic } from "@yourgpt/llm-sdk/anthropic";
 
-const openai = createOpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+const anthropic = createAnthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
 const runtime = createRuntime({
-  provider: openai,
-  model: "gpt-4o-mini",
+  provider: anthropic,
+  model: "claude-haiku-4-5",
   systemPrompt:
     "You are a helpful assistant. Be concise and helpful. When using tools, provide clear feedback about what you're doing.",
   debug: process.env.NODE_ENV === "development",

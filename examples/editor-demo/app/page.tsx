@@ -507,8 +507,8 @@ Ready to learn more? Let's connect.
   });
 
   return (
-    <DemoLayout title="Content Editor" theme="catppuccin">
-      <div className="flex h-[calc(100vh-41px)]">
+    <DemoLayout theme="catppuccin">
+      <div className="flex h-screen">
         {/* Main Content */}
         <div className="flex-1 overflow-hidden bg-[#11111b]">
           <Tabs

@@ -449,8 +449,8 @@ function ShoppingContent() {
   });
 
   return (
-    <DemoLayout title="Shopping Assistant" theme="modern-minimal">
-      <div className="flex h-[calc(100vh-41px)]">
+    <DemoLayout theme="modern-minimal">
+      <div className="flex h-screen">
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto p-6">
           {viewMode === "shopping" && (

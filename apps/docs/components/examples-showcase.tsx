@@ -30,6 +30,26 @@ const examples: Example[] = [
     github: "https://github.com/YourGPT/copilot-sdk/tree/main/examples",
     video: DEMO_VIDEO_URL,
   },
+  {
+    id: "debug-assistant",
+    title: "Debug Assistant",
+    description:
+      "AI-powered debugging companion that captures console logs, takes screenshots, and provides intelligent analysis with actionable suggestions.",
+    preview: "/images/debug-assistant-demo.webp",
+    tags: ["Developer Tools", "Debugging", "Console Logs", "Screenshots"],
+    github:
+      "https://github.com/YourGPT/copilot-sdk/tree/main/examples/debug-assistant-demo",
+  },
+  {
+    id: "saas-demo",
+    title: "SaaS Application",
+    description:
+      "SaaS template with AI copilot integration. Includes subscription handling, billing management, and intelligent assistance for common workflows.",
+    preview: "/images/saas-demo.webp",
+    tags: ["SaaS", "Subscription", "Billing", "Dashboard"],
+    github:
+      "https://github.com/YourGPT/copilot-sdk/tree/main/examples/saas-demo",
+  },
 ];
 
 function VideoModal({
@@ -118,44 +138,61 @@ function ExampleCard({
   index: number;
   onPlayClick: () => void;
 }) {
+  const hasVideo = Boolean(example.video);
+
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-fd-border bg-fd-card transition-colors duration-200 hover:border-fd-border/80">
       {/* Preview Area */}
-      <button
-        onClick={onPlayClick}
-        className="relative aspect-video overflow-hidden bg-fd-secondary/50 cursor-pointer w-full text-left"
-      >
-        {/* Thumbnail Image */}
-        <img
-          src={DEMO_POSTER_URL}
-          alt={example.title}
-          className="absolute inset-0 w-full h-full object-cover"
-        />
+      {hasVideo ? (
+        <button
+          onClick={onPlayClick}
+          className="relative aspect-video overflow-hidden bg-fd-secondary/50 cursor-pointer w-full text-left"
+        >
+          {/* Thumbnail Image */}
+          <img
+            src={DEMO_POSTER_URL}
+            alt={example.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
 
-        {/* Play button overlay */}
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-fd-border bg-fd-background/90 shadow-lg group-hover:scale-110 group-hover:bg-fd-background transition-all duration-200">
-            <Play
-              className="h-5 w-5 text-fd-foreground ml-0.5"
-              fill="currentColor"
-            />
+          {/* Play button overlay */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border border-fd-border bg-fd-background/90 shadow-lg group-hover:scale-110 group-hover:bg-fd-background transition-all duration-200">
+              <Play
+                className="h-5 w-5 text-fd-foreground ml-0.5"
+                fill="currentColor"
+              />
+            </div>
+          </div>
+
+          {/* Watch Demo label */}
+          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-fd-background/90 border border-fd-border px-3 py-1 text-xs font-medium text-fd-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+            <Play className="h-3 w-3" fill="currentColor" />
+            Watch Demo
+          </div>
+        </button>
+      ) : (
+        <div className="relative aspect-video overflow-hidden bg-fd-secondary/50">
+          {/* Poster Image */}
+          <img
+            src={example.preview}
+            alt={example.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+          {/* Video coming soon badge */}
+          <div className="absolute top-3 right-3 flex items-center gap-1.5 rounded-full bg-fd-background/90 border border-fd-border px-2.5 py-1 text-[10px] font-medium text-fd-muted-foreground">
+            Video coming soon
           </div>
         </div>
-
-        {/* Watch Demo label */}
-        <div className="absolute bottom-3 left-3 flex items-center gap-1.5 rounded-full bg-fd-background/90 border border-fd-border px-3 py-1 text-xs font-medium text-fd-foreground opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <Play className="h-3 w-3" fill="currentColor" />
-          Watch Demo
-        </div>
-      </button>
+      )}
 
       {/* Content */}
-      <div className="flex flex-1 flex-col p-4">
-        <h3 className="text-base font-semibold text-fd-foreground tracking-tight mb-1.5">
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="text-lg font-semibold text-fd-foreground tracking-tight mb-2">
           {example.title}
         </h3>
 
-        <p className="text-sm text-fd-muted-foreground leading-relaxed mb-3 flex-1">
+        <p className="text-sm text-fd-muted-foreground leading-relaxed mb-4 flex-1">
           {example.description}
         </p>
 
@@ -176,7 +213,7 @@ function ExampleCard({
               href={example.github}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors"
+              className="flex items-center gap-1.5 text-xs text-fd-muted-foreground hover:text-fd-foreground transition-colors shrink-0"
               onClick={(e) => e.stopPropagation()}
             >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
@@ -261,17 +298,14 @@ export function ExamplesShowcase() {
       </header>
 
       {/* Examples */}
-      <div className="flex flex-wrap gap-4">
+      <div className="flex flex-col gap-4">
         {examples.map((example, index) => (
-          <div key={example.id} className="flex-1 min-w-[320px] max-w-full">
-            <ExampleCard
-              example={example}
-              index={index}
-              onPlayClick={() =>
-                openVideoModal(example.video || DEMO_VIDEO_URL)
-              }
-            />
-          </div>
+          <ExampleCard
+            key={example.id}
+            example={example}
+            index={index}
+            onPlayClick={() => openVideoModal(example.video || DEMO_VIDEO_URL)}
+          />
         ))}
       </div>
     </div>

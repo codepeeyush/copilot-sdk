@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@yourgpt/llm-sdk": "^1.5.3",
+    "@yourgpt/llm-sdk": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
