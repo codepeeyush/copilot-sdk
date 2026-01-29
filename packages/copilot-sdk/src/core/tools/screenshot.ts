@@ -1,8 +1,8 @@
 /**
  * Screenshot Capture Tool
  *
- * Captures screenshots of the current viewport or specific elements.
- * Uses html2canvas for reliable DOM-to-canvas conversion.
+ * Captures screenshots of the current viewport using html-to-image library.
+ * Works with modern CSS including oklch, color-mix, etc.
  */
 
 import type { ScreenshotOptions, ScreenshotResult } from "./types";
@@ -23,25 +23,146 @@ const DEFAULT_OPTIONS: Required<ScreenshotOptions> = {
   includeCursor: false,
 };
 
-// Lazy-loaded html2canvas instance
-let html2canvasPromise: Promise<typeof import("html2canvas").default> | null =
-  null;
+// Lazy-loaded html-to-image
+let htmlToImagePromise: Promise<typeof import("html-to-image")> | null = null;
+
+async function getHtmlToImage(): Promise<typeof import("html-to-image")> {
+  if (!htmlToImagePromise) {
+    htmlToImagePromise = import("html-to-image");
+  }
+  return htmlToImagePromise;
+}
 
 /**
- * Dynamically import html2canvas (only when needed)
+ * Capture a screenshot using html-to-image library
+ * This method works with modern CSS including oklch, color-mix, etc.
  */
-async function getHtml2Canvas(): Promise<typeof import("html2canvas").default> {
-  if (!html2canvasPromise) {
-    html2canvasPromise = import("html2canvas").then((mod) => mod.default);
+async function captureWithHtmlToImage(
+  element: HTMLElement,
+  opts: Required<ScreenshotOptions>,
+): Promise<ScreenshotResult> {
+  const htmlToImage = await getHtmlToImage();
+
+  const rect = element.getBoundingClientRect();
+  const width = rect.width || window.innerWidth;
+  const height = rect.height || window.innerHeight;
+
+  // Scale down if needed
+  const scale = Math.min(opts.maxWidth / width, opts.maxHeight / height, 1);
+
+  let dataUrl: string;
+
+  if (opts.format === "jpeg") {
+    dataUrl = await htmlToImage.toJpeg(element, {
+      quality: opts.quality,
+      pixelRatio: scale,
+      skipAutoScale: true,
+      cacheBust: true,
+    });
+  } else {
+    dataUrl = await htmlToImage.toPng(element, {
+      pixelRatio: scale,
+      skipAutoScale: true,
+      cacheBust: true,
+    });
   }
-  return html2canvasPromise;
+
+  // Get actual dimensions from the image
+  const img = new Image();
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to load captured image"));
+    img.src = dataUrl;
+  });
+
+  return {
+    data: dataUrl,
+    format: opts.format,
+    width: img.width,
+    height: img.height,
+    timestamp: Date.now(),
+  };
+}
+
+/**
+ * Capture a screenshot using the native browser Screen Capture API
+ * Fallback method that requires user permission
+ */
+async function captureWithDisplayMedia(
+  opts: Required<ScreenshotOptions>,
+): Promise<ScreenshotResult> {
+  const stream = await navigator.mediaDevices.getDisplayMedia({
+    video: {
+      displaySurface: "browser",
+    },
+    audio: false,
+    // @ts-expect-error - preferCurrentTab is a newer API
+    preferCurrentTab: true,
+  });
+
+  try {
+    const track = stream.getVideoTracks()[0];
+    const settings = track.getSettings();
+
+    const video = document.createElement("video");
+    video.srcObject = stream;
+    video.muted = true;
+
+    await new Promise<void>((resolve, reject) => {
+      video.onloadedmetadata = () => {
+        video
+          .play()
+          .then(() => resolve())
+          .catch(reject);
+      };
+      video.onerror = () => reject(new Error("Failed to load video stream"));
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    const videoWidth = settings.width || video.videoWidth || window.innerWidth;
+    const videoHeight =
+      settings.height || video.videoHeight || window.innerHeight;
+
+    const scale = Math.min(
+      opts.maxWidth / videoWidth,
+      opts.maxHeight / videoHeight,
+      1,
+    );
+    const width = Math.round(videoWidth * scale);
+    const height = Math.round(videoHeight * scale);
+
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+
+    if (!ctx) {
+      throw new Error("Failed to create canvas context");
+    }
+
+    ctx.drawImage(video, 0, 0, width, height);
+
+    const mimeType = `image/${opts.format === "jpeg" ? "jpeg" : opts.format}`;
+    const data = canvas.toDataURL(mimeType, opts.quality);
+
+    return {
+      data,
+      format: opts.format,
+      width,
+      height,
+      timestamp: Date.now(),
+    };
+  } finally {
+    stream.getTracks().forEach((track) => track.stop());
+  }
 }
 
 /**
  * Capture a screenshot of an element or the viewport
  *
- * Uses html2canvas for reliable DOM-to-canvas conversion.
- * Handles complex CSS, images, flexbox, grid, etc.
+ * Uses html-to-image for reliable capture that works with modern CSS
+ * including oklch, color-mix, and other modern color functions.
  *
  * @param options - Screenshot options
  * @returns Promise resolving to screenshot result
@@ -51,9 +172,8 @@ async function getHtml2Canvas(): Promise<typeof import("html2canvas").default> {
  * // Capture viewport
  * const screenshot = await captureScreenshot();
  *
- * // Capture specific element
+ * // Capture with custom quality
  * const screenshot = await captureScreenshot({
- *   element: document.getElementById('my-element'),
  *   format: 'jpeg',
  *   quality: 0.9,
  * });
@@ -71,87 +191,59 @@ export async function captureScreenshot(
   const opts = { ...DEFAULT_OPTIONS, ...options };
   const element = opts.element || document.body;
 
-  // Get element dimensions
+  // Try html-to-image first (no dialog, works with modern CSS)
+  try {
+    return await captureWithHtmlToImage(element, opts);
+  } catch (error) {
+    console.warn(
+      "[Copilot SDK] html-to-image capture failed, trying native API",
+      error,
+    );
+  }
+
+  // Fallback to native Screen Capture API (requires dialog)
+  const hasDisplayMedia =
+    typeof navigator !== "undefined" &&
+    typeof navigator.mediaDevices !== "undefined" &&
+    typeof navigator.mediaDevices.getDisplayMedia === "function";
+
+  if (hasDisplayMedia) {
+    try {
+      return await captureWithDisplayMedia(opts);
+    } catch (error) {
+      console.warn(
+        "[Copilot SDK] Screen capture cancelled or not supported",
+        error,
+      );
+    }
+  }
+
+  // Final fallback: Create a placeholder
   const rect = element.getBoundingClientRect();
   let width = rect.width || window.innerWidth;
   let height = rect.height || window.innerHeight;
 
-  // Scale down if needed
   const scale = Math.min(opts.maxWidth / width, opts.maxHeight / height, 1);
   width = Math.round(width * scale);
   height = Math.round(height * scale);
 
-  let canvas: HTMLCanvasElement;
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
 
-  try {
-    // Load html2canvas dynamically
-    const html2canvas = await getHtml2Canvas();
-
-    // Capture using html2canvas
-    canvas = await html2canvas(element, {
-      scale: scale,
-      useCORS: true, // Enable cross-origin images
-      allowTaint: false, // Don't allow tainted canvas
-      backgroundColor: null, // Transparent background (uses element's bg)
-      logging: false, // Disable internal logging
-      width: rect.width,
-      height: rect.height,
-      windowWidth: window.innerWidth,
-      windowHeight: window.innerHeight,
-      scrollX: 0,
-      scrollY: 0,
-      x: rect.left + window.scrollX,
-      y: rect.top + window.scrollY,
-    });
-  } catch (error) {
-    // Fallback to placeholder if html2canvas fails
-    canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      createPlaceholder(ctx, width, height, element, String(error));
-    }
+  if (ctx) {
+    createPlaceholder(ctx, width, height, element, "Screenshot capture failed");
   }
 
-  // Convert to data URL
   const mimeType = `image/${opts.format === "jpeg" ? "jpeg" : opts.format}`;
-  let data: string;
-
-  try {
-    data = canvas.toDataURL(mimeType, opts.quality);
-  } catch (e) {
-    // Handle tainted canvas (cross-origin images)
-    if (e instanceof DOMException && e.name === "SecurityError") {
-      console.warn(
-        "[Copilot SDK] Canvas tainted by cross-origin content. Creating placeholder.",
-      );
-      const cleanCanvas = document.createElement("canvas");
-      cleanCanvas.width = width;
-      cleanCanvas.height = height;
-      const cleanCtx = cleanCanvas.getContext("2d");
-      if (cleanCtx) {
-        createPlaceholder(
-          cleanCtx,
-          width,
-          height,
-          element,
-          "Cross-origin content blocked",
-        );
-        data = cleanCanvas.toDataURL(mimeType, opts.quality);
-      } else {
-        throw new Error("Failed to create placeholder canvas");
-      }
-    } else {
-      throw e;
-    }
-  }
+  const data = canvas.toDataURL(mimeType, opts.quality);
 
   return {
     data,
     format: opts.format,
-    width: canvas.width,
-    height: canvas.height,
+    width,
+    height,
     timestamp: Date.now(),
   };
 }
@@ -166,16 +258,13 @@ function createPlaceholder(
   element: HTMLElement,
   errorMessage?: string,
 ): void {
-  // Gray background
   ctx.fillStyle = "#f0f0f0";
   ctx.fillRect(0, 0, width, height);
 
-  // Border
   ctx.strokeStyle = "#ddd";
   ctx.lineWidth = 2;
   ctx.strokeRect(2, 2, width - 4, height - 4);
 
-  // Text
   ctx.fillStyle = "#666";
   ctx.font = "14px system-ui, sans-serif";
   ctx.textAlign = "center";

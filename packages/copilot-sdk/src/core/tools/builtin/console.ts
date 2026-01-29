@@ -3,6 +3,9 @@
  *
  * A pre-configured tool that retrieves browser console logs.
  * Can be used with useTools() hook in React.
+ *
+ * Console capture starts automatically when this module is imported,
+ * so logs are captured from the beginning of the app lifecycle.
  */
 
 import { tool, success, failure } from "../../types/tools";
@@ -12,6 +15,15 @@ import {
   isConsoleCaptureActive,
   startConsoleCapture,
 } from "../console";
+
+// Auto-start console capture when this module is imported
+// This ensures logs are captured from the beginning, not just when the tool is called
+const isBrowser =
+  typeof window !== "undefined" && typeof console !== "undefined";
+
+if (isBrowser && !isConsoleCaptureActive()) {
+  startConsoleCapture();
+}
 
 /**
  * Console logs tool - retrieves browser console output

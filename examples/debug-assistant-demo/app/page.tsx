@@ -1,569 +1,374 @@
 "use client";
 
 import { useState, useCallback, useEffect } from "react";
-import {
-  CopilotProvider,
-  useAIContext,
-  useTool,
-} from "@yourgpt/copilot-sdk/react";
+import { CopilotProvider, useTools } from "@yourgpt/copilot-sdk/react";
 import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
+import { builtinTools } from "@yourgpt/copilot-sdk/core";
 import { DemoLayout } from "@/components/shared/DemoLayout";
-import { ConsoleViewer, type LogEntry } from "@/app/components/ConsoleViewer";
-import {
-  ScreenshotPreview,
-  type Screenshot,
-} from "@/app/components/ScreenshotPreview";
-import { BugReportForm, type BugReport } from "@/app/components/BugReportForm";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Bug, Zap, AlertCircle, Terminal, WifiOff } from "lucide-react";
-import "@yourgpt/copilot-sdk/ui/themes/posthog.css";
+import {
+  AlertTriangle,
+  CreditCard,
+  Calendar,
+  RefreshCw,
+  Loader2,
+  Bell,
+  ChevronLeft,
+} from "lucide-react";
+import { Sidebar, type DashboardView } from "./components/Sidebar";
+import { AcmeSupportHome } from "./copilot/components";
+import { usePaymentLinkTool } from "./copilot/tools";
 
-// Mock network errors for demo
-interface NetworkError {
-  id: string;
-  url: string;
-  method: string;
-  status: number;
-  statusText: string;
-  timestamp: Date;
+interface ApiError {
+  code: string;
+  message: string;
+  details: Record<string, unknown>;
+  timestamp: string;
+  request_id: string;
 }
 
-function DebugContent() {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [screenshots, setScreenshots] = useState<Screenshot[]>([]);
-  const [networkErrors, setNetworkErrors] = useState<NetworkError[]>([]);
-  const [isReportSubmitted, setIsReportSubmitted] = useState(false);
-  const [bugReport, setBugReport] = useState<BugReport>({
-    title: "",
-    description: "",
-    stepsToReproduce: "",
-    expectedBehavior: "",
-    actualBehavior: "",
-    severity: "medium",
-    browser:
-      typeof navigator !== "undefined"
-        ? navigator.userAgent.split(" ").pop() || ""
-        : "",
-    os: typeof navigator !== "undefined" ? navigator.platform : "",
-    url: typeof window !== "undefined" ? window.location.href : "",
-    consoleLogs: [],
-    screenshots: [],
-  });
+function DashboardContent() {
+  const [currentView, setCurrentView] = useState<DashboardView>("billing");
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasError, setHasError] = useState(false);
+  const [errorData, setErrorData] = useState<ApiError | null>(null);
 
-  // Simulate console logs
-  const addLog = useCallback(
-    (type: LogEntry["type"], message: string, stack?: string) => {
-      const newLog: LogEntry = {
-        id: Date.now().toString(),
-        type,
-        message,
-        timestamp: new Date(),
-        stack,
-      };
-      setLogs((prev) => [...prev, newLog]);
-    },
-    [],
-  );
+  const fetchSubscription = useCallback(async () => {
+    setIsLoading(true);
+    console.info("Fetching subscription data from /api/subscription...");
 
-  // Simulate capturing screenshot (using canvas placeholder)
-  const captureScreenshot = useCallback(() => {
-    // Create a placeholder screenshot (in real app, would use html2canvas or similar)
-    const canvas = document.createElement("canvas");
-    canvas.width = 800;
-    canvas.height = 450;
-    const ctx = canvas.getContext("2d");
-    if (ctx) {
-      // Create a gradient background
-      const gradient = ctx.createLinearGradient(0, 0, 800, 450);
-      gradient.addColorStop(0, "#fef3c7");
-      gradient.addColorStop(1, "#fde68a");
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 800, 450);
+    try {
+      const response = await fetch("/api/subscription");
+      const data = await response.json();
 
-      // Add some text
-      ctx.fillStyle = "#92400e";
-      ctx.font = "24px sans-serif";
-      ctx.fillText("Screenshot Captured", 280, 220);
-      ctx.font = "14px sans-serif";
-      ctx.fillText(new Date().toLocaleString(), 320, 250);
+      if (!response.ok) {
+        setHasError(true);
+        setErrorData(data.error);
+
+        console.error(
+          `API Error: ${data.error.message}`,
+          `\nError Code: ${data.error.code}\nRequest ID: ${data.error.request_id}\nStatus: ${response.status} Payment Required`,
+        );
+
+        if (data.error.details) {
+          console.error(
+            `Payment Details - Invoice: ${data.error.details.invoice_id}, Amount Due: $${(data.error.details.amount_due / 100).toFixed(2)}, Days Overdue: ${data.error.details.days_overdue}`,
+            `\nLast Payment Attempt: ${data.error.details.last_payment_attempt}\nLast Error: ${data.error.details.last_payment_error}`,
+          );
+        }
+
+        console.warn(
+          "Subscription features may be limited until payment is resolved",
+        );
+      } else {
+        console.info("Subscription data loaded successfully");
+        setHasError(false);
+        setErrorData(null);
+      }
+    } catch (err) {
+      setHasError(true);
+      console.error(
+        `Network error while fetching subscription: ${err instanceof Error ? err.message : "Unknown error"}`,
+      );
+    } finally {
+      setIsLoading(false);
     }
-
-    const newScreenshot: Screenshot = {
-      id: Date.now().toString(),
-      dataUrl: canvas.toDataURL(),
-      timestamp: new Date(),
-      description: "Captured screenshot",
-    };
-    setScreenshots((prev) => [...prev, newScreenshot]);
-    return newScreenshot;
   }, []);
 
-  // Add network error
-  const addNetworkError = useCallback(
-    (url: string, method: string, status: number, statusText: string) => {
-      const newError: NetworkError = {
-        id: Date.now().toString(),
-        url,
-        method,
-        status,
-        statusText,
-        timestamp: new Date(),
-      };
-      setNetworkErrors((prev) => [...prev, newError]);
-    },
-    [],
-  );
-
-  // Provide context to AI
-  useAIContext({
-    key: "console_logs",
-    data: {
-      total: logs.length,
-      errors: logs.filter((l) => l.type === "error").length,
-      warnings: logs.filter((l) => l.type === "warn").length,
-      recentLogs: logs.slice(-10).map((l) => ({
-        type: l.type,
-        message: l.message,
-        timestamp: l.timestamp.toISOString(),
-      })),
-    },
-    description:
-      "Console logs from the application including errors and warnings",
-  });
-
-  useAIContext({
-    key: "network_errors",
-    data: {
-      total: networkErrors.length,
-      errors: networkErrors.map((e) => ({
-        url: e.url,
-        method: e.method,
-        status: e.status,
-        statusText: e.statusText,
-      })),
-    },
-    description: "Network request errors and failed API calls",
-  });
-
-  useAIContext({
-    key: "screenshots",
-    data: {
-      count: screenshots.length,
-    },
-    description: "Captured screenshots for debugging",
-  });
-
-  useAIContext({
-    key: "bug_report",
-    data: bugReport,
-    description: "Current bug report form state",
-  });
-
-  // Register AI tools
-  useTool({
-    name: "capture_screenshot",
-    description:
-      "Capture a screenshot of the current application state for debugging",
-    inputSchema: {
-      type: "object",
-      properties: {
-        description: {
-          type: "string",
-          description: "Description of what the screenshot captures",
-        },
-      },
-    },
-    handler: async ({ description }: { description?: string }) => {
-      const screenshot = captureScreenshot();
-      if (description) {
-        setScreenshots((prev) =>
-          prev.map((s) => (s.id === screenshot.id ? { ...s, description } : s)),
-        );
-      }
-      return {
-        success: true,
-        data: { screenshotId: screenshot.id, description },
-      };
-    },
-  });
-
-  useTool({
-    name: "get_console_logs",
-    description:
-      "Retrieve console logs, especially errors and warnings, for debugging",
-    inputSchema: {
-      type: "object",
-      properties: {
-        type: {
-          type: "string",
-          description: "Filter by log type: error, warn, info, log, or all",
-        },
-        limit: {
-          type: "number",
-          description: "Maximum number of logs to retrieve",
-        },
-      },
-    },
-    handler: async ({
-      type = "all",
-      limit = 20,
-    }: {
-      type?: string;
-      limit?: number;
-    }) => {
-      const filtered =
-        type === "all" ? logs : logs.filter((l) => l.type === type);
-      const limited = filtered.slice(-limit);
-      return {
-        success: true,
-        data: {
-          count: limited.length,
-          logs: limited.map((l) => ({
-            type: l.type,
-            message: l.message,
-            timestamp: l.timestamp.toISOString(),
-            ...(l.stack && { stack: l.stack }),
-          })),
-        },
-      };
-    },
-  });
-
-  useTool({
-    name: "get_network_errors",
-    description: "Retrieve failed network requests and API errors",
-    inputSchema: {
-      type: "object",
-      properties: {},
-    },
-    handler: async () => {
-      return {
-        success: true,
-        data: {
-          count: networkErrors.length,
-          errors: networkErrors.map((e) => ({
-            url: e.url,
-            method: e.method,
-            status: e.status,
-            statusText: e.statusText,
-            timestamp: e.timestamp.toISOString(),
-          })),
-        },
-      };
-    },
-  });
-
-  useTool({
-    name: "create_bug_report",
-    description:
-      "Fill in the bug report form with the collected debugging information",
-    inputSchema: {
-      type: "object",
-      properties: {
-        title: { type: "string", description: "Bug report title" },
-        description: {
-          type: "string",
-          description: "Detailed description of the bug",
-        },
-        stepsToReproduce: {
-          type: "string",
-          description: "Steps to reproduce the bug",
-        },
-        expectedBehavior: { type: "string", description: "What should happen" },
-        actualBehavior: {
-          type: "string",
-          description: "What actually happens",
-        },
-        severity: {
-          type: "string",
-          description: "Bug severity: low, medium, high, or critical",
-        },
-      },
-      required: ["title", "description"],
-    },
-    needsApproval: true,
-    approvalMessage: (params: Partial<BugReport>) =>
-      `Create bug report: "${params.title}"?`,
-    handler: async (params: Partial<BugReport>) => {
-      setBugReport((prev) => ({
-        ...prev,
-        ...params,
-        consoleLogs: logs.filter(
-          (l) => l.type === "error" || l.type === "warn",
-        ),
-        screenshots: screenshots,
-        severity: (params.severity as BugReport["severity"]) || prev.severity,
-      }));
-      return {
-        success: true,
-        data: { message: "Bug report created", title: params.title },
-      };
-    },
-    render: ({ status, args }) => {
-      if (status === "approval-required" || status === "executing") {
-        return (
-          <div className="p-3 bg-yellow-50 dark:bg-yellow-950 rounded-lg border border-yellow-200 dark:border-yellow-800 text-sm">
-            <p className="font-medium text-yellow-700 dark:text-yellow-300">
-              Bug Report Preview
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400 mt-1 font-bold">
-              {args.title}
-            </p>
-            <p className="text-yellow-600 dark:text-yellow-400 mt-1 line-clamp-2">
-              {args.description}
-            </p>
-          </div>
-        );
-      }
-      return null;
-    },
-  });
-
-  useTool({
-    name: "simulate_error",
-    description:
-      "Simulate an error in the console for testing the debug assistant",
-    inputSchema: {
-      type: "object",
-      properties: {
-        type: {
-          type: "string",
-          description: "Type of error: console, network, or both",
-        },
-        message: { type: "string", description: "Error message to simulate" },
-      },
-    },
-    handler: async ({
-      type = "console",
-      message = "Simulated error",
-    }: {
-      type?: string;
-      message?: string;
-    }) => {
-      if (type === "console" || type === "both") {
-        addLog(
-          "error",
-          message,
-          "    at simulateError (debug-assistant.tsx:123)\n    at handleClick (app.tsx:45)",
-        );
-      }
-      if (type === "network" || type === "both") {
-        addNetworkError("/api/data", "GET", 500, "Internal Server Error");
-      }
-      return {
-        success: true,
-        data: { simulated: type, message },
-      };
-    },
-  });
-
-  // Add some initial demo logs
   useEffect(() => {
+    console.info("Dashboard page loaded");
+    console.log("Initializing services...");
+
     const timer = setTimeout(() => {
-      addLog("info", "Debug Assistant initialized");
-      addLog("log", "User session started");
-      addLog("warn", "Deprecated API method detected: oldMethod()");
+      fetchSubscription();
     }, 500);
+
     return () => clearTimeout(timer);
-  }, [addLog]);
+  }, [fetchSubscription]);
+
+  // Register built-in tools (screenshot & console with approval)
+  useTools({
+    capture_screenshot: builtinTools.capture_screenshot,
+    get_console_logs: builtinTools.get_console_logs,
+  });
+
+  // Custom tool: Generate payment link with Gen UI
+  usePaymentLinkTool(errorData);
+
+  const viewTitles: Record<DashboardView, string> = {
+    dashboard: "Dashboard",
+    billing: "Billing & Subscription",
+    usage: "Usage",
+    invoices: "Invoices",
+    team: "Team",
+    settings: "Settings",
+  };
 
   return (
-    <DemoLayout title="Debug Assistant" theme="posthog">
-      <div className="flex h-[calc(100vh-41px)]">
+    <DemoLayout>
+      <div className="flex h-screen bg-muted/30 overflow-visible">
+        {/* Collapsible Sidebar */}
+        <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+
         {/* Main Content */}
-        <div className="flex-1 overflow-y-auto p-6">
-          {/* Quick Actions */}
-          <div className="mb-6">
-            <Card className="border-yellow-200 dark:border-yellow-800 bg-yellow-50/50 dark:bg-yellow-950/30">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Zap className="h-5 w-5 text-yellow-600" />
-                  Simulate Issues (for Demo)
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      addLog(
-                        "error",
-                        "TypeError: Cannot read property 'undefined' of null",
-                        "    at processData (utils.js:42)\n    at async fetchData (api.js:18)",
-                      )
-                    }
-                  >
-                    <AlertCircle className="h-4 w-4 mr-2 text-red-500" />
-                    Console Error
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      addLog("warn", "Memory usage exceeded 80% threshold")
-                    }
-                  >
-                    <Terminal className="h-4 w-4 mr-2 text-yellow-500" />
-                    Warning
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() =>
-                      addNetworkError("/api/users", "POST", 401, "Unauthorized")
-                    }
-                  >
-                    <WifiOff className="h-4 w-4 mr-2 text-orange-500" />
-                    Network Error
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={captureScreenshot}
-                  >
-                    Capture Screenshot
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {/* Header */}
+          <header className="h-14 border-b bg-card flex items-center justify-between px-6 flex-shrink-0">
+            <h1 className="font-semibold">{viewTitles[currentView]}</h1>
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="icon">
+                <Bell className="h-5 w-5" />
+              </Button>
+            </div>
+          </header>
 
-          <Tabs defaultValue="logs" className="space-y-4">
-            <TabsList>
-              <TabsTrigger value="logs">Console Logs</TabsTrigger>
-              <TabsTrigger value="network">Network</TabsTrigger>
-              <TabsTrigger value="screenshots">Screenshots</TabsTrigger>
-              <TabsTrigger value="report">Bug Report</TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="logs">
-              <ConsoleViewer logs={logs} onClear={() => setLogs([])} />
-            </TabsContent>
-
-            <TabsContent value="network">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <WifiOff className="h-5 w-5" />
-                    Network Errors
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {networkErrors.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      No network errors
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {networkErrors.map((error) => (
-                        <div
-                          key={error.id}
-                          className="p-3 rounded-lg bg-red-50 dark:bg-red-950 border border-red-200 dark:border-red-800"
-                        >
-                          <div className="flex items-center justify-between">
-                            <span className="font-mono text-sm font-medium text-red-700 dark:text-red-300">
-                              {error.method} {error.url}
-                            </span>
-                            <span className="text-red-600 dark:text-red-400 text-sm">
-                              {error.status} {error.statusText}
-                            </span>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            {error.timestamp.toLocaleString()}
-                          </p>
-                        </div>
-                      ))}
+          {/* Page Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="max-w-5xl mx-auto space-y-6">
+              {/* Error Overlay */}
+              {hasError && (
+                <Card className="border-destructive/50 bg-destructive/5">
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-destructive/10 rounded-full">
+                        <AlertTriangle className="h-5 w-5 text-destructive" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-destructive">
+                          Something went wrong
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Unable to load subscription data. Please try again or
+                          contact support.
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={fetchSubscription}
+                        disabled={isLoading}
+                      >
+                        {isLoading ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <RefreshCw className="h-4 w-4" />
+                        )}
+                      </Button>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+                  </CardContent>
+                </Card>
+              )}
 
-            <TabsContent value="screenshots">
-              <ScreenshotPreview
-                screenshots={screenshots}
-                onCapture={captureScreenshot}
-                onRemove={(id) =>
-                  setScreenshots((prev) => prev.filter((s) => s.id !== id))
-                }
-              />
-            </TabsContent>
+              {/* Loading State */}
+              {isLoading && !hasError && (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                </div>
+              )}
 
-            <TabsContent value="report">
-              <BugReportForm
-                report={{
-                  ...bugReport,
-                  consoleLogs: logs.filter(
-                    (l) => l.type === "error" || l.type === "warn",
-                  ),
-                  screenshots: screenshots,
-                }}
-                onUpdate={setBugReport}
-                onSubmit={() => setIsReportSubmitted(true)}
-                isSubmitted={isReportSubmitted}
-              />
-            </TabsContent>
-          </Tabs>
+              {/* Subscription Content (disabled when error) */}
+              {!isLoading && (
+                <div
+                  className={hasError ? "opacity-50 pointer-events-none" : ""}
+                >
+                  {/* Plan Overview */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Current Plan
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold">Team Pro</span>
+                          <Button variant="outline" size="sm">
+                            Upgrade
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Team Members
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold">5 / 10</span>
+                          <Button variant="outline" size="sm">
+                            Manage
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-muted-foreground">
+                          Next Invoice
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between">
+                          <span className="text-2xl font-bold">$245.00</span>
+                          <span className="text-sm text-muted-foreground">
+                            Feb 15
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Payment Method */}
+                  <Card className="mb-6">
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <CreditCard className="h-5 w-5" />
+                        Payment Method
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-8 bg-muted rounded flex items-center justify-center">
+                            <span className="text-xs font-bold">VISA</span>
+                          </div>
+                          <div>
+                            <p className="font-medium">Visa ending in 4242</p>
+                            <p className="text-sm text-muted-foreground">
+                              Expires 12/2025
+                            </p>
+                          </div>
+                        </div>
+                        <Button variant="outline">Update</Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Billing History */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Calendar className="h-5 w-5" />
+                        Billing History
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[
+                          {
+                            date: "Jan 15, 2026",
+                            amount: "$245.00",
+                            status: "Paid",
+                          },
+                          {
+                            date: "Dec 15, 2025",
+                            amount: "$245.00",
+                            status: "Paid",
+                          },
+                          {
+                            date: "Nov 15, 2025",
+                            amount: "$245.00",
+                            status: "Paid",
+                          },
+                        ].map((invoice, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between py-2 border-b last:border-0"
+                          >
+                            <div>
+                              <p className="font-medium">{invoice.date}</p>
+                              <p className="text-sm text-muted-foreground">
+                                Team Pro - Monthly
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-medium">{invoice.amount}</p>
+                              <p className="text-sm text-muted-foreground">
+                                {invoice.status}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* Chat Panel */}
-        <div
-          className="w-96 border-l bg-background flex flex-col"
-          data-csdk-theme="posthog"
-        >
-          <CopilotChat
-            placeholder="Describe your issue..."
-            className="h-full"
+        {/* Copilot Panel */}
+        <div className="w-[400px] border-l border-border/50 flex flex-col bg-background">
+          <CopilotChat.Root
             persistence={true}
-            showThreadPicker={true}
-            header={{
-              name: "Debug Assistant",
-            }}
-            suggestions={[
-              "My app crashed suddenly",
-              "API calls are failing",
-              "Help me create a bug report",
-            ]}
-          />
+            className="h-full"
+            showPoweredBy={false}
+          >
+            {/* Custom Home View */}
+            <CopilotChat.HomeView className="!gap-0 !p-0">
+              <AcmeSupportHome
+                input={
+                  <CopilotChat.Input placeholder="Describe your issue..." />
+                }
+              />
+            </CopilotChat.HomeView>
+
+            {/* Custom Chat View */}
+            <CopilotChat.ChatView>
+              <CopilotChat.Header className="flex items-center gap-3 px-4 py-3 border-b bg-card/50">
+                <CopilotChat.BackButton className="text-muted-foreground hover:text-foreground p-1.5 rounded-lg hover:bg-muted/50 transition-colors">
+                  <ChevronLeft className="w-4 h-4" />
+                </CopilotChat.BackButton>
+                <div className="flex items-center gap-2.5 flex-1">
+                  {/* Logo */}
+                  <div className="w-8 h-8 rounded-lg bg-muted border border-border/50 flex items-center justify-center">
+                    <img src="/logo.svg" alt="Acme" className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-medium leading-tight">
+                      Acme AI
+                    </span>
+                    <CopilotChat.ThreadPicker size="sm" />
+                  </div>
+                </div>
+              </CopilotChat.Header>
+            </CopilotChat.ChatView>
+          </CopilotChat.Root>
         </div>
       </div>
     </DemoLayout>
   );
 }
 
-export default function DebugAssistantPage() {
+export default function SubscriptionPage() {
   return (
     <CopilotProvider
       runtimeUrl="/api/chat"
-      systemPrompt={`You are an AI debugging assistant that helps developers identify and report bugs. You have access to:
+      systemPrompt={`You are a friendly support assistant for Acme Inc dashboard.
 
-- Console logs (errors, warnings, info, regular logs)
-- Network errors (failed API requests)
-- Screenshot capabilities
-- Bug report creation
+When a user reports an issue, follow these steps IN ORDER (one tool at a time):
 
-Your capabilities:
-1. capture_screenshot - Capture screenshots of the current state
-2. get_console_logs - Retrieve console logs, filterable by type
-3. get_network_errors - Get failed network requests
-4. create_bug_report - Fill in the bug report form with collected info
-5. simulate_error - Create test errors for demonstration
+STEP 1: First, use capture_screenshot tool to see what the user sees.
+- After getting the screenshot, describe what you see
+- If you see an error like "Something went wrong", tell the user you need to investigate further
 
-When a user reports an issue:
-1. First analyze the context (console logs, network errors)
-2. Ask clarifying questions if needed
-3. Capture screenshots if it's a visual issue
-4. Help create a comprehensive bug report
+STEP 2: Then, use get_console_logs tool to check for technical errors.
+- Analyze the console output to find the root cause
+- Look for error codes, API failures, or payment issues
 
-Be proactive in gathering debugging information. If the user mentions an error, check the console logs. If they mention an API issue, check network errors. If it's a UI issue, offer to capture a screenshot.
+STEP 3: Based on your findings, explain the issue clearly to the user.
+- If it's a billing/payment issue, offer to generate a payment link using generate_payment_link tool
 
-The debugging context is automatically available to you, so you can see errors and logs in real-time.`}
+IMPORTANT: Call tools one at a time, not together. Wait for each result before proceeding.`}
       debug={process.env.NODE_ENV === "development"}
     >
-      <DebugContent />
+      <DashboardContent />
     </CopilotProvider>
   );
 }

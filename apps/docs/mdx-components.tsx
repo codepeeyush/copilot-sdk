@@ -11,6 +11,7 @@ import { ExamplesShowcase } from "@/components/examples-showcase";
 import { ArchitectureDiagram } from "@/components/architecture-diagram";
 import { ServerFlowDiagram } from "@/components/server-flow-diagram";
 import { DemoVideo } from "@/components/demo-video";
+import { PlaygroundShowcase } from "@/components/playground-showcase";
 
 export function getMDXComponents(components?: MDXComponents): MDXComponents {
   return {
@@ -26,6 +27,7 @@ export function getMDXComponents(components?: MDXComponents): MDXComponents {
     ArchitectureDiagram,
     ServerFlowDiagram,
     DemoVideo,
+    PlaygroundShowcase,
     ...components,
   };
 }

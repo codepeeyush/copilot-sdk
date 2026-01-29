@@ -38,5 +38,16 @@ coverage
 # Misc
 *.tsbuildinfo
 
+# AI/Agent config
+.agent/
+.agents/
+.claude/
+.codex/
+.cursor/
+.gemini/
+.github/skills/
+.trae/
+.windsurf/
+
 # Private projects (not part of SDK)
 examples/yourgpt-chatbot/

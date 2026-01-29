@@ -1,3 +1,4 @@
+import type { ComponentType } from "react";
 import { source, getPageImage } from "@/lib/source";
 import {
   DocsBody,
@@ -20,7 +21,10 @@ export default async function Page(props: PageProps) {
   const page = source.getPage(params.slug);
   if (!page) notFound();
 
-  const MDX = page.data.body;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const MDX = (page.data as any).body as ComponentType<{
+    components: ReturnType<typeof getMDXComponents>;
+  }>;
 
   return (
     <DocsPage

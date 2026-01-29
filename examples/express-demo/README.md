@@ -1,22 +1,66 @@
 # Express Demo - StreamResult API
 
-This example demonstrates the new `StreamResult` API for Express servers.
+> Server-side streaming example using Express.js with the LLM SDK's StreamResult API.
 
-## Setup
+## Features Showcased
+
+### Streaming Methods
+
+- `pipeToResponse()` - SSE streaming (recommended)
+- `pipeTextToResponse()` - Text-only streaming
+- `expressHandler()` - Built-in Express handler
+- `collect()` - Non-streaming JSON response
+- Event handlers with `on('text', ...)` - Custom event processing
+- `toResponse()` - Web Response conversion
+
+### Express Integration
+
+- Multiple endpoint patterns
+- Error handling
+- CORS configuration
+- Request/response streaming
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- **pnpm** (required for workspace setup - npm/yarn won't work)
+- OpenAI API key
+
+### Installation
 
 ```bash
-# From repo root
+# Clone the repository
+git clone https://github.com/YourGPT/yourgpt-copilot.git
+cd yourgpt-copilot
+
+# Install all dependencies from root (required for workspace)
 pnpm install
 
-# Set your API key
-export OPENAI_API_KEY=sk-your-key-here
+# Set up environment
+export OPENAI_API_KEY=your-api-key-here
 
-# Run the server
+# Run development server
 cd examples/express-demo
 pnpm dev
 ```
 
-## Endpoints
+Server runs on [http://localhost:3001](http://localhost:3001)
+
+## Environment Variables
+
+Set your API key as an environment variable:
+
+```bash
+export OPENAI_API_KEY=your-api-key-here
+```
+
+| Variable         | Description         |
+| ---------------- | ------------------- |
+| `OPENAI_API_KEY` | Your OpenAI API key |
+
+## API Endpoints
 
 | Endpoint            | Method                 | Description                 |
 | ------------------- | ---------------------- | --------------------------- |
@@ -84,3 +128,26 @@ app.post("/api/chat", async (req, res) => {
   res.json({ response: text });
 });
 ```
+
+## Project Structure
+
+```
+express-demo/
+├── src/
+│   └── index.ts                    # Express server with all endpoints
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+## Tech Stack
+
+- Express.js
+- TypeScript
+- @yourgpt/llm-sdk
+
+## Important Notes
+
+> **Workspace Dependency**: This example uses `workspace:*` dependencies. You must use `pnpm install` from the monorepo root. Regular `npm install` or `yarn install` will not resolve workspace dependencies correctly.
+
+> **Backend Only**: This is a backend-only example. For frontend integration, see the Next.js examples.
