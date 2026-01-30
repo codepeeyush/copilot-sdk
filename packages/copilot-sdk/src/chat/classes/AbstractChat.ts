@@ -508,6 +508,10 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
     data: Omit<Extract<ChatEvent, { type: E }>, "type">,
   ): void {
     const event = { type, ...data } as ChatEvent;
+    const handlers = this.eventHandlers.get(type);
+    if (type === "toolCalls") {
+      this.debug(`emit(toolCalls): ${handlers?.size || 0} handlers registered`);
+    }
     this.eventHandlers.get(type)?.forEach((handler) => handler(event));
   }
 
@@ -567,11 +571,14 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
    */
   protected buildRequest() {
     // Send tools in SDK format - runtime handles conversion to LLM format
-    const tools = this.config.tools?.map((tool) => ({
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-    }));
+    // Filter out tools that are marked as unavailable
+    const tools = this.config.tools
+      ?.filter((tool) => tool.available !== false)
+      .map((tool) => ({
+        name: tool.name,
+        description: tool.description,
+        inputSchema: tool.inputSchema,
+      }));
 
     // Build a map of toolCallId -> { toolName, args } from assistant messages
     const toolCallMap = new Map<
@@ -833,10 +840,18 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
     );
   }
 
+  private isDisposed = false;
+
   /**
    * Dispose and cleanup
    */
   dispose(): void {
+    if (this.isDisposed) {
+      this.debug("dispose() called but already disposed - ignoring");
+      return;
+    }
+    this.debug("dispose() - clearing event handlers");
+    this.isDisposed = true;
     this.stop();
     this.eventHandlers.clear();
   }
