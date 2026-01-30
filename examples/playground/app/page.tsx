@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import type { ProviderId, PersonData } from "@/lib/types";
-import { samplePersons, WELCOME_DISMISSED_KEY } from "@/lib/constants";
+import { samplePersons } from "@/lib/constants";
 
 // Hooks
 import { useApiKeys } from "@/hooks/useApiKeys";
@@ -51,17 +51,19 @@ export default function PlaygroundPage() {
   const [selectedProvider, setSelectedProvider] =
     useState<ProviderId>("openai");
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
-  const [welcomeModalOpen, setWelcomeModalOpen] = useState(false);
 
   // Initialize on mount
   useEffect(() => {
     setMounted(true);
-    // Show welcome modal if not dismissed
-    const welcomeDismissed = localStorage.getItem(WELCOME_DISMISSED_KEY);
-    if (!welcomeDismissed) {
-      setWelcomeModalOpen(true);
-    }
   }, []);
+
+  // Check if any API key is set
+  const hasAnyApiKey = Object.values(apiKeys).some((key) => !!key);
+
+  // Welcome modal - show if no API keys are set and not temporarily dismissed
+  const [welcomeDismissed, setWelcomeDismissed] = useState(false);
+  const showWelcomeModal =
+    !hasAnyApiKey && !welcomeDismissed && !apiKeyModalOpen;
 
   // Handlers
   const handleSaveApiKeys = useCallback(
@@ -166,8 +168,9 @@ export default function PlaygroundPage() {
       />
 
       <WelcomeModal
-        open={welcomeModalOpen}
-        onOpenChange={setWelcomeModalOpen}
+        open={showWelcomeModal}
+        onOpenChange={(open) => !open && setWelcomeDismissed(true)}
+        onTryWithApiKeys={handleOpenApiKeyModal}
       />
     </div>
   );

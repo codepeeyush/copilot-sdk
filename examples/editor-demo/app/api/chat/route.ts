@@ -7,7 +7,7 @@ const openai = createOpenAI({
 
 const runtime = createRuntime({
   provider: openai,
-  model: "gpt-4o-mini",
+  model: "gpt-5.2",
   systemPrompt:
     "You are a helpful assistant. Be concise and helpful. When using tools, provide clear feedback about what you're doing.",
   debug: process.env.NODE_ENV === "development",

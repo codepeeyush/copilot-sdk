@@ -43,7 +43,7 @@ export const providers: ProviderConfig[] = [
   {
     id: "openai",
     name: "OpenAI",
-    model: "gpt-4o-mini",
+    model: "gpt-5.2",
     color: "#10a37f",
     keyPlaceholder: "sk-...",
     keyLink: "https://platform.openai.com/api-keys",
@@ -79,7 +79,7 @@ export const providers: ProviderConfig[] = [
   {
     id: "xai",
     name: "xAI",
-    model: "grok-3-fast-beta",
+    model: "grok-3-fast",
     color: "#1d9bf0",
     keyPlaceholder: "xai-...",
     keyLink: "https://console.x.ai/",
@@ -130,7 +130,7 @@ export const WELCOME_DISMISSED_KEY = "copilot-playground-welcome-dismissed";
 
 // External URLs
 export const GITHUB_REPO_URL =
-  "https://github.com/YourGPT/yourgpt-copilot/tree/main/examples/playground";
+  "https://github.com/YourGPT/copilot-sdk/tree/main/examples/playground";
 
 // Initial state values
 export const INITIAL_DASHBOARD_STATE: DashboardState = {

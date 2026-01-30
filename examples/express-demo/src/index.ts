@@ -15,7 +15,7 @@ const openai = createOpenAI({
 
 const runtime = createRuntime({
   provider: openai,
-  model: "gpt-4o-mini",
+  model: "gpt-5.2",
   systemPrompt: "You are a helpful AI assistant. Keep responses concise.",
 });
 

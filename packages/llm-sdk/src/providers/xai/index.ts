@@ -83,7 +83,7 @@ const XAI_MODELS: Record<string, ModelCapabilities> = {
     maxTokens: 131072,
     outputTokens: 8192,
   },
-  "grok-3-fast-beta": {
+  "grok-3-fast": {
     vision: false,
     tools: true,
     maxTokens: 131072,
@@ -163,7 +163,7 @@ export function createXAI(config: XAIProviderConfig = {}): AIProvider {
     },
 
     getCapabilities(modelId: string): ProviderCapabilities {
-      const model = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast-beta"];
+      const model = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast"];
 
       return {
         supportsVision: model.vision,

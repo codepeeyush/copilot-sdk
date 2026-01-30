@@ -72,7 +72,7 @@ function ApiKeyModalComponent({
           </div>
 
           {/* Provider Keys */}
-          <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+          <div className="space-y-3 max-h-[400px] overflow-y-auto pr-1">
             {providers.map((provider) => (
               <div key={provider.id} className="space-y-1.5">
                 <label className="text-xs font-medium text-zinc-700 dark:text-zinc-300 flex items-center gap-2">

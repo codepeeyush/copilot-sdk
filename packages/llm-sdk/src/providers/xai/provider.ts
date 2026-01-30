@@ -10,7 +10,7 @@
  * import { generateText } from '@yourgpt/llm-sdk';
  *
  * const result = await generateText({
- *   model: xai('grok-3-fast-beta'),
+ *   model: xai('grok-3-fast'),
  *   prompt: 'Hello!',
  * });
  * ```
@@ -59,7 +59,7 @@ const XAI_MODELS: Record<string, XAIModelConfig> = {
 
   // Grok 3 (February 2025) - Stable
   "grok-3-beta": { vision: true, tools: true, maxTokens: 131072 },
-  "grok-3-fast-beta": { vision: false, tools: true, maxTokens: 131072 },
+  "grok-3-fast": { vision: false, tools: true, maxTokens: 131072 },
   "grok-3-mini-beta": { vision: false, tools: true, maxTokens: 32768 },
   "grok-3-mini-fast-beta": { vision: false, tools: true, maxTokens: 32768 },
 
@@ -90,14 +90,14 @@ export interface XAIProviderOptions {
 /**
  * Create an xAI language model
  *
- * @param modelId - Model ID (e.g., 'grok-3-fast-beta', 'grok-4')
+ * @param modelId - Model ID (e.g., 'grok-3-fast', 'grok-4')
  * @param options - Provider options
  * @returns LanguageModel instance
  *
  * @example
  * ```ts
  * // Basic usage
- * const model = xai('grok-3-fast-beta');
+ * const model = xai('grok-3-fast');
  *
  * // With custom options
  * const model = xai('grok-4', {
@@ -126,7 +126,7 @@ export function xai(
   }
 
   // Get model config
-  const modelConfig = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast-beta"];
+  const modelConfig = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast"];
 
   return {
     provider: "xai",

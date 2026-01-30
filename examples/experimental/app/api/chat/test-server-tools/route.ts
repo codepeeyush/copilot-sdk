@@ -39,7 +39,7 @@ const serverTools: ToolDefinition[] = [
 
 const runtime = createRuntime({
   provider: openai,
-  model: "gpt-4o-mini",
+  model: "gpt-5.2",
   systemPrompt:
     "You are a helpful assistant. Use the get_random_number tool when asked for random numbers.",
   debug: true,

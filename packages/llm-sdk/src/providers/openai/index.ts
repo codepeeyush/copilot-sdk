@@ -38,7 +38,7 @@ const OPENAI_MODELS: Record<string, ModelCapabilities> = {
     jsonMode: true,
     maxTokens: 128000,
   },
-  "gpt-4o-mini": {
+  "gpt-5.2": {
     vision: true,
     tools: true,
     audio: false,
