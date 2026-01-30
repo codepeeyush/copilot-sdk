@@ -108,3 +108,11 @@ export interface SDKConfig {
   fontSize: FontSize;
   debug: boolean;
 }
+
+export interface ToolMetadata {
+  name: ToolKey;
+  displayName: string;
+  description: string;
+  suggestedQuery: string;
+  codeSnippet: string;
+}

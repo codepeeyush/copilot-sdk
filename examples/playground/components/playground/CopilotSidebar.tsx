@@ -42,7 +42,7 @@ export function CopilotSidebar({
 }: CopilotSidebarProps) {
   // Build runtime URL with provider and optional API key
   const runtimeUrl = useMemo(() => {
-    const baseUrl = `/api/${selectedProvider}`;
+    const baseUrl = `/playground/api/${selectedProvider}`;
     const apiKey = apiKeys[selectedProvider];
     if (apiKey) {
       return `${baseUrl}?key=${encodeURIComponent(apiKey)}`;
