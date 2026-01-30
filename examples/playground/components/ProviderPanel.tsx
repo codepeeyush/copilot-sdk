@@ -17,19 +17,19 @@ const providerConfig = {
     name: "OpenAI",
     model: "GPT-4o-mini",
     color: "bg-green-500",
-    apiUrl: "/api/openai",
+    apiUrl: "/playground/api/openai",
   },
   anthropic: {
     name: "Anthropic",
     model: "Claude 3.5 Sonnet",
     color: "bg-orange-500",
-    apiUrl: "/api/anthropic",
+    apiUrl: "/playground/api/anthropic",
   },
   google: {
     name: "Google",
     model: "Gemini 1.5 Flash",
     color: "bg-blue-500",
-    apiUrl: "/api/google",
+    apiUrl: "/playground/api/google",
   },
 };
 

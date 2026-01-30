@@ -43,7 +43,7 @@ export const providers: ProviderConfig[] = [
   {
     id: "openai",
     name: "OpenAI",
-    model: "gpt-5.2",
+    model: "gpt-5-mini",
     color: "#10a37f",
     keyPlaceholder: "sk-...",
     keyLink: "https://platform.openai.com/api-keys",

@@ -53,6 +53,10 @@ import {
 import { WeatherModule } from "./modules/WeatherModule";
 import { StockModule } from "./modules/StockModule";
 import { AlertModule } from "./modules/AlertModule";
+import { ToolInfoHoverCard } from "./ToolInfoHoverCard";
+import { ConfigInfoHoverCard } from "./ConfigInfoHoverCard";
+import { toolMetadata } from "@/lib/tool-metadata";
+import { configMetadata } from "@/lib/config-metadata";
 
 const generativeUIKeys: GenerativeUIKey[] = [
   "weather",
@@ -208,7 +212,18 @@ function ControlPanelComponent({
           {/* Row 1: Theme + Layout Select */}
           <div className="flex items-end gap-4">
             <div className="w-40">
-              <SectionLabel icon={Palette} label="Theme" />
+              <div className="flex items-center gap-1 mb-3">
+                <Palette className="h-3.5 w-3.5 text-zinc-400" />
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Theme
+                </span>
+                <ConfigInfoHoverCard
+                  description={configMetadata.theme.description}
+                  tip={configMetadata.theme.tip}
+                  codeSnippet={configMetadata.theme.codeSnippet}
+                  codeLabel={configMetadata.theme.codeLabel}
+                />
+              </div>
               <Select
                 value={copilotTheme}
                 onValueChange={(v) => onThemeChange(v as CopilotTheme)}
@@ -241,7 +256,18 @@ function ControlPanelComponent({
             </div>
 
             <div className="w-40">
-              <SectionLabel icon={Layout} label="Custom Layouts" />
+              <div className="flex items-center gap-1 mb-3">
+                <Layout className="h-3.5 w-3.5 text-zinc-400" />
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Custom Layouts
+                </span>
+                <ConfigInfoHoverCard
+                  description={configMetadata.layout.description}
+                  tip={configMetadata.layout.tip}
+                  codeSnippet={configMetadata.layout.codeSnippet}
+                  codeLabel={configMetadata.layout.codeLabel}
+                />
+              </div>
               <Select
                 value={layoutTemplate}
                 onValueChange={(v) => onLayoutChange(v as LayoutTemplate)}
@@ -267,7 +293,18 @@ function ControlPanelComponent({
             </div>
 
             <div className="w-48">
-              <SectionLabel icon={Cpu} label="Model" />
+              <div className="flex items-center gap-1 mb-3">
+                <Cpu className="h-3.5 w-3.5 text-zinc-400" />
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                  Model
+                </span>
+                <ConfigInfoHoverCard
+                  description={configMetadata.model.description}
+                  tip={configMetadata.model.tip}
+                  codeSnippet={configMetadata.model.codeSnippet}
+                  codeLabel={configMetadata.model.codeLabel}
+                />
+              </div>
               <Select
                 value={selectedProvider}
                 onValueChange={(v) => onProviderChange(v as ProviderId)}
@@ -307,7 +344,18 @@ function ControlPanelComponent({
 
           {/* Row 2: System Prompt - Full width */}
           <div>
-            <SectionLabel icon={MessageSquare} label="System Prompt" />
+            <div className="flex items-center gap-1 mb-3">
+              <MessageSquare className="h-3.5 w-3.5 text-zinc-400" />
+              <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                System Prompt
+              </span>
+              <ConfigInfoHoverCard
+                description={configMetadata.systemPrompt.description}
+                tip={configMetadata.systemPrompt.tip}
+                codeSnippet={configMetadata.systemPrompt.codeSnippet}
+                codeLabel={configMetadata.systemPrompt.codeLabel}
+              />
+            </div>
             <textarea
               value={systemPrompt}
               onChange={(e) => onSystemPromptChange(e.target.value)}
@@ -363,28 +411,34 @@ function ControlPanelComponent({
                 <div
                   className={`rounded-xl ring-1 overflow-hidden ${toolsEnabled.updateCounter ? "ring-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10" : "ring-zinc-200 dark:ring-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/30"}`}
                 >
-                  <button
-                    onClick={() => onToggleTool("updateCounter")}
-                    className="w-full flex items-center justify-between p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between p-3">
+                    <button
+                      onClick={() => onToggleTool("updateCounter")}
+                      className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-md px-1 -ml-1"
+                    >
                       <Gauge
                         className={`h-4 w-4 ${toolsEnabled.updateCounter ? "text-emerald-500" : "text-zinc-400"}`}
                       />
                       <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
                         Counter
                       </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <ToolInfoHoverCard
+                        metadata={toolMetadata.updateCounter}
+                      />
+                      <button
+                        onClick={() => onToggleTool("updateCounter")}
+                        className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
+                          toolsEnabled.updateCounter
+                            ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
+                        }`}
+                      >
+                        {toolsEnabled.updateCounter ? "ON" : "OFF"}
+                      </button>
                     </div>
-                    <span
-                      className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
-                        toolsEnabled.updateCounter
-                          ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                          : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
-                      }`}
-                    >
-                      {toolsEnabled.updateCounter ? "ON" : "OFF"}
-                    </span>
-                  </button>
+                  </div>
                   <div className="px-3 pb-3 pt-1">
                     <p className="text-2xl font-light text-zinc-900 dark:text-white tabular-nums mb-2">
                       {dashboardState.counter}
@@ -410,28 +464,34 @@ function ControlPanelComponent({
                 <div
                   className={`rounded-xl ring-1 overflow-hidden ${toolsEnabled.updatePreference ? "ring-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10" : "ring-zinc-200 dark:ring-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/30"}`}
                 >
-                  <button
-                    onClick={() => onToggleTool("updatePreference")}
-                    className="w-full flex items-center justify-between p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between p-3">
+                    <button
+                      onClick={() => onToggleTool("updatePreference")}
+                      className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-md px-1 -ml-1"
+                    >
                       <Settings2
                         className={`h-4 w-4 ${toolsEnabled.updatePreference ? "text-emerald-500" : "text-zinc-400"}`}
                       />
                       <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
                         Preference
                       </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <ToolInfoHoverCard
+                        metadata={toolMetadata.updatePreference}
+                      />
+                      <button
+                        onClick={() => onToggleTool("updatePreference")}
+                        className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
+                          toolsEnabled.updatePreference
+                            ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
+                        }`}
+                      >
+                        {toolsEnabled.updatePreference ? "ON" : "OFF"}
+                      </button>
                     </div>
-                    <span
-                      className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
-                        toolsEnabled.updatePreference
-                          ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                          : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
-                      }`}
-                    >
-                      {toolsEnabled.updatePreference ? "ON" : "OFF"}
-                    </span>
-                  </button>
+                  </div>
                   <div className="px-3 pb-3 pt-1">
                     <p className="text-xl font-mono font-medium text-indigo-600 dark:text-indigo-400">
                       {dashboardState.userPreference}
@@ -446,28 +506,32 @@ function ControlPanelComponent({
                 <div
                   className={`rounded-xl ring-1 overflow-hidden ${toolsEnabled.updateCart ? "ring-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10" : "ring-zinc-200 dark:ring-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/30"}`}
                 >
-                  <button
-                    onClick={() => onToggleTool("updateCart")}
-                    className="w-full flex items-center justify-between p-3 hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between p-3">
+                    <button
+                      onClick={() => onToggleTool("updateCart")}
+                      className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-md px-1 -ml-1"
+                    >
                       <ShoppingCart
                         className={`h-4 w-4 ${toolsEnabled.updateCart ? "text-emerald-500" : "text-zinc-400"}`}
                       />
                       <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
                         Cart
                       </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <ToolInfoHoverCard metadata={toolMetadata.updateCart} />
+                      <button
+                        onClick={() => onToggleTool("updateCart")}
+                        className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
+                          toolsEnabled.updateCart
+                            ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
+                        }`}
+                      >
+                        {toolsEnabled.updateCart ? "ON" : "OFF"}
+                      </button>
                     </div>
-                    <span
-                      className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
-                        toolsEnabled.updateCart
-                          ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
-                          : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
-                      }`}
-                    >
-                      {toolsEnabled.updateCart ? "ON" : "OFF"}
-                    </span>
-                  </button>
+                  </div>
                   <div className="px-3 pb-3 pt-1">
                     <p className="text-2xl font-light text-zinc-900 dark:text-white tabular-nums mb-2">
                       {dashboardState.cartItems}
@@ -517,19 +581,24 @@ function ControlPanelComponent({
             <div className="space-y-4">
               <div className="flex items-center gap-5">
                 {generativeUIKeys.map((key) => (
-                  <label
-                    key={key}
-                    className="flex items-center gap-2.5 cursor-pointer group"
-                  >
-                    <ToggleSwitch
-                      size="sm"
-                      active={generativeUI[key]}
-                      onChange={() => onToggleGenerativeUI(key)}
+                  <div key={key} className="flex items-center gap-2.5">
+                    <label className="flex items-center gap-2.5 cursor-pointer group">
+                      <ToggleSwitch
+                        size="sm"
+                        active={generativeUI[key]}
+                        onChange={() => onToggleGenerativeUI(key)}
+                      />
+                      <span className="text-xs font-mono text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 capitalize transition-colors">
+                        {key}
+                      </span>
+                    </label>
+                    <ConfigInfoHoverCard
+                      description={configMetadata.generativeUI[key].description}
+                      tip={configMetadata.generativeUI[key].tip}
+                      codeSnippet={configMetadata.generativeUI[key].codeSnippet}
+                      codeLabel={configMetadata.generativeUI[key].codeLabel}
                     />
-                    <span className="text-xs font-mono text-zinc-500 group-hover:text-zinc-700 dark:group-hover:text-zinc-300 capitalize transition-colors">
-                      {key}
-                    </span>
-                  </label>
+                  </div>
                 ))}
               </div>
               <div className="grid grid-cols-3 gap-3">
@@ -564,7 +633,18 @@ function ControlPanelComponent({
           <AccordionContent className="px-5 pt-1 pb-5">
             <div className="grid grid-cols-2 gap-5">
               <div>
-                <SectionLabel icon={User} label="User Profile" />
+                <div className="flex items-center gap-1 mb-3">
+                  <User className="h-3.5 w-3.5 text-zinc-400" />
+                  <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                    User Profile
+                  </span>
+                  <ConfigInfoHoverCard
+                    description={configMetadata.context.description}
+                    tip={configMetadata.context.tip}
+                    codeSnippet={configMetadata.context.codeSnippet}
+                    codeLabel={configMetadata.context.codeLabel}
+                  />
+                </div>
                 <div className="space-y-2">
                   {samplePersons.map((person) => (
                     <button

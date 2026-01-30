@@ -128,3 +128,16 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Sugar High syntax highlighting - dark theme */
+:root {
+  --sh-class: #ffcb6b;
+  --sh-identifier: #82aaff;
+  --sh-sign: #89ddff;
+  --sh-property: #80cbc4;
+  --sh-entity: #82aaff;
+  --sh-jsxliterals: #c792ea;
+  --sh-string: #c3e88d;
+  --sh-keyword: #c792ea;
+  --sh-comment: #546e7a;
+}
