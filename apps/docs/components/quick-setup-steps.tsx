@@ -28,7 +28,7 @@ import { openai } from '@yourgpt/llm-sdk/openai';
 export async function POST(req: Request) {
   const { messages } = await req.json();
   const result = await streamText({
-    model: openai('gpt-4o-mini'),
+    model: openai('gpt-5.2'),
     messages,
   });
   return result.toTextStreamResponse();

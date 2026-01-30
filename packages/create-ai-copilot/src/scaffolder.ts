@@ -17,7 +17,7 @@ interface ProviderConfig {
 const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
   openai: {
     envKey: "OPENAI_API_KEY",
-    defaultModel: "gpt-4o-mini",
+    defaultModel: "gpt-5.2",
     importName: "openai",
     className: "OpenAI",
     sdkPackage: "openai",
@@ -41,7 +41,7 @@ const PROVIDER_CONFIGS: Record<Provider, ProviderConfig> = {
   },
   xai: {
     envKey: "XAI_API_KEY",
-    defaultModel: "grok-3-fast-beta",
+    defaultModel: "grok-3-fast",
     importName: "xai",
     className: "XAI",
     sdkPackage: "openai",

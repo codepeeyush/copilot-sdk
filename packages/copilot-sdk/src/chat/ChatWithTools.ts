@@ -150,10 +150,16 @@ export class ChatWithTools {
    * Wire up internal events between chat and agent loop
    */
   private wireEvents(): void {
+    this.debug("Wiring up toolCalls event handler");
+
     // Handle tool calls from chat
     this.chat.on("toolCalls", async (event) => {
+      this.debug("🎯 toolCalls event handler FIRED", event);
       const toolCalls = event.toolCalls;
-      if (!toolCalls?.length) return;
+      if (!toolCalls?.length) {
+        this.debug("No tool calls in event");
+        return;
+      }
 
       this.debug("Tool calls received:", toolCalls);
 

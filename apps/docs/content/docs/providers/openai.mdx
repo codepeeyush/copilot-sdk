@@ -74,7 +74,7 @@ export async function POST(req: Request) {
 ```ts
 // Latest and best
 openai('gpt-4o')              // Fastest GPT-4 class
-openai('gpt-4o-mini')         // Cost-effective, very capable
+openai('gpt-5.2')         // Cost-effective, very capable
 
 // GPT-4 Turbo
 openai('gpt-4-turbo')         // 128K context
@@ -182,7 +182,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | Model | Input | Output |
 |-------|-------|--------|
 | gpt-4o | $2.50/1M tokens | $10/1M tokens |
-| gpt-4o-mini | $0.15/1M tokens | $0.60/1M tokens |
+| gpt-5.2 | $0.15/1M tokens | $0.60/1M tokens |
 | gpt-3.5-turbo | $0.50/1M tokens | $1.50/1M tokens |
 
 *Prices as of late 2024. Check [OpenAI pricing](https://openai.com/pricing) for current rates.*

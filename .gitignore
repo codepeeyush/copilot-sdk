@@ -48,6 +48,7 @@ coverage
 .github/skills/
 .trae/
 .windsurf/
+skills/
 
 # Private projects (not part of SDK)
 examples/yourgpt-chatbot/

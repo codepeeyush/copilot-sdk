@@ -1,5 +1,5 @@
 import type { BaseLayoutProps } from "fumadocs-ui/layouts/shared";
-import { BookOpen, Github } from "lucide-react";
+import { BookOpen, Github, Play } from "lucide-react";
 import CopilotSDKLogo from "@/components/logos/copilot-sdk-logo";
 
 export function baseOptions(): BaseLayoutProps {
@@ -18,6 +18,12 @@ export function baseOptions(): BaseLayoutProps {
         text: "Docs",
         url: "/docs",
         active: "nested-url",
+      },
+      {
+        type: "icon",
+        icon: <Play />,
+        text: "Playground",
+        url: "/playground",
       },
       {
         type: "icon",

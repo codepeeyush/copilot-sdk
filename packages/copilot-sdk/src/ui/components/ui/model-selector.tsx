@@ -80,7 +80,7 @@ export interface ModelSelectorProps {
  *       label: 'OpenAI',
  *       models: [
  *         { id: 'gpt-4o', name: 'GPT-4o' },
- *         { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+ *         { id: 'gpt-5.2', name: 'GPT-4o Mini' },
  *       ],
  *     },
  *   ]}

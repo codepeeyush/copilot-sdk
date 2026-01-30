@@ -88,7 +88,7 @@ await streamText({ model: anthropic("claude-sonnet-4-20250514"), messages });
 await streamText({ model: google("gemini-2.0-flash"), messages });
 
 // xAI Grok (uses OpenAI-compatible API)
-await streamText({ model: xai("grok-3-fast-beta"), messages });
+await streamText({ model: xai("grok-3-fast"), messages });
 ```
 
 ### SDK Requirements

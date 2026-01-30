@@ -44,7 +44,7 @@ import { generateText } from '@yourgpt/llm-sdk';
 import { xai } from '@yourgpt/llm-sdk/xai';
 
 const result = await generateText({
-  model: xai('grok-3-fast-beta'),
+  model: xai('grok-3-fast'),
   prompt: 'What are the latest trends in AI?',
 });
 
@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   const { messages } = await req.json();
 
   const result = await streamText({
-    model: xai('grok-3-fast-beta'),
+    model: xai('grok-3-fast'),
     system: 'You are a helpful assistant.',
     messages,
   });
@@ -88,7 +88,7 @@ xai('grok-4')                       // Flagship model, 256K context
 
 // Grok 3 (Stable)
 xai('grok-3-beta')                  // Enterprise flagship, 131K context
-xai('grok-3-fast-beta')             // Fast and stable, 131K context
+xai('grok-3-fast')             // Fast and stable, 131K context
 xai('grok-3-mini-beta')             // Smaller model, 32K context
 
 // Grok Code
@@ -103,13 +103,13 @@ xai('grok-code-fast-1')             // Optimized for coding, 256K context
 import { xai } from '@yourgpt/llm-sdk/xai';
 
 // Custom API key
-const model = xai('grok-3-fast-beta', {
+const model = xai('grok-3-fast', {
   apiKey: 'xai-custom-key',
 });
 
 // With generation options
 const result = await generateText({
-  model: xai('grok-3-fast-beta'),
+  model: xai('grok-3-fast'),
   prompt: 'Hello',
   temperature: 0.7,
   maxTokens: 4096,
@@ -128,7 +128,7 @@ import { xai } from '@yourgpt/llm-sdk/xai';
 import { z } from 'zod';
 
 const result = await generateText({
-  model: xai('grok-3-fast-beta'),
+  model: xai('grok-3-fast'),
   prompt: 'What is the weather in San Francisco?',
   tools: {
     getWeather: tool({
@@ -188,7 +188,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 | Model | Input | Output |
 |-------|-------|--------|
 | grok-4-1-fast | $0.20/1M tokens | $0.50/1M tokens |
-| grok-3-fast-beta | $0.10/1M tokens | $0.30/1M tokens |
+| grok-3-fast | $0.10/1M tokens | $0.30/1M tokens |
 | grok-3-mini-beta | $0.05/1M tokens | $0.15/1M tokens |
 
 *Check [x.ai/api](https://x.ai/api) for current rates.*

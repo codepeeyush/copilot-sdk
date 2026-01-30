@@ -41,7 +41,7 @@ interface OpenAIModelConfig {
 const OPENAI_MODELS: Record<string, OpenAIModelConfig> = {
   // GPT-4o series
   "gpt-4o": { vision: true, tools: true, jsonMode: true, maxTokens: 128000 },
-  "gpt-4o-mini": {
+  "gpt-5.2": {
     vision: true,
     tools: true,
     jsonMode: true,
@@ -127,7 +127,7 @@ export interface OpenAIProviderOptions {
 /**
  * Create an OpenAI language model
  *
- * @param modelId - Model ID (e.g., 'gpt-4o', 'gpt-4o-mini')
+ * @param modelId - Model ID (e.g., 'gpt-4o', 'gpt-5.2')
  * @param options - Provider options
  * @returns LanguageModel instance
  *
