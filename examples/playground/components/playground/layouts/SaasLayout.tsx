@@ -77,17 +77,13 @@ function CustomSuggestions() {
   );
 }
 
-export function SaasLayout({ theme, sdkConfig }: LayoutProps) {
+export function SaasLayout({ theme }: LayoutProps) {
   // Use supabase theme by default for this layout, unless a different theme is selected
   const effectiveTheme = theme === "default" ? "supabase" : theme;
 
   return (
     <div className="h-full" data-csdk-theme={effectiveTheme}>
-      <CopilotChat.Root
-        persistence={sdkConfig.showHeader}
-        className="h-full"
-        showPoweredBy={false}
-      >
+      <CopilotChat.Root persistence className="h-full" showPoweredBy={false}>
         {/* Home View - Custom welcome screen */}
         <CopilotChat.HomeView className="gap-4 p-6 bg-gradient-to-b from-primary/30 via-background to-background items-stretch w-full">
           {/* Logo */}
@@ -139,7 +135,7 @@ export function SaasLayout({ theme, sdkConfig }: LayoutProps) {
                 <span className="text-sm font-medium leading-tight">
                   Finance Assistant
                 </span>
-                {sdkConfig.showHeader && <CopilotChat.ThreadPicker size="sm" />}
+                <CopilotChat.ThreadPicker size="sm" />
               </div>
             </div>
           </CopilotChat.Header>

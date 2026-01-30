@@ -29,9 +29,7 @@ import {
   Gauge,
   User,
   Sparkles,
-  Radio,
   MessageSquare,
-  PanelTop,
   Layout,
   Cpu,
 } from "lucide-react";
@@ -43,7 +41,6 @@ import type {
   ToolsEnabledConfig,
   ToolKey,
   PersonData,
-  SDKConfig,
   LayoutTemplate,
   ProviderId,
 } from "@/lib/types";
@@ -134,11 +131,6 @@ interface ControlPanelProps {
   onReset: () => void;
   selectedPerson: PersonData;
   onSelectPerson: (person: PersonData) => void;
-  sdkConfig: SDKConfig;
-  onSDKConfigChange: <K extends keyof SDKConfig>(
-    key: K,
-    value: SDKConfig[K],
-  ) => void;
 }
 
 function ControlPanelComponent({
@@ -162,8 +154,6 @@ function ControlPanelComponent({
   onReset,
   selectedPerson,
   onSelectPerson,
-  sdkConfig,
-  onSDKConfigChange,
 }: ControlPanelProps) {
   const activeToolCount = Object.values(toolsEnabled).filter(Boolean).length;
   const selectedTheme = themes.find((t) => t.id === copilotTheme);
@@ -251,7 +241,7 @@ function ControlPanelComponent({
             </div>
 
             <div className="w-40">
-              <SectionLabel icon={Layout} label="Layout" />
+              <SectionLabel icon={Layout} label="Custom Layouts" />
               <Select
                 value={layoutTemplate}
                 onValueChange={(v) => onLayoutChange(v as LayoutTemplate)}
@@ -312,44 +302,6 @@ function ControlPanelComponent({
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            {/* SDK Options - Inline toggles */}
-            <div className="flex-1">
-              <SectionLabel icon={Settings2} label="SDK Options" />
-              <div className="flex items-center gap-2">
-                {/* Streaming */}
-                <button
-                  onClick={() =>
-                    onSDKConfigChange("streaming", !sdkConfig.streaming)
-                  }
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ring-1 transition-all ${
-                    sdkConfig.streaming
-                      ? "bg-emerald-500/10 ring-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                      : "bg-zinc-100 dark:bg-zinc-800/50 ring-zinc-200 dark:ring-zinc-700 text-zinc-500"
-                  }`}
-                >
-                  <Radio className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">Stream</span>
-                </button>
-
-                {/* Header + Thread Picker */}
-                <button
-                  onClick={() =>
-                    onSDKConfigChange("showHeader", !sdkConfig.showHeader)
-                  }
-                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ring-1 transition-all ${
-                    sdkConfig.showHeader
-                      ? "bg-emerald-500/10 ring-emerald-500/40 text-emerald-600 dark:text-emerald-400"
-                      : "bg-zinc-100 dark:bg-zinc-800/50 ring-zinc-200 dark:ring-zinc-700 text-zinc-500"
-                  }`}
-                >
-                  <PanelTop className="h-3.5 w-3.5" />
-                  <span className="text-[10px] font-medium">
-                    Header & Threads
-                  </span>
-                </button>
-              </div>
             </div>
           </div>
 

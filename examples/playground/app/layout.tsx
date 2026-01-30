@@ -15,7 +15,37 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Copilot SDK Playground",
-  description: "Compare AI providers and explore SDK themes",
+  description:
+    "Interactive playground to explore the Copilot SDK. Test AI providers, themes, tools, and generative UI components.",
+  keywords: [
+    "AI",
+    "Copilot",
+    "SDK",
+    "Playground",
+    "OpenAI",
+    "Anthropic",
+    "Google AI",
+    "Generative UI",
+    "Chat UI",
+  ],
+  authors: [{ name: "YourGPT" }],
+  openGraph: {
+    title: "Copilot SDK Playground",
+    description:
+      "Interactive playground to explore the Copilot SDK. Test AI providers, themes, tools, and generative UI components.",
+    type: "website",
+    siteName: "Copilot SDK",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Copilot SDK Playground",
+    description:
+      "Interactive playground to explore the Copilot SDK. Test AI providers, themes, tools, and generative UI components.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

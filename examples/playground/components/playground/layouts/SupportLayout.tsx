@@ -168,17 +168,13 @@ function SupportHome({ input }: { input?: React.ReactNode }) {
   );
 }
 
-export function SupportLayout({ theme, sdkConfig }: LayoutProps) {
+export function SupportLayout({ theme }: LayoutProps) {
   return (
     <div
       className="h-full"
       data-csdk-theme={theme === "default" ? undefined : theme}
     >
-      <CopilotChat.Root
-        persistence={sdkConfig.showHeader}
-        className="h-full"
-        showPoweredBy={false}
-      >
+      <CopilotChat.Root persistence className="h-full" showPoweredBy={false}>
         {/* Custom Home View */}
         <CopilotChat.HomeView className="!gap-0 !p-0">
           <SupportHome
@@ -207,7 +203,7 @@ export function SupportLayout({ theme, sdkConfig }: LayoutProps) {
                 <span className="text-sm font-medium leading-tight">
                   Support AI
                 </span>
-                {sdkConfig.showHeader && <CopilotChat.ThreadPicker size="sm" />}
+                <CopilotChat.ThreadPicker size="sm" />
               </div>
             </div>
           </CopilotChat.Header>

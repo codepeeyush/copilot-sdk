@@ -1,14 +1,13 @@
 "use client";
 
 import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
-import type { CopilotTheme, SDKConfig } from "@/lib/types";
+import type { CopilotTheme } from "@/lib/types";
 
 export interface LayoutProps {
   theme: CopilotTheme;
-  sdkConfig: SDKConfig;
 }
 
-export function DefaultLayout({ theme, sdkConfig }: LayoutProps) {
+export function DefaultLayout({ theme }: LayoutProps) {
   return (
     <div
       className="h-full"
@@ -17,10 +16,10 @@ export function DefaultLayout({ theme, sdkConfig }: LayoutProps) {
       <CopilotChat
         placeholder="Enter command..."
         className="h-full"
-        showHeader={sdkConfig.showHeader}
-        header={sdkConfig.showHeader ? { name: "AI Copilot" } : undefined}
-        showThreadPicker={sdkConfig.showHeader}
-        persistence={sdkConfig.showHeader}
+        showHeader
+        header={{ name: "AI Copilot" }}
+        showThreadPicker
+        persistence
       />
     </div>
   );

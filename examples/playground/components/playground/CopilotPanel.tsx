@@ -4,7 +4,6 @@ import type {
   CopilotTheme,
   DashboardState,
   PersonData,
-  SDKConfig,
   LayoutTemplate,
   ToolsEnabledConfig,
   GenerativeUIConfig,
@@ -22,7 +21,6 @@ interface CopilotPanelProps {
   dashboardState: DashboardState;
   actions: DashboardActions;
   currentPerson: PersonData;
-  sdkConfig: SDKConfig;
   toolsEnabled: ToolsEnabledConfig;
   generativeUI: GenerativeUIConfig;
 }
@@ -33,7 +31,6 @@ export function CopilotPanel({
   dashboardState,
   actions,
   currentPerson,
-  sdkConfig,
   toolsEnabled,
   generativeUI,
 }: CopilotPanelProps) {
@@ -44,12 +41,12 @@ export function CopilotPanel({
   const renderLayout = () => {
     switch (layoutTemplate) {
       case "saas":
-        return <SaasLayout theme={theme} sdkConfig={sdkConfig} />;
+        return <SaasLayout theme={theme} />;
       case "support":
-        return <SupportLayout theme={theme} sdkConfig={sdkConfig} />;
+        return <SupportLayout theme={theme} />;
       case "default":
       default:
-        return <DefaultLayout theme={theme} sdkConfig={sdkConfig} />;
+        return <DefaultLayout theme={theme} />;
     }
   };
 

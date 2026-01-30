@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  reactStrictMode: false, // Disable for debugging tool execution issues
+  reactStrictMode: false,
+  basePath: "/playground",
 };
 
 export default nextConfig;

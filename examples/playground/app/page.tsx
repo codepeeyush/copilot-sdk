@@ -36,13 +36,11 @@ export default function PlaygroundPage() {
     systemPrompt,
     generativeUI,
     toolsEnabled,
-    sdkConfig,
     updateTheme,
     updateLayoutTemplate,
     updateSystemPrompt,
     toggleGenerativeUI,
     toggleTool,
-    updateSDKConfig,
   } = usePlaygroundConfig();
 
   // Local state
@@ -140,8 +138,6 @@ export default function PlaygroundPage() {
               onReset={actions.reset}
               selectedPerson={selectedPerson}
               onSelectPerson={handleSelectPerson}
-              sdkConfig={sdkConfig}
-              onSDKConfigChange={updateSDKConfig}
             />
           </div>
         </div>
@@ -154,9 +150,10 @@ export default function PlaygroundPage() {
           dashboardState={dashboardState}
           actions={actions}
           selectedPerson={selectedPerson}
-          sdkConfig={sdkConfig}
           toolsEnabled={toolsEnabled}
           generativeUI={generativeUI}
+          selectedProvider={selectedProvider}
+          apiKeys={apiKeys}
         />
       </div>
 

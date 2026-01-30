@@ -24,12 +24,12 @@ import {
  * @see Vercel React best practices: `rerender-functional-setstate`
  */
 export function usePlaygroundConfig() {
-  // Theme state
-  const [copilotTheme, setCopilotTheme] = useState<CopilotTheme>("default");
+  // Theme state - default to Vercel theme
+  const [copilotTheme, setCopilotTheme] = useState<CopilotTheme>("vercel");
 
-  // Layout template state
+  // Layout template state - default to Support layout
   const [layoutTemplate, setLayoutTemplate] =
-    useState<LayoutTemplate>("default");
+    useState<LayoutTemplate>("support");
 
   // System prompt state
   const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
