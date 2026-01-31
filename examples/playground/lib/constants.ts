@@ -8,6 +8,7 @@ import type {
   ToolsEnabledConfig,
   SDKConfig,
   LayoutConfig,
+  OpenRouterModelOption,
 } from "./types";
 
 // Theme configurations - hoisted outside component to prevent re-renders
@@ -88,6 +89,18 @@ export const providers: ProviderConfig[] = [
     createProvider: "createXAI",
     importPath: "@yourgpt/llm-sdk/xai",
   },
+  {
+    id: "openrouter",
+    name: "OpenRouter",
+    model: "anthropic/claude-3.5-sonnet",
+    color: "#6366f1",
+    keyPlaceholder: "sk-or-...",
+    keyLink: "https://openrouter.ai/keys",
+    keyLinkText: "openrouter.ai",
+    envVar: "OPENROUTER_API_KEY",
+    createProvider: "createOpenRouter",
+    importPath: "@yourgpt/llm-sdk/openrouter",
+  },
 ];
 
 // Sample person data for useAIContext demo
@@ -145,7 +158,95 @@ export const INITIAL_API_KEYS: ApiKeys = {
   anthropic: "",
   google: "",
   xai: "",
+  openrouter: "",
 };
+
+// OpenRouter model options for the model selector
+// Source: https://openrouter.ai/models, https://openrouter.ai/rankings
+export const OPENROUTER_MODELS: OpenRouterModelOption[] = [
+  // OpenRouter Special
+  {
+    id: "openrouter/auto",
+    name: "Auto (Best for prompt)",
+    provider: "OpenRouter",
+  },
+  // Anthropic Claude - https://openrouter.ai/anthropic
+  {
+    id: "anthropic/claude-sonnet-4",
+    name: "Claude Sonnet 4",
+    provider: "Anthropic",
+  },
+  {
+    id: "anthropic/claude-3.5-sonnet",
+    name: "Claude 3.5 Sonnet",
+    provider: "Anthropic",
+  },
+  {
+    id: "anthropic/claude-3-5-haiku",
+    name: "Claude 3.5 Haiku",
+    provider: "Anthropic",
+  },
+  {
+    id: "anthropic/claude-3-opus",
+    name: "Claude 3 Opus",
+    provider: "Anthropic",
+  },
+  {
+    id: "anthropic/claude-3-haiku",
+    name: "Claude 3 Haiku",
+    provider: "Anthropic",
+  },
+  // OpenAI
+  { id: "openai/gpt-4o", name: "GPT-4o", provider: "OpenAI" },
+  { id: "openai/gpt-4o-mini", name: "GPT-4o Mini", provider: "OpenAI" },
+  { id: "openai/gpt-4-turbo", name: "GPT-4 Turbo", provider: "OpenAI" },
+  { id: "openai/o1", name: "o1", provider: "OpenAI" },
+  { id: "openai/o1-mini", name: "o1 Mini", provider: "OpenAI" },
+  // Google Gemini
+  { id: "google/gemini-2.5-pro", name: "Gemini 2.5 Pro", provider: "Google" },
+  {
+    id: "google/gemini-2.5-flash",
+    name: "Gemini 2.5 Flash",
+    provider: "Google",
+  },
+  {
+    id: "google/gemini-2.0-flash-001",
+    name: "Gemini 2.0 Flash",
+    provider: "Google",
+  },
+  {
+    id: "google/gemini-flash-1.5",
+    name: "Gemini Flash 1.5",
+    provider: "Google",
+  },
+  // Meta Llama
+  {
+    id: "meta-llama/llama-3.3-70b-instruct",
+    name: "Llama 3.3 70B",
+    provider: "Meta",
+  },
+  {
+    id: "meta-llama/llama-3.1-405b-instruct",
+    name: "Llama 3.1 405B",
+    provider: "Meta",
+  },
+  // DeepSeek
+  {
+    id: "deepseek/deepseek-chat-v3-0324",
+    name: "DeepSeek V3",
+    provider: "DeepSeek",
+  },
+  {
+    id: "deepseek/deepseek-r1-0528:free",
+    name: "DeepSeek R1 (Free)",
+    provider: "DeepSeek",
+  },
+  // Mistral
+  { id: "mistralai/mistral-large", name: "Mistral Large", provider: "Mistral" },
+  { id: "mistralai/mistral-nemo", name: "Mistral Nemo", provider: "Mistral" },
+  // xAI
+  { id: "x-ai/grok-2", name: "Grok 2", provider: "xAI" },
+];
 
 export const INITIAL_GENERATIVE_UI: GenerativeUIConfig = {
   weather: true,

@@ -3,6 +3,7 @@ import { createOpenAI } from "@yourgpt/llm-sdk/openai";
 import { createAnthropic } from "@yourgpt/llm-sdk/anthropic";
 import { createGoogle } from "@yourgpt/llm-sdk/google";
 import { createXAI } from "@yourgpt/llm-sdk/xai";
+import { createOpenRouter } from "@yourgpt/llm-sdk/openrouter";
 import { providers, SYSTEM_PROMPT } from "@/lib/constants";
 import type { ProviderId } from "@/lib/types";
 
@@ -12,6 +13,7 @@ const providerFactories = {
   anthropic: createAnthropic,
   google: createGoogle,
   xai: createXAI,
+  openrouter: createOpenRouter,
 } as const;
 
 // Environment variable names for each provider
@@ -20,6 +22,7 @@ const envVarNames: Record<ProviderId, string> = {
   anthropic: "ANTHROPIC_API_KEY",
   google: "GOOGLE_GENERATIVE_AI_API_KEY",
   xai: "XAI_API_KEY",
+  openrouter: "OPENROUTER_API_KEY",
 };
 
 export async function POST(
@@ -57,10 +60,17 @@ export async function POST(
     const createProvider = providerFactories[providerId as ProviderId];
     const providerInstance = createProvider({ apiKey });
 
+    // Get model - OpenRouter supports dynamic model selection via URL param
+    const modelOverride = url.searchParams.get("model");
+    const model =
+      providerId === "openrouter" && modelOverride
+        ? modelOverride
+        : providerConfig.model;
+
     // Create runtime with shared system prompt
     const runtime = createRuntime({
       provider: providerInstance,
-      model: providerConfig.model,
+      model,
       systemPrompt: SYSTEM_PROMPT,
       debug: process.env.NODE_ENV === "development",
     });

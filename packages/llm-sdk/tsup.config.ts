@@ -12,6 +12,7 @@ export default defineConfig({
     "providers/ollama/index": "src/providers/ollama/index.ts",
     "providers/xai/index": "src/providers/xai/index.ts",
     "providers/azure/index": "src/providers/azure/index.ts",
+    "providers/openrouter/index": "src/providers/openrouter/index.ts",
 
     // Legacy adapters
     "adapters/index": "src/adapters/index.ts",

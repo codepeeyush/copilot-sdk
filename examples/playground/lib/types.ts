@@ -34,9 +34,15 @@ export interface ApiKeys {
   anthropic: string;
   google: string;
   xai: string;
+  openrouter: string;
 }
 
-export type ProviderId = "openai" | "anthropic" | "google" | "xai";
+export type ProviderId =
+  | "openai"
+  | "anthropic"
+  | "google"
+  | "xai"
+  | "openrouter";
 
 export interface ProviderConfig {
   id: ProviderId;
@@ -49,6 +55,12 @@ export interface ProviderConfig {
   envVar: string;
   createProvider: string;
   importPath: string;
+}
+
+export interface OpenRouterModelOption {
+  id: string;
+  name: string;
+  provider: string;
 }
 
 export interface PersonData {

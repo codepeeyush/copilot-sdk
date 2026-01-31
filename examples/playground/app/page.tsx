@@ -50,6 +50,9 @@ export default function PlaygroundPage() {
   );
   const [selectedProvider, setSelectedProvider] =
     useState<ProviderId>("openai");
+  const [selectedOpenRouterModel, setSelectedOpenRouterModel] = useState(
+    "anthropic/claude-3.5-sonnet",
+  );
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
 
   // Initialize on mount
@@ -79,6 +82,10 @@ export default function PlaygroundPage() {
 
   const handleProviderChange = useCallback((provider: ProviderId) => {
     setSelectedProvider(provider);
+  }, []);
+
+  const handleOpenRouterModelChange = useCallback((model: string) => {
+    setSelectedOpenRouterModel(model);
   }, []);
 
   const handleSelectPerson = useCallback((person: PersonData) => {
@@ -126,6 +133,8 @@ export default function PlaygroundPage() {
               onLayoutChange={updateLayoutTemplate}
               selectedProvider={selectedProvider}
               onProviderChange={handleProviderChange}
+              selectedOpenRouterModel={selectedOpenRouterModel}
+              onOpenRouterModelChange={handleOpenRouterModelChange}
               systemPrompt={systemPrompt}
               onSystemPromptChange={updateSystemPrompt}
               generativeUI={generativeUI}
@@ -155,6 +164,7 @@ export default function PlaygroundPage() {
           toolsEnabled={toolsEnabled}
           generativeUI={generativeUI}
           selectedProvider={selectedProvider}
+          selectedOpenRouterModel={selectedOpenRouterModel}
           apiKeys={apiKeys}
         />
       </div>

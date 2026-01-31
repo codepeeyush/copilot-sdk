@@ -1,0 +1,692 @@
+---
+title: Deploy
+description: Deploy your Copilot backend to any platform
+icon: Rocket
+---
+
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Card, Cards } from 'fumadocs-ui/components/card';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+Your Copilot backend uses standard Web APIs (`fetch`, `Response`, `ReadableStream`), so the **same code runs everywhere** — Vercel, Cloudflare, Deno, AWS, or your own servers.
+
+<Cards>
+  <Card title="Vercel" href="#vercel" />
+  <Card title="Cloudflare Workers" href="#cloudflare-workers" />
+  <Card title="Deno Deploy" href="#deno-deploy" />
+  <Card title="AWS Lambda" href="#aws-lambda" />
+  <Card title="Express / Node.js" href="#express--nodejs" />
+  <Card title="Docker" href="#docker" />
+</Cards>
+
+---
+
+## Vercel
+
+Deploy to Vercel with Next.js. Supports both Serverless and Edge runtimes.
+
+<Tabs items={['Serverless (Default)', 'Edge Runtime']}>
+  <Tab value="Serverless (Default)">
+    ```ts title="app/api/chat/route.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export async function POST(req: Request) {
+      const body = await req.json();
+      return runtime.stream(body).toResponse();
+    }
+    ```
+  </Tab>
+  <Tab value="Edge Runtime">
+    Edge functions have faster cold starts (~25ms vs ~250ms) and run closer to users.
+
+    ```ts title="app/api/chat/route.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    export const runtime = 'edge'; // Enable Edge Runtime
+
+    const rt = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export async function POST(req: Request) {
+      const body = await req.json();
+      return rt.stream(body).toResponse();
+    }
+    ```
+
+    <Callout type="info">
+    Edge functions have a 30-second execution limit. For long-running agent loops, use Serverless.
+    </Callout>
+  </Tab>
+</Tabs>
+
+### Non-Streaming
+
+```ts title="app/api/chat/route.ts"
+export async function POST(req: Request) {
+  const body = await req.json();
+  const result = await runtime.chat(body);
+  return Response.json(result);
+}
+```
+
+### Deploy
+
+```bash
+npm i -g vercel
+vercel
+```
+
+Set your environment variable in the Vercel dashboard or CLI:
+
+```bash
+vercel env add OPENAI_API_KEY
+```
+
+---
+
+## Cloudflare Workers
+
+Deploy to Cloudflare's edge network with Workers. Runs in 300+ locations worldwide.
+
+<Tabs items={['Streaming', 'Non-Streaming']}>
+  <Tab value="Streaming">
+    ```ts title="src/index.ts"
+    import { createRuntime, createHonoApp } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    export interface Env {
+      OPENAI_API_KEY: string;
+    }
+
+    export default {
+      async fetch(request: Request, env: Env): Promise<Response> {
+        const runtime = createRuntime({
+          provider: createOpenAI({ apiKey: env.OPENAI_API_KEY }),
+          model: 'gpt-4o',
+          systemPrompt: 'You are a helpful assistant.',
+        });
+
+        return createHonoApp(runtime).fetch(request, env);
+      },
+    };
+    ```
+  </Tab>
+  <Tab value="Non-Streaming">
+    ```ts title="src/index.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    export interface Env {
+      OPENAI_API_KEY: string;
+    }
+
+    export default {
+      async fetch(request: Request, env: Env): Promise<Response> {
+        const runtime = createRuntime({
+          provider: createOpenAI({ apiKey: env.OPENAI_API_KEY }),
+          model: 'gpt-4o',
+          systemPrompt: 'You are a helpful assistant.',
+        });
+
+        if (request.method !== 'POST') {
+          return new Response('Method not allowed', { status: 405 });
+        }
+
+        const body = await request.json();
+        const result = await runtime.chat(body);
+        return Response.json(result);
+      },
+    };
+    ```
+  </Tab>
+</Tabs>
+
+### Configuration
+
+```toml title="wrangler.toml"
+name = "my-copilot-api"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+compatibility_flags = ["nodejs_compat"]
+```
+
+### Deploy
+
+```bash
+npm i -g wrangler
+
+# Add your API key as a secret
+wrangler secret put OPENAI_API_KEY
+
+# Deploy
+wrangler deploy
+```
+
+<Callout>
+Your API will be available at `https://my-copilot-api.<your-subdomain>.workers.dev`
+</Callout>
+
+---
+
+## Deno Deploy
+
+Deploy to Deno's global edge network with zero configuration.
+
+<Tabs items={['Streaming', 'Non-Streaming']}>
+  <Tab value="Streaming">
+    ```ts title="main.ts"
+    import { createRuntime, createHonoApp } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY') }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    Deno.serve(createHonoApp(runtime).fetch);
+    ```
+  </Tab>
+  <Tab value="Non-Streaming">
+    ```ts title="main.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: Deno.env.get('OPENAI_API_KEY') }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    Deno.serve(async (req: Request) => {
+      if (req.method !== 'POST') {
+        return new Response('Method not allowed', { status: 405 });
+      }
+
+      const body = await req.json();
+      const result = await runtime.chat(body);
+      return Response.json(result);
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Deploy
+
+```bash
+# Install Deno Deploy CLI
+deno install -Arf jsr:@deno/deployctl
+
+# Deploy
+deployctl deploy --project=my-copilot main.ts
+```
+
+Set environment variables in the Deno Deploy dashboard.
+
+---
+
+## AWS Lambda
+
+Deploy to AWS Lambda using SST, Serverless Framework, or AWS CDK.
+
+<Tabs items={['SST', 'Serverless Framework']}>
+  <Tab value="SST">
+    ```ts title="packages/functions/src/chat.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+    import { Resource } from 'sst';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: Resource.OpenAIApiKey.value }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export async function handler(event: any) {
+      const body = JSON.parse(event.body);
+
+      // Non-streaming (Lambda default)
+      const result = await runtime.chat(body);
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result),
+      };
+    }
+    ```
+
+    ```ts title="sst.config.ts"
+    export default $config({
+      app(input) {
+        return { name: 'my-copilot', region: 'us-east-1' };
+      },
+      async run() {
+        const api = new sst.aws.Function('Chat', {
+          handler: 'packages/functions/src/chat.handler',
+          url: true,
+        });
+
+        return { url: api.url };
+      },
+    });
+    ```
+  </Tab>
+  <Tab value="Serverless Framework">
+    ```ts title="handler.ts"
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+    import type { APIGatewayProxyHandler } from 'aws-lambda';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    export const chat: APIGatewayProxyHandler = async (event) => {
+      const body = JSON.parse(event.body || '{}');
+      const result = await runtime.chat(body);
+
+      return {
+        statusCode: 200,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(result),
+      };
+    };
+    ```
+
+    ```yaml title="serverless.yml"
+    service: my-copilot
+
+    provider:
+      name: aws
+      runtime: nodejs20.x
+      environment:
+        OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+
+    functions:
+      chat:
+        handler: handler.chat
+        events:
+          - http:
+              path: /chat
+              method: post
+    ```
+  </Tab>
+</Tabs>
+
+### Streaming on Lambda
+
+<Callout type="warn">
+AWS Lambda requires **Function URL with streaming** for SSE responses. Standard API Gateway does not support streaming.
+</Callout>
+
+```ts title="packages/functions/src/chat-stream.ts"
+import { createRuntime, createHonoApp } from '@yourgpt/llm-sdk';
+import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+import { streamHandle } from 'hono/aws-lambda';
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+});
+
+export const handler = streamHandle(createHonoApp(runtime));
+```
+
+### Deploy
+
+```bash
+# SST
+npx sst deploy
+
+# Serverless
+serverless deploy
+```
+
+---
+
+## Express / Node.js
+
+Deploy to any Node.js hosting (Railway, Render, Fly.io, DigitalOcean, etc.).
+
+<Tabs items={['Streaming', 'Non-Streaming', 'Both']}>
+  <Tab value="Streaming">
+    ```ts title="server.ts"
+    import express from 'express';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(express.json());
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    app.post('/api/chat', async (req, res) => {
+      await runtime.stream(req.body).pipeToResponse(res);
+    });
+
+    app.listen(3000, () => {
+      console.log('Server running on http://localhost:3000');
+    });
+    ```
+  </Tab>
+  <Tab value="Non-Streaming">
+    ```ts title="server.ts"
+    import express from 'express';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(express.json());
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    app.post('/api/chat', async (req, res) => {
+      const result = await runtime.chat(req.body);
+      res.json(result);
+    });
+
+    app.listen(3000, () => {
+      console.log('Server running on http://localhost:3000');
+    });
+    ```
+  </Tab>
+  <Tab value="Both">
+    ```ts title="server.ts"
+    import express from 'express';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const app = express();
+    app.use(express.json());
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    // Streaming endpoint
+    app.post('/api/chat/stream', async (req, res) => {
+      await runtime.stream(req.body).pipeToResponse(res);
+    });
+
+    // Non-streaming endpoint
+    app.post('/api/chat', async (req, res) => {
+      const result = await runtime.chat(req.body);
+      res.json(result);
+    });
+
+    app.listen(3000, () => {
+      console.log('Server running on http://localhost:3000');
+    });
+    ```
+  </Tab>
+</Tabs>
+
+### Deploy to Popular Platforms
+
+<Accordions type="single">
+  <Accordion title="Railway" id="railway">
+    ```bash
+    npm i -g @railway/cli
+    railway login
+    railway init
+    railway up
+    ```
+
+    Set `OPENAI_API_KEY` in Railway dashboard → Variables.
+  </Accordion>
+  <Accordion title="Render" id="render">
+    1. Push to GitHub
+    2. Create new **Web Service** on Render
+    3. Set build command: `npm install && npm run build`
+    4. Set start command: `npm start`
+    5. Add `OPENAI_API_KEY` in Environment
+  </Accordion>
+  <Accordion title="Fly.io" id="flyio">
+    ```bash
+    npm i -g flyctl
+    fly launch
+    fly secrets set OPENAI_API_KEY=sk-...
+    fly deploy
+    ```
+  </Accordion>
+</Accordions>
+
+---
+
+## Docker
+
+Self-host your Copilot backend with Docker.
+
+<Tabs items={['Streaming', 'Non-Streaming']}>
+  <Tab value="Streaming">
+    ```ts title="server.ts"
+    import { serve } from '@hono/node-server';
+    import { createRuntime, createHonoApp } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    const port = Number(process.env.PORT) || 3000;
+
+    serve({ fetch: createHonoApp(runtime).fetch, port }, (info) => {
+      console.log(`Server running on http://localhost:${info.port}`);
+    });
+    ```
+  </Tab>
+  <Tab value="Non-Streaming">
+    ```ts title="server.ts"
+    import { serve } from '@hono/node-server';
+    import { Hono } from 'hono';
+    import { createRuntime } from '@yourgpt/llm-sdk';
+    import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+    const runtime = createRuntime({
+      provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+      model: 'gpt-4o',
+      systemPrompt: 'You are a helpful assistant.',
+    });
+
+    const app = new Hono();
+
+    app.post('/api/chat', async (c) => {
+      const body = await c.req.json();
+      const result = await runtime.chat(body);
+      return c.json(result);
+    });
+
+    const port = Number(process.env.PORT) || 3000;
+    serve({ fetch: app.fetch, port });
+    ```
+  </Tab>
+</Tabs>
+
+### Dockerfile
+
+```dockerfile title="Dockerfile"
+FROM node:20-slim AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM node:20-slim
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/package.json ./
+
+ENV NODE_ENV=production
+EXPOSE 3000
+
+CMD ["node", "dist/server.js"]
+```
+
+### Docker Compose
+
+```yaml title="docker-compose.yml"
+services:
+  copilot:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    restart: unless-stopped
+```
+
+### Run
+
+```bash
+# Build and run
+docker compose up -d
+
+# Or without compose
+docker build -t my-copilot .
+docker run -p 3000:3000 -e OPENAI_API_KEY=sk-... my-copilot
+```
+
+---
+
+## Bun
+
+Deploy with Bun for faster startup and better performance.
+
+```ts title="server.ts"
+import { createRuntime, createHonoApp } from '@yourgpt/llm-sdk';
+import { createOpenAI } from '@yourgpt/llm-sdk/openai';
+
+const runtime = createRuntime({
+  provider: createOpenAI({ apiKey: Bun.env.OPENAI_API_KEY }),
+  model: 'gpt-4o',
+  systemPrompt: 'You are a helpful assistant.',
+});
+
+const app = createHonoApp(runtime);
+
+export default {
+  port: 3000,
+  fetch: app.fetch,
+};
+```
+
+### Run
+
+```bash
+bun run server.ts
+```
+
+---
+
+## Connect Frontend
+
+Point your Copilot SDK frontend to your deployed API:
+
+```tsx title="app/providers.tsx"
+'use client';
+
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider
+      runtimeUrl="https://your-api.example.com/api/chat"
+      // For non-streaming:
+      // streaming={false}
+    >
+      {children}
+    </CopilotProvider>
+  );
+}
+```
+
+| Mode | Server Method | CopilotProvider |
+|------|---------------|-----------------|
+| Streaming | `.stream(body).toResponse()` | `streaming={true}` (default) |
+| Non-streaming | `await runtime.chat(body)` | `streaming={false}` |
+
+---
+
+## CORS
+
+If your frontend and backend are on different domains, add CORS headers:
+
+<Tabs items={['Next.js', 'Hono', 'Express']}>
+  <Tab value="Next.js">
+    ```ts title="app/api/chat/route.ts"
+    const corsHeaders = {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+    };
+
+    export async function OPTIONS() {
+      return new Response(null, { headers: corsHeaders });
+    }
+
+    export async function POST(req: Request) {
+      const body = await req.json();
+      const response = runtime.stream(body).toResponse();
+
+      // Add CORS headers
+      Object.entries(corsHeaders).forEach(([key, value]) => {
+        response.headers.set(key, value);
+      });
+
+      return response;
+    }
+    ```
+  </Tab>
+  <Tab value="Hono">
+    ```ts
+    import { cors } from 'hono/cors';
+
+    const app = createHonoApp(runtime);
+    app.use('*', cors());
+    ```
+  </Tab>
+  <Tab value="Express">
+    ```ts
+    import cors from 'cors';
+
+    app.use(cors());
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Next Steps
+
+- [Server Setup](/docs/server) — Full runtime configuration and options
+- [Tools](/docs/tools) — Add function calling to your Copilot
+- [Providers](/docs/providers) — Configure different LLM providers
