@@ -9,12 +9,12 @@
 export { openai, createOpenAI as createOpenAIModel } from "./provider";
 export type { OpenAIProviderOptions } from "./provider";
 
-// LEGACY: Keep existing createOpenAI for backward compatibility
 import { createOpenAIAdapter } from "../../adapters/openai";
-import type {
-  AIProvider,
-  ProviderCapabilities,
-  OpenAIProviderConfig,
+import {
+  createCallableProvider,
+  type AIProvider,
+  type ProviderCapabilities,
+  type OpenAIProviderConfig,
 } from "../types";
 
 // ============================================
@@ -146,68 +146,68 @@ const OPENAI_MODELS: Record<string, ModelCapabilities> = {
 // ============================================
 
 /**
- * Create an OpenAI provider for use with createRuntime()
+ * Create an OpenAI provider (callable, Vercel AI SDK style)
  *
  * @example
  * ```typescript
- * import { createRuntime } from '@yourgpt/llm-sdk';
  * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
  *
+ * const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY });
+ *
+ * // Callable - Vercel AI SDK style
+ * const model = openai('gpt-4o');
+ *
+ * // Also works with createRuntime (backward compatible)
  * const runtime = createRuntime({
- *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+ *   provider: openai,
  *   model: 'gpt-4o',
  * });
- * ```
  *
- * For streamText/generateText, use the simpler openai() function:
- * ```typescript
- * import { streamText } from '@yourgpt/llm-sdk';
- * import { openai } from '@yourgpt/llm-sdk/openai';
- *
- * const result = await streamText({
- *   model: openai('gpt-4o'),
- *   messages,
- * });
+ * // Check capabilities
+ * const caps = openai.getCapabilities('gpt-4o');
  * ```
  */
 export function createOpenAI(config: OpenAIProviderConfig = {}): AIProvider {
   const apiKey = config.apiKey ?? process.env.OPENAI_API_KEY ?? "";
 
-  return {
+  // Create the callable function
+  const providerFn = (modelId: string) => {
+    return createOpenAIAdapter({
+      apiKey,
+      model: modelId,
+      baseUrl: config.baseUrl,
+    });
+  };
+
+  // Get capabilities helper
+  const getCapabilities = (modelId: string): ProviderCapabilities => {
+    const model = OPENAI_MODELS[modelId] ?? OPENAI_MODELS["gpt-4o"];
+
+    return {
+      supportsVision: model.vision,
+      supportsTools: model.tools,
+      supportsThinking: false,
+      supportsStreaming: true,
+      supportsPDF: false,
+      supportsAudio: model.audio,
+      supportsVideo: false,
+      maxTokens: model.maxTokens,
+      supportedImageTypes: model.vision
+        ? ["image/png", "image/jpeg", "image/gif", "image/webp"]
+        : [],
+      supportedAudioTypes: model.audio
+        ? ["audio/mp3", "audio/wav", "audio/webm"]
+        : [],
+      supportsJsonMode: model.jsonMode,
+      supportsSystemMessages: true,
+    };
+  };
+
+  return createCallableProvider(providerFn, {
     name: "openai",
     supportedModels: Object.keys(OPENAI_MODELS),
-
-    languageModel(modelId: string) {
-      return createOpenAIAdapter({
-        apiKey,
-        model: modelId,
-        baseUrl: config.baseUrl,
-      });
-    },
-
-    getCapabilities(modelId: string): ProviderCapabilities {
-      const model = OPENAI_MODELS[modelId] ?? OPENAI_MODELS["gpt-4o"];
-
-      return {
-        supportsVision: model.vision,
-        supportsTools: model.tools,
-        supportsThinking: false, // OpenAI doesn't have extended thinking
-        supportsStreaming: true,
-        supportsPDF: false, // OpenAI doesn't support PDFs directly
-        supportsAudio: model.audio,
-        supportsVideo: false,
-        maxTokens: model.maxTokens,
-        supportedImageTypes: model.vision
-          ? ["image/png", "image/jpeg", "image/gif", "image/webp"]
-          : [],
-        supportedAudioTypes: model.audio
-          ? ["audio/mp3", "audio/wav", "audio/webm"]
-          : [],
-        supportsJsonMode: model.jsonMode,
-        supportsSystemMessages: true,
-      };
-    },
-  };
+    getCapabilities,
+  });
 }
 
 // Alias for consistency

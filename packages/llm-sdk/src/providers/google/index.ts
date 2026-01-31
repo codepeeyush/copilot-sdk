@@ -17,12 +17,12 @@
 export { google, createGoogle as createGoogleModel } from "./provider";
 export type { GoogleProviderOptions } from "./provider";
 
-// LEGACY: Keep existing createGoogle for backward compatibility
 import { createGoogleAdapter } from "../../adapters/google";
-import type {
-  AIProvider,
-  ProviderCapabilities,
-  GoogleProviderConfig,
+import {
+  createCallableProvider,
+  type AIProvider,
+  type ProviderCapabilities,
+  type GoogleProviderConfig,
 } from "../types";
 
 // ============================================
@@ -144,16 +144,20 @@ const GOOGLE_MODELS: Record<string, ModelCapabilities> = {
 // ============================================
 
 /**
- * Create a Google provider
+ * Create a Google provider (callable, Vercel AI SDK style)
  *
  * @example
  * ```typescript
- * const google = createGoogle({
- *   apiKey: '...',
- * });
- * const adapter = google.languageModel('gemini-2.0-flash');
- * const caps = google.getCapabilities('gemini-2.0-flash');
+ * const google = createGoogle({ apiKey: '...' });
  *
+ * // Callable - Vercel AI SDK style
+ * const model = google('gemini-2.0-flash');
+ *
+ * // Also supports method call (backward compatible)
+ * const model2 = google.languageModel('gemini-2.0-flash');
+ *
+ * // Check capabilities
+ * const caps = google.getCapabilities('gemini-2.0-flash');
  * if (caps.supportsVideo) {
  *   // Show video upload button
  * }
@@ -162,66 +166,69 @@ const GOOGLE_MODELS: Record<string, ModelCapabilities> = {
 export function createGoogle(config: GoogleProviderConfig = {}): AIProvider {
   const apiKey = config.apiKey ?? process.env.GOOGLE_API_KEY ?? "";
 
-  return {
+  // Create the callable function
+  const providerFn = (modelId: string) => {
+    return createGoogleAdapter({
+      apiKey,
+      model: modelId,
+      baseUrl: config.baseUrl,
+      safetySettings: config.safetySettings,
+    });
+  };
+
+  // Get capabilities helper
+  const getCapabilities = (modelId: string): ProviderCapabilities => {
+    const model = GOOGLE_MODELS[modelId] ?? GOOGLE_MODELS["gemini-2.0-flash"];
+
+    return {
+      supportsVision: model.vision,
+      supportsTools: model.tools,
+      supportsThinking: false,
+      supportsStreaming: true,
+      supportsPDF: model.pdf,
+      supportsAudio: model.audio,
+      supportsVideo: model.video,
+      maxTokens: model.maxTokens,
+      supportedImageTypes: model.vision
+        ? [
+            "image/png",
+            "image/jpeg",
+            "image/gif",
+            "image/webp",
+            "image/heic",
+            "image/heif",
+          ]
+        : [],
+      supportedAudioTypes: model.audio
+        ? [
+            "audio/mp3",
+            "audio/wav",
+            "audio/aiff",
+            "audio/aac",
+            "audio/ogg",
+            "audio/flac",
+          ]
+        : [],
+      supportedVideoTypes: model.video
+        ? [
+            "video/mp4",
+            "video/mpeg",
+            "video/mov",
+            "video/avi",
+            "video/webm",
+            "video/mkv",
+          ]
+        : [],
+      supportsJsonMode: true,
+      supportsSystemMessages: true,
+    };
+  };
+
+  return createCallableProvider(providerFn, {
     name: "google",
     supportedModels: Object.keys(GOOGLE_MODELS),
-
-    languageModel(modelId: string) {
-      return createGoogleAdapter({
-        apiKey,
-        model: modelId,
-        baseUrl: config.baseUrl,
-        safetySettings: config.safetySettings,
-      });
-    },
-
-    getCapabilities(modelId: string): ProviderCapabilities {
-      const model = GOOGLE_MODELS[modelId] ?? GOOGLE_MODELS["gemini-2.0-flash"];
-
-      return {
-        supportsVision: model.vision,
-        supportsTools: model.tools,
-        supportsThinking: false, // Gemini doesn't have extended thinking like Claude
-        supportsStreaming: true,
-        supportsPDF: model.pdf,
-        supportsAudio: model.audio,
-        supportsVideo: model.video,
-        maxTokens: model.maxTokens,
-        supportedImageTypes: model.vision
-          ? [
-              "image/png",
-              "image/jpeg",
-              "image/gif",
-              "image/webp",
-              "image/heic",
-              "image/heif",
-            ]
-          : [],
-        supportedAudioTypes: model.audio
-          ? [
-              "audio/mp3",
-              "audio/wav",
-              "audio/aiff",
-              "audio/aac",
-              "audio/ogg",
-              "audio/flac",
-            ]
-          : [],
-        supportedVideoTypes: model.video
-          ? [
-              "video/mp4",
-              "video/mpeg",
-              "video/mov",
-              "video/avi",
-              "video/webm",
-              "video/mkv",
-            ]
-          : [],
-        supportsJsonMode: true, // Gemini supports JSON mode
-        supportsSystemMessages: true,
-      };
-    },
-  };
+    getCapabilities,
+  });
 }
 
 // Alias for consistency

@@ -6,10 +6,11 @@
  */
 
 import { createOllamaAdapter } from "../../adapters/ollama";
-import type {
-  AIProvider,
-  ProviderCapabilities,
-  OllamaProviderConfig,
+import {
+  createCallableProvider,
+  type AIProvider,
+  type ProviderCapabilities,
+  type OllamaProviderConfig,
 } from "../types";
 
 // ============================================
@@ -138,53 +139,60 @@ const DEFAULT_MODEL_CAPS: ModelCapabilities = {
 // ============================================
 
 /**
- * Create an Ollama provider
+ * Create an Ollama provider (callable, Vercel AI SDK style)
  *
  * @example
  * ```typescript
  * const ollama = createOllama({ baseUrl: 'http://localhost:11434' });
- * const adapter = ollama.languageModel('llama3');
+ *
+ * // Callable - Vercel AI SDK style
+ * const model = ollama('llama3');
+ *
+ * // Also supports method call (backward compatible)
+ * const model2 = ollama.languageModel('llama3');
  * ```
  */
 export function createOllama(config: OllamaProviderConfig = {}): AIProvider {
   const baseUrl = config.baseUrl ?? "http://localhost:11434";
 
-  return {
+  // Create the callable function
+  const providerFn = (modelId: string) => {
+    return createOllamaAdapter({
+      model: modelId,
+      baseUrl,
+    });
+  };
+
+  // Get capabilities helper
+  const getCapabilities = (modelId: string): ProviderCapabilities => {
+    const baseModelName = modelId.split(":")[0];
+    const model =
+      OLLAMA_MODELS[modelId] ??
+      OLLAMA_MODELS[baseModelName] ??
+      DEFAULT_MODEL_CAPS;
+
+    return {
+      supportsVision: model.vision,
+      supportsTools: model.tools,
+      supportsThinking: false,
+      supportsStreaming: true,
+      supportsPDF: false,
+      supportsAudio: false,
+      supportsVideo: false,
+      maxTokens: model.maxTokens,
+      supportedImageTypes: model.vision
+        ? ["image/png", "image/jpeg", "image/gif"]
+        : [],
+      supportsJsonMode: false,
+      supportsSystemMessages: true,
+    };
+  };
+
+  return createCallableProvider(providerFn, {
     name: "ollama",
     supportedModels: Object.keys(OLLAMA_MODELS),
-
-    languageModel(modelId: string) {
-      return createOllamaAdapter({
-        model: modelId,
-        baseUrl,
-      });
-    },
-
-    getCapabilities(modelId: string): ProviderCapabilities {
-      // Try exact match first, then try base model name
-      const baseModelName = modelId.split(":")[0];
-      const model =
-        OLLAMA_MODELS[modelId] ??
-        OLLAMA_MODELS[baseModelName] ??
-        DEFAULT_MODEL_CAPS;
-
-      return {
-        supportsVision: model.vision,
-        supportsTools: model.tools,
-        supportsThinking: false,
-        supportsStreaming: true,
-        supportsPDF: false,
-        supportsAudio: false,
-        supportsVideo: false,
-        maxTokens: model.maxTokens,
-        supportedImageTypes: model.vision
-          ? ["image/png", "image/jpeg", "image/gif"]
-          : [],
-        supportsJsonMode: false,
-        supportsSystemMessages: true,
-      };
-    },
-  };
+    getCapabilities,
+  });
 }
 
 // Alias for consistency

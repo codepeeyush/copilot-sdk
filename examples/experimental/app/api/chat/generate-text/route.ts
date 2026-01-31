@@ -1,52 +1,23 @@
-import { generateText, type CoreMessage } from "@yourgpt/llm-sdk";
+import { createRuntime } from "@yourgpt/llm-sdk";
 import { createAnthropic } from "@yourgpt/llm-sdk/anthropic";
 
 const anthropic = createAnthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
+const runtime = createRuntime({
+  provider: anthropic,
+  model: "claude-sonnet-4-20250514",
+  systemPrompt: "You are a helpful assistant. Be concise and helpful.",
+  debug: process.env.NODE_ENV === "development",
+});
+
 export async function POST(request: Request) {
   console.log("[Generate Text Route] Received request");
 
   try {
-    const body = await request.json();
-    const { messages } = body;
-
-    console.log("[Generate Text Route] Messages:", messages?.length);
-
-    // Convert to CoreMessage format
-    const coreMessages: CoreMessage[] = messages.map(
-      (m: { role: string; content: string }) => ({
-        role: m.role as "user" | "assistant" | "system",
-        content: m.content,
-      }),
-    );
-
-    const result = await generateText({
-      model: anthropic("claude-sonnet-4-20250514"),
-      system: "You are a helpful assistant. Be concise and helpful.",
-      messages: coreMessages,
-    });
-
-    console.log("[Generate Text Route] Response:", {
-      textLength: result.text.length,
-      usage: result.usage,
-      finishReason: result.finishReason,
-    });
-
-    // Return in format compatible with CopilotChat
-    return Response.json({
-      success: true,
-      content: result.text,
-      messages: [
-        {
-          role: "assistant",
-          content: result.text,
-        },
-      ],
-      usage: result.usage,
-      finishReason: result.finishReason,
-    });
+    const response = await runtime.handleRequest(request);
+    return response;
   } catch (error) {
     console.error("[Generate Text Route] Error:", error);
     return Response.json(

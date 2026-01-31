@@ -668,7 +668,7 @@ export class Runtime {
    * Get the AI provider name from config
    */
   private getProviderName(): string {
-    if ("provider" in this.config && this.config.provider) {
+    if ("provider" in this.config) {
       return this.config.provider.name;
     }
     if ("llm" in this.config && this.config.llm) {
@@ -682,7 +682,7 @@ export class Runtime {
    * Get the AI provider instance (if using provider config)
    */
   getProvider(): AIProvider | null {
-    if ("provider" in this.config && this.config.provider) {
+    if ("provider" in this.config) {
       return this.config.provider as AIProvider;
     }
     return null;
@@ -692,7 +692,7 @@ export class Runtime {
    * Get the current model ID
    */
   getModel(): string {
-    if ("provider" in this.config && this.config.provider) {
+    if ("provider" in this.config) {
       return this.config.model;
     }
     if ("llm" in this.config && this.config.llm) {
