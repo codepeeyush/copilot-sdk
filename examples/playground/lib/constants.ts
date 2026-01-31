@@ -157,6 +157,8 @@ export const INITIAL_TOOLS_ENABLED: ToolsEnabledConfig = {
   updateCounter: true,
   updatePreference: true,
   updateCart: true,
+  captureScreenshot: true,
+  getConsoleLogs: true,
 };
 
 export const INITIAL_SDK_CONFIG: SDKConfig = {

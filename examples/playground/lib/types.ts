@@ -76,6 +76,8 @@ export interface ToolsEnabledConfig {
   updateCounter: boolean;
   updatePreference: boolean;
   updateCart: boolean;
+  captureScreenshot: boolean;
+  getConsoleLogs: boolean;
 }
 
 export type GenerativeUIKey = keyof GenerativeUIConfig;

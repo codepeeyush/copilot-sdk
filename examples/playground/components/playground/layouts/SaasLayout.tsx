@@ -1,11 +1,13 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { CopilotChat, useCopilotChatContext } from "@yourgpt/copilot-sdk/ui";
 import {
-  CreditCard,
-  Calendar,
-  HeartPulse,
-  ArrowUpRight,
+  Plus,
+  Sun,
+  Moon,
+  ShoppingCart,
+  Camera,
   ChevronLeft,
 } from "lucide-react";
 import type { LayoutProps } from "./DefaultLayout";
@@ -14,11 +16,13 @@ import type { LayoutProps } from "./DefaultLayout";
 function SuggestionCard({
   icon: Icon,
   label,
+  message,
   iconBg,
   iconColor,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  message?: string;
   iconBg: string;
   iconColor: string;
 }) {
@@ -26,7 +30,7 @@ function SuggestionCard({
 
   return (
     <button
-      onClick={() => send(label)}
+      onClick={() => send(message || label)}
       className="group w-full flex items-center gap-3 px-3 py-2.5 rounded-xl
                  bg-card/80 border border-border/50
                  hover:bg-card hover:border-border hover:shadow-md
@@ -47,29 +51,36 @@ function SuggestionCard({
 
 // Custom Suggestions Grid
 function CustomSuggestions() {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   return (
     <div className="w-full space-y-1.5">
       <SuggestionCard
-        icon={CreditCard}
-        label="What are my subscriptions?"
+        icon={Plus}
+        label="Update counter"
+        message="Increase the counter by 5"
         iconBg="bg-violet-500/15"
         iconColor="text-violet-400"
       />
       <SuggestionCard
-        icon={Calendar}
-        label="Upcoming bills"
+        icon={isDark ? Sun : Moon}
+        label={isDark ? "Light mode" : "Dark mode"}
+        message={isDark ? "Switch to light mode" : "Switch to dark mode"}
         iconBg="bg-blue-500/15"
         iconColor="text-blue-400"
       />
       <SuggestionCard
-        icon={HeartPulse}
-        label="Check my finances"
+        icon={ShoppingCart}
+        label="Add to cart"
+        message="Add 3 items to my cart"
         iconBg="bg-emerald-500/15"
         iconColor="text-emerald-400"
       />
       <SuggestionCard
-        icon={ArrowUpRight}
-        label="Move $200 to savings"
+        icon={Camera}
+        label="Take screenshot"
+        message="Take a screenshot of this page"
         iconBg="bg-amber-500/15"
         iconColor="text-amber-400"
       />
