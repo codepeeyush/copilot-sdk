@@ -15,10 +15,11 @@
  */
 
 import { createAzureAdapter } from "../../adapters/azure";
-import type {
-  AIProvider,
-  ProviderCapabilities,
-  AzureProviderConfig,
+import {
+  createCallableProvider,
+  type AIProvider,
+  type ProviderCapabilities,
+  type AzureProviderConfig,
 } from "../types";
 
 // ============================================
@@ -77,7 +78,7 @@ function detectCapabilitiesFromDeployment(deploymentName: string): {
 // ============================================
 
 /**
- * Create an Azure OpenAI provider
+ * Create an Azure OpenAI provider (callable, Vercel AI SDK style)
  *
  * @example
  * ```typescript
@@ -86,8 +87,12 @@ function detectCapabilitiesFromDeployment(deploymentName: string): {
  *   resourceName: 'my-azure-resource',
  *   deploymentName: 'gpt-4o-deployment',
  * });
- * const adapter = azure.languageModel('gpt-4o-deployment');
- * const caps = azure.getCapabilities('gpt-4o-deployment');
+ *
+ * // Callable - Vercel AI SDK style
+ * const model = azure('gpt-4o-deployment');
+ *
+ * // Also supports method call (backward compatible)
+ * const model2 = azure.languageModel('gpt-4o-deployment');
  * ```
  */
 export function createAzure(config: AzureProviderConfig): AIProvider {
@@ -98,45 +103,47 @@ export function createAzure(config: AzureProviderConfig): AIProvider {
     config.deploymentName ?? process.env.AZURE_OPENAI_DEPLOYMENT ?? "";
 
   // For Azure, the "supported models" are actually deployment names
-  // We include the default deployment as the main "model"
   const supportedModels = defaultDeployment ? [defaultDeployment] : [];
 
-  return {
+  // Create the callable function
+  const providerFn = (deploymentName: string) => {
+    return createAzureAdapter({
+      apiKey,
+      resourceName,
+      deploymentName: deploymentName || defaultDeployment,
+      apiVersion: config.apiVersion,
+      baseUrl: config.baseUrl,
+    });
+  };
+
+  // Get capabilities helper
+  const getCapabilities = (deploymentName: string): ProviderCapabilities => {
+    const detected = detectCapabilitiesFromDeployment(
+      deploymentName || defaultDeployment,
+    );
+
+    return {
+      supportsVision: detected.vision,
+      supportsTools: detected.tools,
+      supportsThinking: false,
+      supportsStreaming: true,
+      supportsPDF: false,
+      supportsAudio: false,
+      supportsVideo: false,
+      maxTokens: detected.maxTokens,
+      supportedImageTypes: detected.vision
+        ? ["image/png", "image/jpeg", "image/gif", "image/webp"]
+        : [],
+      supportsJsonMode: true,
+      supportsSystemMessages: true,
+    };
+  };
+
+  return createCallableProvider(providerFn, {
     name: "azure",
     supportedModels,
-
-    languageModel(deploymentName: string) {
-      return createAzureAdapter({
-        apiKey,
-        resourceName,
-        deploymentName: deploymentName || defaultDeployment,
-        apiVersion: config.apiVersion,
-        baseUrl: config.baseUrl,
-      });
-    },
-
-    getCapabilities(deploymentName: string): ProviderCapabilities {
-      const detected = detectCapabilitiesFromDeployment(
-        deploymentName || defaultDeployment,
-      );
-
-      return {
-        supportsVision: detected.vision,
-        supportsTools: detected.tools,
-        supportsThinking: false,
-        supportsStreaming: true,
-        supportsPDF: false,
-        supportsAudio: false,
-        supportsVideo: false,
-        maxTokens: detected.maxTokens,
-        supportedImageTypes: detected.vision
-          ? ["image/png", "image/jpeg", "image/gif", "image/webp"]
-          : [],
-        supportsJsonMode: true,
-        supportsSystemMessages: true,
-      };
-    },
-  };
+    getCapabilities,
+  });
 }
 
 // Alias for consistency

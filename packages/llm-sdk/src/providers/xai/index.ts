@@ -14,12 +14,12 @@
 export { xai, createXAI as createXAIModel } from "./provider";
 export type { XAIProviderOptions } from "./provider";
 
-// LEGACY: Keep existing createXAI for backward compatibility
 import { createXAIAdapter } from "../../adapters/xai";
-import type {
-  AIProvider,
-  ProviderCapabilities,
-  XAIProviderConfig,
+import {
+  createCallableProvider,
+  type AIProvider,
+  type ProviderCapabilities,
+  type XAIProviderConfig,
 } from "../types";
 
 // ============================================
@@ -136,52 +136,60 @@ const XAI_MODELS: Record<string, ModelCapabilities> = {
 // ============================================
 
 /**
- * Create an xAI provider
+ * Create an xAI provider (callable, Vercel AI SDK style)
  *
  * @example
  * ```typescript
- * const xai = createXAI({
- *   apiKey: '...',
- * });
- * const adapter = xai.languageModel('grok-2');
+ * const xai = createXAI({ apiKey: '...' });
+ *
+ * // Callable - Vercel AI SDK style
+ * const model = xai('grok-2');
+ *
+ * // Also supports method call (backward compatible)
+ * const model2 = xai.languageModel('grok-2');
+ *
+ * // Check capabilities
  * const caps = xai.getCapabilities('grok-2');
  * ```
  */
 export function createXAI(config: XAIProviderConfig = {}): AIProvider {
   const apiKey = config.apiKey ?? process.env.XAI_API_KEY ?? "";
 
-  return {
+  // Create the callable function
+  const providerFn = (modelId: string) => {
+    return createXAIAdapter({
+      apiKey,
+      model: modelId,
+      baseUrl: config.baseUrl,
+    });
+  };
+
+  // Get capabilities helper
+  const getCapabilities = (modelId: string): ProviderCapabilities => {
+    const model = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast"];
+
+    return {
+      supportsVision: model.vision,
+      supportsTools: model.tools,
+      supportsThinking: false,
+      supportsStreaming: true,
+      supportsPDF: false,
+      supportsAudio: false,
+      supportsVideo: false,
+      maxTokens: model.maxTokens,
+      supportedImageTypes: model.vision
+        ? ["image/png", "image/jpeg", "image/gif", "image/webp"]
+        : [],
+      supportsJsonMode: false,
+      supportsSystemMessages: true,
+    };
+  };
+
+  return createCallableProvider(providerFn, {
     name: "xai",
     supportedModels: Object.keys(XAI_MODELS),
-
-    languageModel(modelId: string) {
-      return createXAIAdapter({
-        apiKey,
-        model: modelId,
-        baseUrl: config.baseUrl,
-      });
-    },
-
-    getCapabilities(modelId: string): ProviderCapabilities {
-      const model = XAI_MODELS[modelId] ?? XAI_MODELS["grok-3-fast"];
-
-      return {
-        supportsVision: model.vision,
-        supportsTools: model.tools,
-        supportsThinking: false,
-        supportsStreaming: true,
-        supportsPDF: false,
-        supportsAudio: false,
-        supportsVideo: false,
-        maxTokens: model.maxTokens,
-        supportedImageTypes: model.vision
-          ? ["image/png", "image/jpeg", "image/gif", "image/webp"]
-          : [],
-        supportsJsonMode: false, // xAI doesn't support JSON mode yet
-        supportsSystemMessages: true,
-      };
-    },
-  };
+    getCapabilities,
+  });
 }
 
 // Alias for consistency

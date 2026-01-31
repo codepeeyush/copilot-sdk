@@ -9,12 +9,12 @@
 export { anthropic, createAnthropic as createAnthropicModel } from "./provider";
 export type { AnthropicProviderOptions } from "./provider";
 
-// LEGACY: Keep existing createAnthropic for backward compatibility
 import { createAnthropicAdapter } from "../../adapters/anthropic";
-import type {
-  AIProvider,
-  ProviderCapabilities,
-  AnthropicProviderConfig,
+import {
+  createCallableProvider,
+  type AIProvider,
+  type ProviderCapabilities,
+  type AnthropicProviderConfig,
 } from "../types";
 
 // ============================================
@@ -101,7 +101,7 @@ const ANTHROPIC_MODELS: Record<string, ModelCapabilities> = {
 // ============================================
 
 /**
- * Create an Anthropic provider
+ * Create an Anthropic provider (callable, Vercel AI SDK style)
  *
  * @example
  * ```typescript
@@ -109,7 +109,14 @@ const ANTHROPIC_MODELS: Record<string, ModelCapabilities> = {
  *   apiKey: '...',
  *   thinkingBudget: 10000, // Enable extended thinking
  * });
- * const adapter = anthropic.languageModel('claude-sonnet-4-20250514');
+ *
+ * // Callable - Vercel AI SDK style
+ * const model = anthropic('claude-sonnet-4-20250514');
+ *
+ * // Also supports method call (backward compatible)
+ * const model2 = anthropic.languageModel('claude-sonnet-4-20250514');
+ *
+ * // Check capabilities
  * const caps = anthropic.getCapabilities('claude-sonnet-4-20250514');
  * ```
  */
@@ -118,46 +125,48 @@ export function createAnthropic(
 ): AIProvider {
   const apiKey = config.apiKey ?? process.env.ANTHROPIC_API_KEY ?? "";
 
-  return {
+  // Create the callable function
+  const providerFn = (modelId: string) => {
+    return createAnthropicAdapter({
+      apiKey,
+      model: modelId,
+      baseUrl: config.baseUrl,
+      thinking: config.thinkingBudget
+        ? { type: "enabled", budgetTokens: config.thinkingBudget }
+        : undefined,
+    });
+  };
+
+  // Get capabilities helper
+  const getCapabilities = (modelId: string): ProviderCapabilities => {
+    const model =
+      ANTHROPIC_MODELS[modelId] ?? ANTHROPIC_MODELS["claude-3-5-sonnet-latest"];
+
+    return {
+      supportsVision: model.vision,
+      supportsTools: model.tools,
+      supportsThinking: model.thinking,
+      supportsStreaming: true,
+      supportsPDF: true,
+      supportsAudio: false,
+      supportsVideo: false,
+      maxTokens: model.maxTokens,
+      supportedImageTypes: [
+        "image/png",
+        "image/jpeg",
+        "image/gif",
+        "image/webp",
+      ],
+      supportsJsonMode: false,
+      supportsSystemMessages: true,
+    };
+  };
+
+  return createCallableProvider(providerFn, {
     name: "anthropic",
     supportedModels: Object.keys(ANTHROPIC_MODELS),
-
-    languageModel(modelId: string) {
-      return createAnthropicAdapter({
-        apiKey,
-        model: modelId,
-        baseUrl: config.baseUrl,
-        thinking: config.thinkingBudget
-          ? { type: "enabled", budgetTokens: config.thinkingBudget }
-          : undefined,
-      });
-    },
-
-    getCapabilities(modelId: string): ProviderCapabilities {
-      const model =
-        ANTHROPIC_MODELS[modelId] ??
-        ANTHROPIC_MODELS["claude-3-5-sonnet-latest"];
-
-      return {
-        supportsVision: model.vision,
-        supportsTools: model.tools,
-        supportsThinking: model.thinking,
-        supportsStreaming: true,
-        supportsPDF: true, // Claude supports PDFs
-        supportsAudio: false,
-        supportsVideo: false,
-        maxTokens: model.maxTokens,
-        supportedImageTypes: [
-          "image/png",
-          "image/jpeg",
-          "image/gif",
-          "image/webp",
-        ],
-        supportsJsonMode: false, // Anthropic doesn't have JSON mode
-        supportsSystemMessages: true,
-      };
-    },
-  };
+    getCapabilities,
+  });
 }
 
 // Alias for consistency

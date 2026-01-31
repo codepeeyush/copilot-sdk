@@ -35,8 +35,8 @@ export interface UseToolConfig<TParams = Record<string, unknown>> {
   available?: boolean;
   /** Require user approval */
   needsApproval?: boolean;
-  /** Custom approval message */
-  approvalMessage?: string;
+  /** Custom approval message (can be string or function that receives params) */
+  approvalMessage?: string | ((params: TParams) => string);
 }
 
 /**
@@ -87,7 +87,8 @@ export function useTool<TParams = Record<string, unknown>>(
       render: config.render as ToolDefinition["render"],
       available: config.available ?? true,
       needsApproval: config.needsApproval,
-      approvalMessage: config.approvalMessage,
+      approvalMessage:
+        config.approvalMessage as ToolDefinition["approvalMessage"],
     };
 
     // Register tool
@@ -227,7 +228,8 @@ export function useToolsArray<TParams = Record<string, unknown>>(
         },
         available: config.available ?? true,
         needsApproval: config.needsApproval,
-        approvalMessage: config.approvalMessage,
+        approvalMessage:
+          config.approvalMessage as ToolDefinition["approvalMessage"],
       };
 
       registerTool(tool);

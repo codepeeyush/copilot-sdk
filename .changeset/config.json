@@ -7,5 +7,16 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": []
+  "ignore": [
+    "@yourgpt/copilot-sdk-knowledge",
+    "@yourgpt/copilot-sdk-docs",
+    "playground",
+    "debug-assistant-demo",
+    "editor-demo",
+    "experimental",
+    "express-demo",
+    "saas-demo",
+    "shopping-demo",
+    "support-tickets-demo"
+  ]
 }

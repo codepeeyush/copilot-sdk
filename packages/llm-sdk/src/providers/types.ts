@@ -228,28 +228,14 @@ export interface ProviderCapabilities {
 // ============================================
 
 /**
- * AI Provider interface
+ * AI Provider interface (object form)
  *
  * Wraps existing LLMAdapter with additional metadata:
  * - Supported models list
  * - Per-model capabilities
  * - Provider name
- *
- * @example
- * ```typescript
- * const openai = createOpenAI({ apiKey: '...' });
- *
- * // Get adapter for a specific model
- * const adapter = openai.languageModel('gpt-4o');
- *
- * // Check capabilities
- * const caps = openai.getCapabilities('gpt-4o');
- * if (caps.supportsVision) {
- *   // Show image upload button
- * }
- * ```
  */
-export interface AIProvider {
+export interface AIProviderObject {
   /** Provider name (e.g., 'openai', 'anthropic') */
   readonly name: string;
 
@@ -272,6 +258,63 @@ export interface AIProvider {
    * Optional: Get an embedding model (future expansion)
    */
   embeddingModel?(modelId: string): EmbeddingModel;
+}
+
+/**
+ * Callable AI Provider (Vercel AI SDK style)
+ *
+ * A function that returns a LanguageModel when called with a model ID,
+ * but also has properties for provider metadata and methods.
+ *
+ * @example
+ * ```typescript
+ * const openai = createOpenAI({ apiKey: '...' });
+ *
+ * // Callable - returns LanguageModel directly (Vercel AI SDK style)
+ * const model = openai('gpt-4o');
+ *
+ * // Also supports method calls (backward compatible)
+ * const model2 = openai.languageModel('gpt-4o');
+ *
+ * // Check capabilities
+ * const caps = openai.getCapabilities('gpt-4o');
+ * if (caps.supportsVision) {
+ *   // Show image upload button
+ * }
+ * ```
+ */
+export interface AIProvider extends AIProviderObject {
+  /**
+   * Call the provider directly with a model ID to get a LanguageModel
+   * This is the Vercel AI SDK style pattern
+   */
+  (modelId: string): LLMAdapter;
+}
+
+/**
+ * Helper to create a callable AIProvider
+ * Combines a callable function with AIProvider properties
+ */
+export function createCallableProvider(
+  providerFn: (modelId: string) => LLMAdapter,
+  properties: Omit<AIProviderObject, "languageModel">,
+): AIProvider {
+  // Define 'name' property using defineProperty since it's read-only on functions
+  Object.defineProperty(providerFn, "name", {
+    value: properties.name,
+    writable: false,
+    configurable: true,
+  });
+
+  // Assign other properties
+  Object.assign(providerFn, {
+    supportedModels: properties.supportedModels,
+    languageModel: providerFn,
+    getCapabilities: properties.getCapabilities,
+    embeddingModel: properties.embeddingModel,
+  });
+
+  return providerFn as AIProvider;
 }
 
 /**
