@@ -1,7 +1,9 @@
 "use client";
 
-import { useRef, useCallback } from "react";
-import { useTool } from "@yourgpt/copilot-sdk/react";
+import { useRef } from "react";
+import { useTheme } from "next-themes";
+import { useTool, useTools } from "@yourgpt/copilot-sdk/react";
+import { builtinTools } from "@yourgpt/copilot-sdk/core";
 import {
   Plus,
   Minus,
@@ -137,27 +139,33 @@ function CounterTool({
 
 function PreferenceTool({ actions }: { actions: DashboardActions }) {
   const actionsRef = useLatest(actions);
+  const { setTheme } = useTheme();
+  const setThemeRef = useLatest(setTheme);
 
   useTool({
     name: "updatePreference",
     description:
-      "Update user preference setting. Common values: dark, light, auto, system.",
+      "Update the app theme/preference. Use 'dark' for dark mode, 'light' for light mode, or 'system' for system preference.",
     inputSchema: {
       type: "object",
       properties: {
         preference: {
           type: "string",
-          description: "The new preference value (e.g., dark, light, auto)",
+          enum: ["dark", "light", "system"],
+          description: "The theme preference: dark, light, or system",
         },
       },
       required: ["preference"],
     },
     handler: async ({ preference }: { preference: string }) => {
+      // Update dashboard state
       actionsRef.current.setPreference(preference);
+      // Actually change the app theme
+      setThemeRef.current(preference);
       return {
         success: true,
         preference,
-        message: `Preference set to ${preference}`,
+        message: `Theme set to ${preference} mode`,
       };
     },
     render: ({ status, args, result }) => {
@@ -171,10 +179,10 @@ function PreferenceTool({ actions }: { actions: DashboardActions }) {
                 </div>
                 <div>
                   <p className="text-xs font-medium text-zinc-700 dark:text-zinc-300">
-                    Preference Update
+                    Theme Changed
                   </p>
                   <p className="text-[10px] text-zinc-500">
-                    Set to &quot;{args.preference}&quot;
+                    Switched to {args.preference} mode
                   </p>
                 </div>
               </div>
@@ -359,6 +367,28 @@ function CartTool({
   return null;
 }
 
+// ===========================================
+// Built-in Tools Components
+// ===========================================
+
+function ScreenshotTool() {
+  useTools({
+    capture_screenshot: builtinTools.capture_screenshot,
+  });
+  return null;
+}
+
+function ConsoleLogsTool() {
+  useTools({
+    get_console_logs: builtinTools.get_console_logs,
+  });
+  return null;
+}
+
+// ===========================================
+// Generative UI Tools
+// ===========================================
+
 function WeatherTool() {
   useTool({
     name: "getWeather",
@@ -505,6 +535,10 @@ export function DashboardTools({
       {toolsEnabled.updateCart && (
         <CartTool dashboardState={dashboardState} actions={actions} />
       )}
+
+      {/* Built-in tools - screenshot and console logs */}
+      {toolsEnabled.captureScreenshot && <ScreenshotTool />}
+      {toolsEnabled.getConsoleLogs && <ConsoleLogsTool />}
 
       {/* Generative UI tools - conditionally rendered based on generativeUI config */}
       {generativeUI.weather && <WeatherTool />}

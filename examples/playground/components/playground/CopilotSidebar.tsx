@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useCallback } from "react";
+import { toast } from "sonner";
 import { CopilotProvider } from "@yourgpt/copilot-sdk/react";
 import { CopilotPanel } from "./CopilotPanel";
 import type {
@@ -50,8 +51,17 @@ export function CopilotSidebar({
     return baseUrl;
   }, [selectedProvider, apiKeys]);
 
-  // Error handler - logs to console with clear formatting
+  // Error handler - shows toast and logs to console
   const handleError = useCallback((error: Error) => {
+    // Show toast notification
+    toast.error("Copilot Error", {
+      description: error.message,
+      duration: 5000,
+      id: "copilot-error",
+      position: "top-center",
+    });
+
+    // Also log to console for debugging
     console.error(
       `%c[Copilot Error]%c ${error.message}`,
       "background: #ef4444; color: white; padding: 2px 6px; border-radius: 3px; font-weight: bold;",

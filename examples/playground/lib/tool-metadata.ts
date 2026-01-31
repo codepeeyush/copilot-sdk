@@ -1,6 +1,34 @@
 import type { ToolMetadata } from "./types";
 
 export const toolMetadata: Record<string, ToolMetadata> = {
+  captureScreenshot: {
+    name: "captureScreenshot",
+    displayName: "Screenshot",
+    description:
+      "Capture a screenshot of the current page. Useful for debugging UI issues or sharing what you see.",
+    suggestedQuery: "Take a screenshot of this page",
+    codeSnippet: `import { builtinTools } from "@yourgpt/copilot-sdk/core";
+import { useTools } from "@yourgpt/copilot-sdk/react";
+
+// Register built-in screenshot tool
+useTools({
+  capture_screenshot: builtinTools.capture_screenshot,
+});`,
+  },
+  getConsoleLogs: {
+    name: "getConsoleLogs",
+    displayName: "Console Logs",
+    description:
+      "Get recent console logs from the browser. Helpful for debugging errors and understanding application state.",
+    suggestedQuery: "Check the console for any errors",
+    codeSnippet: `import { builtinTools } from "@yourgpt/copilot-sdk/core";
+import { useTools } from "@yourgpt/copilot-sdk/react";
+
+// Register built-in console logs tool
+useTools({
+  get_console_logs: builtinTools.get_console_logs,
+});`,
+  },
   updateCounter: {
     name: "updateCounter",
     displayName: "Counter",
@@ -28,25 +56,25 @@ export const toolMetadata: Record<string, ToolMetadata> = {
   },
   updatePreference: {
     name: "updatePreference",
-    displayName: "Preference",
+    displayName: "Theme",
     description:
-      "Update user preference setting. Common values: dark, light, auto, system.",
-    suggestedQuery: "Set my preference to dark mode",
+      "Change the app theme. Supports dark mode, light mode, or system preference.",
+    suggestedQuery: "Switch to dark mode",
     codeSnippet: `useTool({
   name: "updatePreference",
-  description: "Update user preference setting",
+  description: "Update the app theme",
   inputSchema: {
     type: "object",
     properties: {
       preference: {
         type: "string",
-        description: "The new preference value",
+        enum: ["dark", "light", "system"],
       },
     },
     required: ["preference"],
   },
   handler: async ({ preference }) => {
-    // Handle preference update
+    setTheme(preference); // Uses next-themes
     return { success: true, preference };
   },
 });`,

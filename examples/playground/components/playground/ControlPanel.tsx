@@ -32,6 +32,8 @@ import {
   MessageSquare,
   Layout,
   Cpu,
+  Camera,
+  ScrollText,
 } from "lucide-react";
 import type {
   CopilotTheme,
@@ -387,7 +389,7 @@ function ControlPanelComponent({
                   Tools & State
                 </p>
                 <p className="text-[10px] text-zinc-500 font-mono">
-                  {activeToolCount}/3 tools active
+                  {activeToolCount}/5 tools active
                 </p>
               </div>
             </div>
@@ -406,7 +408,7 @@ function ControlPanelComponent({
               </div>
 
               {/* Unified Tool + State Cards */}
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-5 gap-3">
                 {/* Counter Tool + State */}
                 <div
                   className={`rounded-xl ring-1 overflow-hidden ${toolsEnabled.updateCounter ? "ring-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10" : "ring-zinc-200 dark:ring-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/30"}`}
@@ -550,6 +552,90 @@ function ControlPanelComponent({
                         <Trash2 className="h-3.5 w-3.5 text-zinc-400" />
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* Screenshot Tool (Built-in) */}
+                <div
+                  className={`rounded-xl ring-1 overflow-hidden ${toolsEnabled.captureScreenshot ? "ring-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10" : "ring-zinc-200 dark:ring-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/30"}`}
+                >
+                  <div className="flex items-center justify-between p-3">
+                    <button
+                      onClick={() => onToggleTool("captureScreenshot")}
+                      className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-md px-1 -ml-1"
+                    >
+                      <Camera
+                        className={`h-4 w-4 ${toolsEnabled.captureScreenshot ? "text-emerald-500" : "text-zinc-400"}`}
+                      />
+                      <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
+                        Screenshot
+                      </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <ToolInfoHoverCard
+                        metadata={toolMetadata.captureScreenshot}
+                      />
+                      <button
+                        onClick={() => onToggleTool("captureScreenshot")}
+                        className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
+                          toolsEnabled.captureScreenshot
+                            ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
+                        }`}
+                      >
+                        {toolsEnabled.captureScreenshot ? "ON" : "OFF"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="px-3 pb-3 pt-1">
+                    <p className="text-[10px] text-zinc-500 font-mono">
+                      Captures current page
+                    </p>
+                    <p className="text-[9px] text-zinc-400 font-mono mt-1">
+                      built-in tool
+                    </p>
+                  </div>
+                </div>
+
+                {/* Console Logs Tool (Built-in) */}
+                <div
+                  className={`rounded-xl ring-1 overflow-hidden ${toolsEnabled.getConsoleLogs ? "ring-emerald-500/40 bg-emerald-500/5 dark:bg-emerald-500/10" : "ring-zinc-200 dark:ring-zinc-700/50 bg-zinc-50 dark:bg-zinc-800/30"}`}
+                >
+                  <div className="flex items-center justify-between p-3">
+                    <button
+                      onClick={() => onToggleTool("getConsoleLogs")}
+                      className="flex items-center gap-2 hover:bg-black/5 dark:hover:bg-white/5 transition-colors rounded-md px-1 -ml-1"
+                    >
+                      <ScrollText
+                        className={`h-4 w-4 ${toolsEnabled.getConsoleLogs ? "text-emerald-500" : "text-zinc-400"}`}
+                      />
+                      <span className="text-xs font-medium text-zinc-900 dark:text-zinc-100">
+                        Console
+                      </span>
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <ToolInfoHoverCard
+                        metadata={toolMetadata.getConsoleLogs}
+                      />
+                      <button
+                        onClick={() => onToggleTool("getConsoleLogs")}
+                        className={`relative text-[9px] font-mono font-semibold uppercase tracking-wider px-2 py-1 rounded-md transition-all ${
+                          toolsEnabled.getConsoleLogs
+                            ? "bg-emerald-500/20 text-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]"
+                            : "bg-zinc-200 dark:bg-zinc-700 text-zinc-500"
+                        }`}
+                      >
+                        {toolsEnabled.getConsoleLogs ? "ON" : "OFF"}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="px-3 pb-3 pt-1">
+                    <p className="text-[10px] text-zinc-500 font-mono">
+                      Gets browser logs
+                    </p>
+                    <p className="text-[9px] text-zinc-400 font-mono mt-1">
+                      built-in tool
+                    </p>
                   </div>
                 </div>
               </div>

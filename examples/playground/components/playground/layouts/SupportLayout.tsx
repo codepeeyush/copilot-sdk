@@ -1,11 +1,13 @@
 "use client";
 
+import { useTheme } from "next-themes";
 import { CopilotChat, useCopilotChatContext } from "@yourgpt/copilot-sdk/ui";
 import {
-  AlertCircle,
-  CreditCard,
-  FileText,
-  Headphones,
+  Camera,
+  ScrollText,
+  Plus,
+  Sun,
+  Moon,
   BookOpen,
   ExternalLink,
   Clock,
@@ -17,17 +19,19 @@ import type { LayoutProps } from "./DefaultLayout";
 function QuickActionChip({
   icon: Icon,
   label,
+  message,
   accentColor,
 }: {
   icon: React.ComponentType<{ className?: string }>;
   label: string;
+  message?: string;
   accentColor: string;
 }) {
   const { send } = useCopilotChatContext();
 
   return (
     <button
-      onClick={() => send(label)}
+      onClick={() => send(message || label)}
       className="group flex items-center gap-2 px-3 py-2 rounded-full text-left transition-all duration-200 bg-muted/50 border border-border/50 hover:border-border hover:bg-muted hover:shadow-sm"
     >
       <div
@@ -78,6 +82,9 @@ function HelpArticle({
 
 // Support Home View Component
 function SupportHome({ input }: { input?: React.ReactNode }) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+
   return (
     <div className="flex flex-col h-full bg-gradient-to-b from-primary/10 via-background to-background">
       {/* Header Section */}
@@ -116,25 +123,29 @@ function SupportHome({ input }: { input?: React.ReactNode }) {
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
             Quick actions
           </p>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <QuickActionChip
-              icon={AlertCircle}
-              label="Why am I seeing an error?"
+              icon={Camera}
+              label="Take screenshot"
+              message="Take a screenshot of this page"
               accentColor="text-rose-500"
             />
             <QuickActionChip
-              icon={CreditCard}
-              label="Update payment"
+              icon={ScrollText}
+              label="Check console"
+              message="Check the console for any errors"
               accentColor="text-blue-500"
             />
             <QuickActionChip
-              icon={FileText}
-              label="View invoices"
+              icon={Plus}
+              label="Update counter"
+              message="Increase the counter by 5"
               accentColor="text-emerald-500"
             />
             <QuickActionChip
-              icon={Headphones}
-              label="Contact support"
+              icon={isDark ? Sun : Moon}
+              label={isDark ? "Light mode" : "Dark mode"}
+              message={isDark ? "Switch to light mode" : "Switch to dark mode"}
               accentColor="text-violet-500"
             />
           </div>
@@ -143,23 +154,28 @@ function SupportHome({ input }: { input?: React.ReactNode }) {
         {/* Help Articles */}
         <div>
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-            Popular articles
+            Documentation
           </p>
           <div className="space-y-1 -mx-3">
             <HelpArticle
-              title="How to update your billing information"
-              readTime="2 min read"
-              href="#"
-            />
-            <HelpArticle
-              title="Understanding your invoice"
+              title="Getting Started with Copilot SDK"
               readTime="3 min read"
-              href="#"
+              href="https://copilot-sdk.yourgpt.ai/docs"
             />
             <HelpArticle
-              title="Troubleshooting payment errors"
+              title="Configure LLM Providers"
+              readTime="2 min read"
+              href="https://copilot-sdk.yourgpt.ai/docs/providers"
+            />
+            <HelpArticle
+              title="Using the LLM SDK"
               readTime="4 min read"
-              href="#"
+              href="https://copilot-sdk.yourgpt.ai/docs/llm-sdk"
+            />
+            <HelpArticle
+              title="Building Copilot Tools"
+              readTime="4 min read"
+              href="https://copilot-sdk.yourgpt.ai/docs/tools"
             />
           </div>
         </div>
