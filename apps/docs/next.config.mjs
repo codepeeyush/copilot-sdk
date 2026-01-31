@@ -8,6 +8,7 @@ const config = {
   reactStrictMode: true,
   async rewrites() {
     return [
+      // Playground proxy
       {
         source: "/playground",
         destination: `${PLAYGROUND_URL}/playground`,
@@ -15,6 +16,11 @@ const config = {
       {
         source: "/playground/:path*",
         destination: `${PLAYGROUND_URL}/playground/:path*`,
+      },
+      // MDX route for LLM features (e.g., /docs/quickstart.mdx -> /llms.mdx/docs/quickstart)
+      {
+        source: "/docs/:path*.mdx",
+        destination: "/llms.mdx/docs/:path*",
       },
     ];
   },

@@ -11,6 +11,7 @@ import { getMDXComponents } from "@/mdx-components";
 import { createRelativeLink } from "fumadocs-ui/mdx";
 import type { Metadata } from "next";
 import { TocFooter } from "@/components/toc-footer";
+import { PageActions } from "@/components/page-actions";
 
 interface PageProps {
   params: Promise<{ slug?: string[] }>;
@@ -41,6 +42,9 @@ export default async function Page(props: PageProps) {
         <>
           <DocsTitle>{page.data.title}</DocsTitle>
           <DocsDescription>{page.data.description}</DocsDescription>
+          <div className="mt-0 pb-4 border-b border-fd-border">
+            <PageActions url={page.url} />
+          </div>
         </>
       )}
       <DocsBody>
