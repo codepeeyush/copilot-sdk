@@ -8,77 +8,11 @@ import type { LLMAdapter } from "../adapters";
 import type { AIProvider } from "../providers/types";
 
 /**
- * LLM provider type for server-side configuration
- */
-export type LLMProvider =
-  | "openai"
-  | "anthropic"
-  | "google"
-  | "ollama"
-  | "xai"
-  | "azure";
-
-/**
- * Server-side LLM configuration (complete config for runtime)
- */
-export interface ServerLLMConfig {
-  /** LLM provider */
-  provider: LLMProvider;
-  /** API key for the provider */
-  apiKey: string;
-  /** Model name */
-  model?: string;
-  /** Base URL for custom/self-hosted models */
-  baseUrl?: string;
-  /** Temperature (0-2) */
-  temperature?: number;
-  /** Maximum tokens in response */
-  maxTokens?: number;
-}
-
-/**
- * Runtime configuration with LLM config
- */
-export interface RuntimeConfigWithLLM {
-  /** LLM configuration */
-  llm: ServerLLMConfig;
-  /** Custom LLM adapter (overrides llm config) */
-  adapter?: LLMAdapter;
-  /** System prompt */
-  systemPrompt?: string;
-  /** Available actions (legacy) */
-  actions?: ActionDefinition[];
-  /** Available tools (new - supports location: server/client) */
-  tools?: ToolDefinition[];
-  /** Agent loop configuration */
-  agentLoop?: AgentLoopConfig;
-  /** Knowledge base configuration (enables search_knowledge tool) */
-  knowledgeBase?: KnowledgeBaseConfig;
-  /** Enable debug logging */
-  debug?: boolean;
-  /**
-   * Custom context data passed to all tool handlers.
-   * Useful for passing auth tokens, user info, tenant data, etc.
-   *
-   * @example
-   * ```typescript
-   * const runtime = createRuntime({
-   *   llm: { ... },
-   *   toolContext: { userId: session.userId, tenantId: tenant.id },
-   * });
-   * ```
-   */
-  toolContext?: Record<string, unknown>;
-}
-
-/**
- * Runtime configuration with adapter
+ * Runtime configuration with adapter (advanced usage)
  */
 export interface RuntimeConfigWithAdapter {
   /** Custom LLM adapter */
   adapter: LLMAdapter;
-  /** LLM configuration (optional when adapter provided) */
-  llm?: ServerLLMConfig;
   /** System prompt */
   systemPrompt?: string;
   /** Available actions (legacy) */
@@ -131,12 +65,25 @@ export interface RuntimeConfigWithProvider {
 }
 
 /**
- * Runtime configuration - either provide llm config, adapter, or provider
+ * Runtime configuration - provide either a provider instance or a custom adapter
+ *
+ * @example
+ * ```typescript
+ * // Recommended: Use provider instance
+ * const runtime = createRuntime({
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY }),
+ *   model: 'gpt-4o',
+ * });
+ *
+ * // Advanced: Use custom adapter
+ * const runtime = createRuntime({
+ *   adapter: myCustomAdapter,
+ * });
+ * ```
  */
 export type RuntimeConfig =
-  | RuntimeConfigWithLLM
-  | RuntimeConfigWithAdapter
-  | RuntimeConfigWithProvider;
+  | RuntimeConfigWithProvider
+  | RuntimeConfigWithAdapter;
 
 /**
  * Message attachment (images, files, etc.)

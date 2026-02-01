@@ -10,7 +10,7 @@ import type {
   ToolInputSchema,
 } from "../../core";
 import { zodObjectToInputSchema } from "../../core";
-import { useCopilotContext } from "../context/CopilotContext";
+import { useCopilot } from "../provider/CopilotProvider";
 
 /**
  * Zod schema type (minimal interface)
@@ -105,7 +105,7 @@ export function useToolWithSchema<TSchema extends ZodObjectSchema>(
   config: UseToolWithSchemaConfig<TSchema>,
   dependencies: unknown[] = [],
 ): void {
-  const { registerTool, unregisterTool } = useCopilotContext();
+  const { registerTool, unregisterTool } = useCopilot();
   const configRef = useRef(config);
 
   // Update ref when config changes
@@ -180,7 +180,7 @@ export function useToolsWithSchema<TSchema extends ZodObjectSchema>(
   tools: UseToolWithSchemaConfig<TSchema>[],
   dependencies: unknown[] = [],
 ): void {
-  const { registerTool, unregisterTool } = useCopilotContext();
+  const { registerTool, unregisterTool } = useCopilot();
   const toolsRef = useRef(tools);
 
   // Update ref when tools change

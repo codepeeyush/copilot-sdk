@@ -15,11 +15,6 @@ import type {
 import type { AIProvider } from "../providers/types";
 import { createMessage } from "../core/stream-events";
 import type { LLMAdapter, ChatCompletionRequest } from "../adapters/base";
-// Legacy imports - only used for legacy llm config
-// These are the most common adapters, kept for backward compatibility
-import { createOpenAIAdapter } from "../adapters/openai";
-import { createAnthropicAdapter } from "../adapters/anthropic";
-import { createOllamaAdapter } from "../adapters/ollama";
 import type {
   RuntimeConfig,
   ChatRequest,
@@ -179,14 +174,16 @@ export class Runtime {
 
     // Create adapter based on configuration type
     if ("provider" in config && config.provider) {
-      // NEW: Use AIProvider to get adapter
+      // Use AIProvider to get adapter
       this.adapter = config.provider.languageModel(config.model);
     } else if ("adapter" in config && config.adapter) {
-      // EXISTING: Direct adapter
+      // Direct adapter
       this.adapter = config.adapter;
     } else {
-      // EXISTING: Legacy LLM config
-      this.adapter = this.createAdapter(config);
+      throw new Error(
+        "Runtime requires either 'provider' or 'adapter' configuration. " +
+          "Use: createRuntime({ provider: createOpenAI({ apiKey }), model: 'gpt-4o' })",
+      );
     }
 
     // Register actions (legacy)
@@ -196,60 +193,11 @@ export class Runtime {
       }
     }
 
-    // Register tools (new)
+    // Register tools
     if (config.tools) {
       for (const tool of config.tools) {
         this.tools.set(tool.name, tool);
       }
-    }
-  }
-
-  /**
-   * Create LLM adapter based on config
-   */
-  private createAdapter(config: RuntimeConfig): LLMAdapter {
-    if (!("llm" in config) || !config.llm) {
-      throw new Error(
-        "LLM configuration is required when adapter is not provided",
-      );
-    }
-    const { llm } = config;
-
-    switch (llm.provider) {
-      case "openai":
-        return createOpenAIAdapter({
-          apiKey: llm.apiKey,
-          model: llm.model,
-          baseUrl: llm.baseUrl,
-          temperature: llm.temperature,
-          maxTokens: llm.maxTokens,
-        });
-
-      case "anthropic":
-        return createAnthropicAdapter({
-          apiKey: llm.apiKey,
-          model: llm.model,
-          temperature: llm.temperature,
-          maxTokens: llm.maxTokens,
-        });
-
-      case "ollama":
-        return createOllamaAdapter({
-          model: llm.model,
-          baseUrl: llm.baseUrl,
-          temperature: llm.temperature,
-          maxTokens: llm.maxTokens,
-        });
-
-      default:
-        // Default to OpenAI-compatible
-        return createOpenAIAdapter({
-          apiKey: llm.apiKey,
-          model: llm.model,
-          baseUrl: llm.baseUrl,
-          temperature: llm.temperature,
-          maxTokens: llm.maxTokens,
-        });
     }
   }
 
@@ -665,20 +613,6 @@ export class Runtime {
   }
 
   /**
-   * Get the AI provider name from config
-   */
-  private getProviderName(): string {
-    if ("provider" in this.config) {
-      return this.config.provider.name;
-    }
-    if ("llm" in this.config && this.config.llm) {
-      return this.config.llm.provider;
-    }
-    // Default to openai if using custom adapter
-    return "openai";
-  }
-
-  /**
    * Get the AI provider instance (if using provider config)
    */
   getProvider(): AIProvider | null {
@@ -694,9 +628,6 @@ export class Runtime {
   getModel(): string {
     if ("provider" in this.config) {
       return this.config.model;
-    }
-    if ("llm" in this.config && this.config.llm) {
-      return this.config.llm.model || "unknown";
     }
     return this.adapter.model;
   }

@@ -1,7 +1,8 @@
 "use client";
 
-import { useTools } from "@yourgpt/copilot-sdk/react";
+import { useTools, useToolWithSchema } from "@yourgpt/copilot-sdk/react";
 import { tool, success } from "@yourgpt/copilot-sdk/core";
+import { z } from "zod";
 import {
   WeatherSkeleton,
   WeatherCard,
@@ -241,6 +242,68 @@ export function TestTools() {
       },
     }),
   } as any);
+
+  // ============================================
+  // TYPE 7: useToolWithSchema with Zod
+  // Tests the bug fix for context mismatch
+  // ============================================
+  const greetingSchema = z.object({
+    name: z.string().describe("Name of the person to greet"),
+    language: z
+      .enum(["en", "es", "fr", "ja"])
+      .optional()
+      .describe("Language for greeting"),
+  });
+
+  useToolWithSchema({
+    name: "zod_greeting_tool",
+    description:
+      "A greeting tool using Zod schema - tests useToolWithSchema hook fix",
+    schema: greetingSchema as any,
+    handler: async ({
+      name,
+      language,
+    }: {
+      name: string;
+      language?: "en" | "es" | "fr" | "ja";
+    }) => {
+      const greetings: Record<string, string> = {
+        en: `Hello, ${name}!`,
+        es: `¡Hola, ${name}!`,
+        fr: `Bonjour, ${name}!`,
+        ja: `こんにちは、${name}さん！`,
+      };
+      const greeting = greetings[language || "en"];
+      return {
+        success: true,
+        message: greeting,
+        data: { name, language: language || "en", greeting },
+      };
+    },
+    render: ({ status, result }) => {
+      if (status === "pending" || status === "executing") {
+        return (
+          <div className="p-4 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-300 animate-pulse">
+            <span className="text-green-600">Preparing greeting...</span>
+          </div>
+        );
+      }
+      if (status === "completed" && result?.success) {
+        const data = result.data as { greeting: string; language: string };
+        return (
+          <div className="p-4 bg-green-100 dark:bg-green-900/20 rounded-lg border border-green-300">
+            <div className="font-medium text-green-800 dark:text-green-200">
+              {data.greeting}
+            </div>
+            <div className="text-xs text-green-600 mt-1">
+              Language: {data.language} | via useToolWithSchema + Zod
+            </div>
+          </div>
+        );
+      }
+      return null;
+    },
+  });
 
   return null;
 }

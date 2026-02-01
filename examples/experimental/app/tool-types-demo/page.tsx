@@ -12,13 +12,14 @@ import {
 /**
  * Tool Types Demo Page
  *
- * Tests all 6 combinations of tool rendering:
+ * Tests all 7 combinations of tool rendering:
  * 1. Basic tool - default ToolSteps
  * 2. Tool with render - custom UI for all states
  * 3. Default approval - PermissionConfirmation
  * 4. Approval + render - interactive custom UI
  * 5. toolRenderers only - app-level override
  * 6. Override priority - toolRenderers > tool.render
+ * 7. useToolWithSchema - Zod schema based tool (tests context fix)
  */
 export default function ToolTypesDemoPage() {
   // App-level toolRenderers for testing
@@ -69,7 +70,7 @@ export default function ToolTypesDemoPage() {
           <div className="container mx-auto px-4 py-4">
             <h1 className="text-2xl font-bold text-center">Tool Types Demo</h1>
             <p className="text-center text-muted-foreground text-sm mt-1">
-              Test all 6 combinations of tool rendering
+              Test all 7 combinations of tool rendering
             </p>
           </div>
         </header>
@@ -124,6 +125,13 @@ export default function ToolTypesDemoPage() {
                   expected="AppOverrideCard (toolRenderers wins over tool.render)"
                   color="orange"
                 />
+                <TestCaseCard
+                  number={7}
+                  title="useToolWithSchema (Zod)"
+                  trigger="Call zod_greeting_tool with name='Alice'"
+                  expected="Custom greeting card (tests context fix)"
+                  color="green"
+                />
               </div>
 
               {/* Quick Test Prompts */}
@@ -136,6 +144,7 @@ export default function ToolTypesDemoPage() {
                   <li>• "Assign task 'Review PR'"</li>
                   <li>• "Generate a sales chart"</li>
                   <li>• "Run priority tool"</li>
+                  <li>• "Greet Alice in Japanese"</li>
                 </ul>
               </div>
             </div>
@@ -166,7 +175,7 @@ function TestCaseCard({
   title: string;
   trigger: string;
   expected: string;
-  color: "gray" | "blue" | "red" | "yellow" | "purple" | "orange";
+  color: "gray" | "blue" | "red" | "yellow" | "purple" | "orange" | "green";
 }) {
   const colors = {
     gray: "border-gray-300 bg-gray-50 dark:bg-gray-900/20",
@@ -175,6 +184,7 @@ function TestCaseCard({
     yellow: "border-yellow-300 bg-yellow-50 dark:bg-yellow-900/20",
     purple: "border-purple-300 bg-purple-50 dark:bg-purple-900/20",
     orange: "border-orange-300 bg-orange-50 dark:bg-orange-900/20",
+    green: "border-green-300 bg-green-50 dark:bg-green-900/20",
   };
 
   return (
