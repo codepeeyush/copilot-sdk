@@ -67,6 +67,14 @@ export class ReactChatWithTools extends ChatWithTools {
     super.dispose();
     this.reactState.dispose();
   }
+
+  /**
+   * Revive a disposed instance (for React StrictMode compatibility)
+   */
+  revive(): void {
+    super.revive();
+    this.reactState.revive();
+  }
 }
 
 /**

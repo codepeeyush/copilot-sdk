@@ -139,6 +139,7 @@ export const samplePersons: PersonData[] = [
 
 // Storage keys
 export const API_KEYS_STORAGE_KEY = "copilot-playground-api-keys";
+export const PLAYGROUND_CONFIG_STORAGE_KEY = "copilot-playground-config";
 export const WELCOME_DISMISSED_KEY = "copilot-playground-welcome-dismissed";
 
 // External URLs

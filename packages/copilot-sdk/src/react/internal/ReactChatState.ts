@@ -165,6 +165,14 @@ export class ReactChatState<
   dispose(): void {
     this.subscribers.clear();
   }
+
+  /**
+   * Revive after dispose (for React StrictMode compatibility)
+   * Subscribers will be re-added automatically via useSyncExternalStore
+   */
+  revive(): void {
+    // No-op: subscribers are re-added automatically
+  }
 }
 
 /**

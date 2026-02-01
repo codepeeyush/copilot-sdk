@@ -5,23 +5,54 @@ icon: Paintbrush
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 
 Customize the appearance, behavior, and branding of your AI copilot.
 
 ---
 
-## Styling (Tailwind CSS v4)
+## Styling
 
 Add the SDK source to your Tailwind config:
 
-```css
-/* app/globals.css */
-@import "tailwindcss";
+<Tabs items={['Tailwind CSS v4', 'Tailwind CSS v3']}>
+  <Tab value="Tailwind CSS v4">
+    ```css title="app/globals.css"
+    @import "tailwindcss";
 
-@source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
+    /* Include SDK package for Tailwind class detection */
+    @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
 
-@custom-variant dark (&:is(.dark *));
-```
+    @custom-variant dark (&:is(.dark *));
+    ```
+
+    <Callout type="warn">
+    The `@source` path is relative to your CSS file location. If your `globals.css` is in the `app/` folder, use `../node_modules/...`. If it's at the project root, use `node_modules/...` (without `../`).
+    </Callout>
+  </Tab>
+  <Tab value="Tailwind CSS v3">
+    Add the SDK package to your Tailwind config content paths:
+
+    ```js title="tailwind.config.js"
+    /** @type {import('tailwindcss').Config} */
+    module.exports = {
+      content: [
+        './app/**/*.{js,ts,jsx,tsx,mdx}',
+        './components/**/*.{js,ts,jsx,tsx,mdx}',
+        './node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}',
+      ],
+      theme: {
+        extend: {},
+      },
+      plugins: [],
+    };
+    ```
+
+    <Callout type="warn">
+    The content path should be relative to where your `tailwind.config.js` is located (usually the project root). Adjust the path if your config is in a different location.
+    </Callout>
+  </Tab>
+</Tabs>
 
 ---
 

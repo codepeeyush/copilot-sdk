@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type {
   CopilotTheme,
   GenerativeUIConfig,
@@ -9,45 +9,130 @@ import type {
   ToolKey,
   SDKConfig,
   LayoutTemplate,
+  ProviderId,
 } from "@/lib/types";
 import {
   DEFAULT_SYSTEM_PROMPT,
   INITIAL_GENERATIVE_UI,
   INITIAL_TOOLS_ENABLED,
   INITIAL_SDK_CONFIG,
+  PLAYGROUND_CONFIG_STORAGE_KEY,
 } from "@/lib/constants";
 
 /**
- * Manages playground configuration state.
+ * Stored playground configuration shape
+ */
+interface PlaygroundConfigStorage {
+  copilotTheme: CopilotTheme;
+  layoutTemplate: LayoutTemplate;
+  systemPrompt: string;
+  generativeUI: GenerativeUIConfig;
+  toolsEnabled: ToolsEnabledConfig;
+  sdkConfig: SDKConfig;
+  selectedProvider: ProviderId;
+  selectedOpenRouterModel: string;
+}
+
+/**
+ * Default configuration values
+ */
+const DEFAULT_CONFIG: PlaygroundConfigStorage = {
+  copilotTheme: "vercel",
+  layoutTemplate: "support",
+  systemPrompt: DEFAULT_SYSTEM_PROMPT,
+  generativeUI: INITIAL_GENERATIVE_UI,
+  toolsEnabled: INITIAL_TOOLS_ENABLED,
+  sdkConfig: INITIAL_SDK_CONFIG,
+  selectedProvider: "openai",
+  selectedOpenRouterModel: "anthropic/claude-3.5-sonnet",
+};
+
+/**
+ * Load configuration from localStorage
+ */
+function loadStoredConfig(): PlaygroundConfigStorage {
+  if (typeof window === "undefined") {
+    return DEFAULT_CONFIG;
+  }
+
+  const stored = localStorage.getItem(PLAYGROUND_CONFIG_STORAGE_KEY);
+  if (stored) {
+    try {
+      const parsed = JSON.parse(stored) as Partial<PlaygroundConfigStorage>;
+      // Merge with defaults to handle missing keys from older stored configs
+      return { ...DEFAULT_CONFIG, ...parsed };
+    } catch {
+      return DEFAULT_CONFIG;
+    }
+  }
+  return DEFAULT_CONFIG;
+}
+
+/**
+ * Manages playground configuration state with localStorage persistence.
  * Uses stable callbacks to prevent unnecessary re-renders.
  *
- * @see Vercel React best practices: `rerender-functional-setstate`
+ * @see Vercel React best practices: `rerender-functional-setstate`, `js-cache-storage`
  */
 export function usePlaygroundConfig() {
-  // Theme state - default to Vercel theme
-  const [copilotTheme, setCopilotTheme] = useState<CopilotTheme>("vercel");
+  // Lazy initialization from localStorage
+  const [copilotTheme, setCopilotTheme] = useState<CopilotTheme>(
+    () => loadStoredConfig().copilotTheme,
+  );
 
-  // Layout template state - default to Support layout
-  const [layoutTemplate, setLayoutTemplate] =
-    useState<LayoutTemplate>("support");
+  const [layoutTemplate, setLayoutTemplate] = useState<LayoutTemplate>(
+    () => loadStoredConfig().layoutTemplate,
+  );
 
-  // System prompt state
-  const [systemPrompt, setSystemPrompt] = useState(DEFAULT_SYSTEM_PROMPT);
+  const [systemPrompt, setSystemPrompt] = useState(
+    () => loadStoredConfig().systemPrompt,
+  );
 
-  // Generative UI toggles
   const [generativeUI, setGenerativeUI] = useState<GenerativeUIConfig>(
-    () => INITIAL_GENERATIVE_UI,
+    () => loadStoredConfig().generativeUI,
   );
 
-  // Tools enabled toggles
   const [toolsEnabled, setToolsEnabled] = useState<ToolsEnabledConfig>(
-    () => INITIAL_TOOLS_ENABLED,
+    () => loadStoredConfig().toolsEnabled,
   );
 
-  // SDK config
   const [sdkConfig, setSDKConfig] = useState<SDKConfig>(
-    () => INITIAL_SDK_CONFIG,
+    () => loadStoredConfig().sdkConfig,
   );
+
+  const [selectedProvider, setSelectedProvider] = useState<ProviderId>(
+    () => loadStoredConfig().selectedProvider,
+  );
+
+  const [selectedOpenRouterModel, setSelectedOpenRouterModel] = useState(
+    () => loadStoredConfig().selectedOpenRouterModel,
+  );
+
+  // Persist to localStorage whenever any config changes
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const config: PlaygroundConfigStorage = {
+      copilotTheme,
+      layoutTemplate,
+      systemPrompt,
+      generativeUI,
+      toolsEnabled,
+      sdkConfig,
+      selectedProvider,
+      selectedOpenRouterModel,
+    };
+    localStorage.setItem(PLAYGROUND_CONFIG_STORAGE_KEY, JSON.stringify(config));
+  }, [
+    copilotTheme,
+    layoutTemplate,
+    systemPrompt,
+    generativeUI,
+    toolsEnabled,
+    sdkConfig,
+    selectedProvider,
+    selectedOpenRouterModel,
+  ]);
 
   // Theme setters
   const updateTheme = useCallback((theme: CopilotTheme) => {
@@ -82,6 +167,16 @@ export function usePlaygroundConfig() {
     [],
   );
 
+  // Provider setter
+  const updateProvider = useCallback((provider: ProviderId) => {
+    setSelectedProvider(provider);
+  }, []);
+
+  // OpenRouter model setter
+  const updateOpenRouterModel = useCallback((model: string) => {
+    setSelectedOpenRouterModel(model);
+  }, []);
+
   return {
     // State
     copilotTheme,
@@ -90,6 +185,8 @@ export function usePlaygroundConfig() {
     generativeUI,
     toolsEnabled,
     sdkConfig,
+    selectedProvider,
+    selectedOpenRouterModel,
     // Actions
     updateTheme,
     updateLayoutTemplate,
@@ -97,6 +194,8 @@ export function usePlaygroundConfig() {
     toggleGenerativeUI,
     toggleTool,
     updateSDKConfig,
+    updateProvider,
+    updateOpenRouterModel,
     // Direct setters (for advanced use cases)
     setCopilotTheme,
     setLayoutTemplate,
@@ -104,5 +203,7 @@ export function usePlaygroundConfig() {
     setGenerativeUI,
     setToolsEnabled,
     setSDKConfig,
+    setSelectedProvider,
+    setSelectedOpenRouterModel,
   };
 }
