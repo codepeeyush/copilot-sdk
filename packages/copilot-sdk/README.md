@@ -49,6 +49,8 @@ function App() {
 
 > **Note:** The `@source` path must point to `dist/` (not `src/`) and include all file extensions `{js,ts,jsx,tsx}`.
 
+> **Important:** For Tailwind v4, you also need the `@theme inline` block to map CSS variables like `--background` to Tailwind utilities like `bg-background`. If you have shadcn/ui, this is already configured. Otherwise, see the [Quick Start guide](https://copilot-sdk.yourgpt.ai/docs/quickstart) for complete setup.
+
 ## Theming
 
 Works automatically with existing shadcn/ui setup. For projects without shadcn:

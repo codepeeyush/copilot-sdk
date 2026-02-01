@@ -198,20 +198,122 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 
     ### 6. Configure Styling (Tailwind CSS v4)
 
-    ```css title="app/globals.css"
-    @import "tailwindcss";
+    The SDK uses Tailwind CSS utility classes with CSS variables for theming. You need to configure both the source path and theme mapping.
 
-    /* Include SDK package for Tailwind class detection */
-    @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+    <Accordions type="single" defaultValue="with-shadcn">
+      <Accordion title="With shadcn/ui (Recommended)" id="with-shadcn">
+        If you have shadcn/ui configured, just add the SDK source path:
 
-    @custom-variant dark (&:is(.dark *));
-    ```
+        ```css title="app/globals.css"
+        @import "tailwindcss";
 
-    <Callout type="warn">
-    The `@source` path is relative to your CSS file location. If your `globals.css` is in the `app/` folder, use `../node_modules/...`. If it's at the project root, use `node_modules/...` (without `../`).
-    </Callout>
+        /* Include SDK package for Tailwind class detection */
+        @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
 
-    <Accordions type="single">
+        @custom-variant dark (&:is(.dark *));
+
+        /* Your existing shadcn/ui @theme and variables... */
+        ```
+
+        The SDK works automatically with your existing shadcn/ui CSS variables.
+      </Accordion>
+
+      <Accordion title="Without shadcn/ui (Manual Setup)" id="without-shadcn">
+        If you don't have shadcn/ui, you need to add both the `@theme inline` block and CSS variables:
+
+        ```css title="app/globals.css"
+        @import "tailwindcss";
+
+        /* Include SDK package for Tailwind class detection */
+        @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+
+        @custom-variant dark (&:is(.dark *));
+
+        /* Map CSS variables to Tailwind theme (required for Tailwind v4) */
+        @theme inline {
+          --color-background: var(--background);
+          --color-foreground: var(--foreground);
+          --color-card: var(--card);
+          --color-card-foreground: var(--card-foreground);
+          --color-popover: var(--popover);
+          --color-popover-foreground: var(--popover-foreground);
+          --color-primary: var(--primary);
+          --color-primary-foreground: var(--primary-foreground);
+          --color-secondary: var(--secondary);
+          --color-secondary-foreground: var(--secondary-foreground);
+          --color-muted: var(--muted);
+          --color-muted-foreground: var(--muted-foreground);
+          --color-accent: var(--accent);
+          --color-accent-foreground: var(--accent-foreground);
+          --color-destructive: var(--destructive);
+          --color-border: var(--border);
+          --color-input: var(--input);
+          --color-ring: var(--ring);
+          --radius-sm: calc(var(--radius) - 4px);
+          --radius-md: calc(var(--radius) - 2px);
+          --radius-lg: var(--radius);
+          --radius-xl: calc(var(--radius) + 4px);
+        }
+
+        /* Define CSS variables (or import styles.css) */
+        :root {
+          --background: hsl(0 0% 100%);
+          --foreground: hsl(240 10% 3.9%);
+          --card: hsl(0 0% 100%);
+          --card-foreground: hsl(240 10% 3.9%);
+          --popover: hsl(0 0% 100%);
+          --popover-foreground: hsl(240 10% 3.9%);
+          --primary: hsl(240 5.9% 10%);
+          --primary-foreground: hsl(0 0% 98%);
+          --secondary: hsl(240 4.8% 95.9%);
+          --secondary-foreground: hsl(240 5.9% 10%);
+          --muted: hsl(240 4.8% 95.9%);
+          --muted-foreground: hsl(240 3.8% 46.1%);
+          --accent: hsl(240 4.8% 95.9%);
+          --accent-foreground: hsl(240 5.9% 10%);
+          --destructive: hsl(0 84.2% 60.2%);
+          --border: hsl(240 5.9% 90%);
+          --input: hsl(240 5.9% 90%);
+          --ring: hsl(240 5.9% 10%);
+          --radius: 0.5rem;
+        }
+
+        .dark {
+          --background: hsl(240 10% 3.9%);
+          --foreground: hsl(0 0% 98%);
+          --card: hsl(240 10% 3.9%);
+          --card-foreground: hsl(0 0% 98%);
+          --popover: hsl(240 10% 3.9%);
+          --popover-foreground: hsl(0 0% 98%);
+          --primary: hsl(0 0% 98%);
+          --primary-foreground: hsl(240 5.9% 10%);
+          --secondary: hsl(240 3.7% 15.9%);
+          --secondary-foreground: hsl(0 0% 98%);
+          --muted: hsl(240 3.7% 15.9%);
+          --muted-foreground: hsl(240 5% 64.9%);
+          --accent: hsl(240 3.7% 15.9%);
+          --accent-foreground: hsl(0 0% 98%);
+          --destructive: hsl(0 62.8% 30.6%);
+          --border: hsl(240 3.7% 15.9%);
+          --input: hsl(240 3.7% 15.9%);
+          --ring: hsl(240 4.9% 83.9%);
+        }
+
+        @layer base {
+          * {
+            @apply border-border;
+          }
+          body {
+            @apply bg-background text-foreground;
+          }
+        }
+        ```
+
+        <Callout type="info">
+        The `@theme inline` block is **required** for Tailwind v4 to map CSS variables to utility classes like `bg-background`.
+        </Callout>
+      </Accordion>
+
       <Accordion title="Using Tailwind CSS v3?" id="tailwind-v3">
         Add the SDK package to your Tailwind config content paths:
 
@@ -236,8 +338,8 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
       </Accordion>
     </Accordions>
 
-    <Callout type="info">
-    For theming and CSS variables, follow the [shadcn/ui theming guide](https://ui.shadcn.com/docs/theming).
+    <Callout type="warn">
+    The `@source` path is relative to your CSS file location. If your `globals.css` is in the `app/` folder, use `../node_modules/...`. If it's at the project root, use `node_modules/...` (without `../`).
     </Callout>
 
     ---
