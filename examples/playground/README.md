@@ -18,7 +18,6 @@
 ### Prerequisites
 
 - Node.js 18+
-- **pnpm** (required for workspace setup - npm/yarn won't work)
 - At least one LLM provider API key
 
 ### Installation
@@ -26,17 +25,16 @@
 ```bash
 # Clone the repository
 git clone https://github.com/YourGPT/yourgpt-copilot.git
-cd yourgpt-copilot
+cd yourgpt-copilot/examples/playground
 
-# Install all dependencies from root (required for workspace)
+# Install dependencies
 pnpm install
 
 # Set up environment
-cp examples/playground/.env.example examples/playground/.env.local
+cp .env.example .env.local
 # Add your API keys to .env.local
 
 # Run development server
-cd examples/playground
 pnpm dev
 ```
 
@@ -101,7 +99,3 @@ playground/
 - Tailwind CSS 4
 - @yourgpt/copilot-sdk
 - @yourgpt/llm-sdk
-
-## Important Notes
-
-> **Workspace Dependency**: This example uses `workspace:*` dependencies. You must use `pnpm install` from the monorepo root. Regular `npm install` or `yarn install` will not resolve workspace dependencies correctly.

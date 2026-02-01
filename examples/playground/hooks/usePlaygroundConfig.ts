@@ -44,7 +44,7 @@ const DEFAULT_CONFIG: PlaygroundConfigStorage = {
   toolsEnabled: INITIAL_TOOLS_ENABLED,
   sdkConfig: INITIAL_SDK_CONFIG,
   selectedProvider: "openai",
-  selectedOpenRouterModel: "anthropic/claude-3.5-sonnet",
+  selectedOpenRouterModel: "",
 };
 
 /**
@@ -104,9 +104,8 @@ export function usePlaygroundConfig() {
     () => loadStoredConfig().selectedProvider,
   );
 
-  const [selectedOpenRouterModel, setSelectedOpenRouterModel] = useState(
-    () => loadStoredConfig().selectedOpenRouterModel,
-  );
+  const [selectedOpenRouterModel, setSelectedOpenRouterModel] =
+    useState<string>(() => loadStoredConfig().selectedOpenRouterModel);
 
   // Persist to localStorage whenever any config changes
   useEffect(() => {
