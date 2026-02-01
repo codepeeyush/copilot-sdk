@@ -189,6 +189,12 @@ export function CopilotProvider({
   const chatRef = useRef<ReactChatWithTools | null>(null);
 
   // Initialize chat on first render
+  // If disposed (React StrictMode), revive instead of recreate to preserve tools
+  if (chatRef.current !== null && chatRef.current.disposed) {
+    chatRef.current.revive();
+    debugLog("Revived disposed instance (React StrictMode)");
+  }
+
   if (chatRef.current === null) {
     // Convert initial messages to UIMessage format
     const uiInitialMessages: UIMessage[] | undefined = initialMessages?.map(

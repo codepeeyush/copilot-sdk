@@ -36,22 +36,21 @@ export default function PlaygroundPage() {
     systemPrompt,
     generativeUI,
     toolsEnabled,
+    selectedProvider,
+    selectedOpenRouterModel,
     updateTheme,
     updateLayoutTemplate,
     updateSystemPrompt,
     toggleGenerativeUI,
     toggleTool,
+    updateProvider,
+    updateOpenRouterModel,
   } = usePlaygroundConfig();
 
   // Local state
   const [mounted, setMounted] = useState(false);
   const [selectedPerson, setSelectedPerson] = useState<PersonData>(
     samplePersons[0],
-  );
-  const [selectedProvider, setSelectedProvider] =
-    useState<ProviderId>("openai");
-  const [selectedOpenRouterModel, setSelectedOpenRouterModel] = useState(
-    "anthropic/claude-3.5-sonnet",
   );
   const [apiKeyModalOpen, setApiKeyModalOpen] = useState(false);
 
@@ -80,13 +79,19 @@ export default function PlaygroundPage() {
     setApiKeyModalOpen(true);
   }, []);
 
-  const handleProviderChange = useCallback((provider: ProviderId) => {
-    setSelectedProvider(provider);
-  }, []);
+  const handleProviderChange = useCallback(
+    (provider: ProviderId) => {
+      updateProvider(provider);
+    },
+    [updateProvider],
+  );
 
-  const handleOpenRouterModelChange = useCallback((model: string) => {
-    setSelectedOpenRouterModel(model);
-  }, []);
+  const handleOpenRouterModelChange = useCallback(
+    (model: string) => {
+      updateOpenRouterModel(model);
+    },
+    [updateOpenRouterModel],
+  );
 
   const handleSelectPerson = useCallback((person: PersonData) => {
     setSelectedPerson(person);

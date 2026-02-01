@@ -840,19 +840,39 @@ export class AbstractChat<T extends UIMessage = UIMessage> {
     );
   }
 
-  private isDisposed = false;
+  private _isDisposed = false;
+
+  /**
+   * Whether this instance has been disposed
+   */
+  get disposed(): boolean {
+    return this._isDisposed;
+  }
 
   /**
    * Dispose and cleanup
+   * Note: Event handlers are NOT cleared to support React StrictMode revive()
    */
   dispose(): void {
-    if (this.isDisposed) {
+    if (this._isDisposed) {
       this.debug("dispose() called but already disposed - ignoring");
       return;
     }
-    this.debug("dispose() - clearing event handlers");
-    this.isDisposed = true;
+    this.debug("dispose() - stopping active requests");
+    this._isDisposed = true;
     this.stop();
-    this.eventHandlers.clear();
+    // Event handlers persist for React StrictMode revive()
+  }
+
+  /**
+   * Revive a disposed instance (for React StrictMode compatibility)
+   * This allows reusing an instance after dispose() was called
+   */
+  revive(): void {
+    if (!this._isDisposed) {
+      return;
+    }
+    this.debug("revive() - restoring disposed instance");
+    this._isDisposed = false;
   }
 }

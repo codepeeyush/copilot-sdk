@@ -154,19 +154,12 @@ export class ChatWithTools {
 
     // Handle tool calls from chat
     this.chat.on("toolCalls", async (event) => {
-      this.debug("🎯 toolCalls event handler FIRED", event);
       const toolCalls = event.toolCalls;
       if (!toolCalls?.length) {
-        this.debug("No tool calls in event");
         return;
       }
 
-      this.debug("Tool calls received:", toolCalls);
-
-      // NOTE: We do NOT clear previous executions here.
-      // Each message filters executions by its toolCallIds (in connected-chat.tsx),
-      // so executions accumulate but each message shows only its own tools.
-      // This preserves tool results for rendering. Full data is also in messages.
+      this.debug("Tool calls received:", toolCalls.length);
 
       // Convert tool calls to the format expected by agent loop
       const toolCallInfos = toolCalls.map((tc) => {
@@ -232,11 +225,6 @@ export class ChatWithTools {
         console.error("[ChatWithTools] Tool execution error:", error);
       }
     });
-
-    // NOTE: We do NOT clear tool executions on "done" event or "toolCalls" event.
-    // Tool results need to persist so UI cards can continue rendering them.
-    // Full data is also stored in tool messages (Vercel-style) for persistence.
-    // Each message filters executions by toolCallIds, so accumulation is safe.
   }
 
   // ============================================
@@ -456,6 +444,23 @@ export class ChatWithTools {
   // ============================================
   // Cleanup
   // ============================================
+
+  /**
+   * Whether this instance has been disposed
+   */
+  get disposed(): boolean {
+    return this.chat.disposed;
+  }
+
+  /**
+   * Revive a disposed instance (for React StrictMode compatibility)
+   * This allows reusing an instance after dispose() was called,
+   * preserving registered tools and state
+   */
+  revive(): void {
+    this.chat.revive();
+    this.agentLoop.revive();
+  }
 
   /**
    * Dispose and cleanup

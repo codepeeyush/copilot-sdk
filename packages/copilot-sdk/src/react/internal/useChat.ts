@@ -96,6 +96,11 @@ export function useChat(config: UseChatConfig): UseChatReturn {
   // Local input state (UI concern)
   const [input, setInput] = useState("");
 
+  // Revive if disposed (React StrictMode compatibility)
+  if (chatRef.current !== null && chatRef.current.disposed) {
+    chatRef.current.revive();
+  }
+
   // Initialize chat on first render
   if (chatRef.current === null) {
     chatRef.current = createReactChat({

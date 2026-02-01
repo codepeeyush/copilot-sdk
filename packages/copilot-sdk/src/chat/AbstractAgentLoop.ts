@@ -54,8 +54,12 @@ export class AbstractAgentLoop implements AgentLoopActions {
   // Cancellation support
   private abortController: AbortController | null = null;
 
-  // Registered tools
-  private registeredTools: Map<string, ToolDefinition> = new Map();
+  // Registered tools with reference counting for React StrictMode compatibility
+  // Tools are never fully removed during a session - only marked as inactive
+  private registeredTools: Map<
+    string,
+    { tool: ToolDefinition; refCount: number; active: boolean }
+  > = new Map();
 
   // Pending approvals - resolve with approval result including extraData
   private pendingApprovals: Map<
@@ -142,7 +146,10 @@ export class AbstractAgentLoop implements AgentLoopActions {
   }
 
   get tools(): ToolDefinition[] {
-    return Array.from(this.registeredTools.values());
+    // Only return active tools for API requests
+    return Array.from(this.registeredTools.values())
+      .filter((entry) => entry.active)
+      .map((entry) => entry.tool);
   }
 
   // ============================================
@@ -190,24 +197,48 @@ export class AbstractAgentLoop implements AgentLoopActions {
   // ============================================
 
   /**
-   * Register a tool
+   * Register a tool (reference counted for React StrictMode compatibility)
+   * Tools are never fully removed - ref counting ensures StrictMode works correctly
    */
   registerTool(tool: ToolDefinition): void {
-    this.registeredTools.set(tool.name, tool);
+    const existing = this.registeredTools.get(tool.name);
+    if (existing) {
+      // Update the tool definition and increment ref count
+      existing.tool = tool;
+      existing.refCount++;
+      existing.active = true;
+    } else {
+      // New tool
+      this.registeredTools.set(tool.name, {
+        tool,
+        refCount: 1,
+        active: true,
+      });
+    }
   }
 
   /**
-   * Unregister a tool
+   * Unregister a tool (reference counted for React StrictMode compatibility)
+   * Tool is only marked inactive when refCount reaches 0, never deleted
    */
   unregisterTool(name: string): void {
-    this.registeredTools.delete(name);
+    const entry = this.registeredTools.get(name);
+    if (entry) {
+      entry.refCount = Math.max(0, entry.refCount - 1);
+      if (entry.refCount === 0) {
+        entry.active = false;
+      }
+    }
   }
 
   /**
-   * Get a registered tool
+   * Get a registered tool (returns active tools, or inactive if forExecution=true)
    */
   getTool(name: string): ToolDefinition | undefined {
-    return this.registeredTools.get(name);
+    const entry = this.registeredTools.get(name);
+    // Always return the tool if it exists - handler execution should work
+    // even if the component temporarily unmounted (StrictMode)
+    return entry?.tool;
   }
 
   // ============================================
@@ -265,7 +296,7 @@ export class AbstractAgentLoop implements AgentLoopActions {
   private async executeSingleTool(
     toolCall: ToolCallInfo,
   ): Promise<ToolResponse> {
-    const tool = this.registeredTools.get(toolCall.name);
+    const tool = this.getTool(toolCall.name);
 
     // Create execution record
     const execution: ToolExecution = {
@@ -548,13 +579,45 @@ export class AbstractAgentLoop implements AgentLoopActions {
   /**
    * Dispose of resources
    */
+  private _isDisposed = false;
+
+  /**
+   * Whether this instance has been disposed
+   */
+  get disposed(): boolean {
+    return this._isDisposed;
+  }
+
+  /**
+   * Dispose and cleanup
+   * Note: Tools are NOT cleared to support React StrictMode revive()
+   */
   dispose(): void {
+    if (this._isDisposed) {
+      return;
+    }
+    this._isDisposed = true;
+
     // Reject all pending approvals
     for (const [_id, pending] of this.pendingApprovals) {
       pending.resolve({ approved: false });
     }
     this.pendingApprovals.clear();
-    this.registeredTools.clear();
+
+    // Tools persist for React StrictMode revive() - ref counting handles lifecycle
     this._toolExecutions = [];
+  }
+
+  /**
+   * Revive a disposed instance (for React StrictMode compatibility)
+   * Tools are preserved across dispose/revive cycle
+   */
+  revive(): void {
+    if (!this._isDisposed) {
+      return;
+    }
+    this._isDisposed = false;
+    this._isCancelled = false;
+    this._maxIterationsReached = false;
   }
 }
