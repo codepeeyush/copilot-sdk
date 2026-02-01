@@ -6,6 +6,7 @@ icon: RocketCustom
 
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
 import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 import { Steps, Step } from 'fumadocs-ui/components/steps';
 
 <Callout type="info">
@@ -20,76 +21,7 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 
 ## Detailed Setup
 
-<Tabs items={['New Project', 'Existing Project']}>
-  <Tab value="New Project">
-    ## Create New Project
-
-    The fastest way to start - one command creates everything:
-
-    <Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
-      <Tab value="pnpm">
-        ```bash
-        pnpm create ai-copilot
-        ```
-      </Tab>
-      <Tab value="npm">
-        ```bash
-        npx create-ai-copilot
-        ```
-      </Tab>
-      <Tab value="yarn">
-        ```bash
-        yarn create ai-copilot
-        ```
-      </Tab>
-      <Tab value="bun">
-        ```bash
-        bunx create-ai-copilot
-        ```
-      </Tab>
-    </Tabs>
-
-    The CLI will guide you through:
-
-    1. **Project name** - Name your app
-    2. **Framework** - Next.js (full-stack) or Vite + React
-    3. **Provider** - OpenAI, Anthropic, Google, or xAI
-    4. **API Key** - Optional, can add to `.env` later
-
-    <Callout type="info">
-    The CLI creates a complete project with frontend, backend, and styling ready to go.
-    </Callout>
-
-    ### Run Your App
-
-    ```bash
-    cd my-app
-    pnpm dev
-    ```
-
-    Open [http://localhost:3000](http://localhost:3000) - your AI copilot is ready!
-
-    ---
-
-    ### What's Included
-
-    The generated project includes:
-
-    - **Frontend** - React chat UI with `@yourgpt/copilot-sdk`
-    - **Backend** - API route with `@yourgpt/llm-sdk`
-    - **Styling** - Tailwind CSS with shadcn/ui theming
-    - **TypeScript** - Full type safety
-    - **Environment** - `.env` file for API keys
-
-    ---
-
-    ### Next Steps
-
-    - [Customize the Chat UI](/docs/chat)
-    - [Add AI Tools](/docs/tools)
-    - [Switch Providers](/docs/providers)
-  </Tab>
-
+<Tabs items={['Existing Project', 'New Project']}>
   <Tab value="Existing Project">
     ## Add to Existing Project
 
@@ -264,24 +196,23 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 
     ---
 
-    ### 6. Configure Styling
+    ### 6. Configure Styling (Tailwind CSS v4)
 
-    <Tabs items={['Tailwind CSS v4', 'Tailwind CSS v3']}>
-      <Tab value="Tailwind CSS v4">
-        ```css title="app/globals.css"
-        @import "tailwindcss";
+    ```css title="app/globals.css"
+    @import "tailwindcss";
 
-        /* Include SDK package for Tailwind class detection */
-        @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+    /* Include SDK package for Tailwind class detection */
+    @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
 
-        @custom-variant dark (&:is(.dark *));
-        ```
+    @custom-variant dark (&:is(.dark *));
+    ```
 
-        <Callout type="warn">
-        The `@source` path is relative to your CSS file location. If your `globals.css` is in the `app/` folder, use `../node_modules/...`. If it's at the project root, use `node_modules/...` (without `../`).
-        </Callout>
-      </Tab>
-      <Tab value="Tailwind CSS v3">
+    <Callout type="warn">
+    The `@source` path is relative to your CSS file location. If your `globals.css` is in the `app/` folder, use `../node_modules/...`. If it's at the project root, use `node_modules/...` (without `../`).
+    </Callout>
+
+    <Accordions type="single">
+      <Accordion title="Using Tailwind CSS v3?" id="tailwind-v3">
         Add the SDK package to your Tailwind config content paths:
 
         ```js title="tailwind.config.js"
@@ -302,8 +233,8 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
         <Callout type="warn">
         The content path should be relative to where your `tailwind.config.js` is located (usually the project root). Adjust the path if your config is in a different location.
         </Callout>
-      </Tab>
-    </Tabs>
+      </Accordion>
+    </Accordions>
 
     <Callout type="info">
     For theming and CSS variables, follow the [shadcn/ui theming guide](https://ui.shadcn.com/docs/theming).
@@ -314,6 +245,75 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
     ### Done!
 
     Run `pnpm dev` and you have a working AI chat.
+
+    ---
+
+    ### Next Steps
+
+    - [Customize the Chat UI](/docs/chat)
+    - [Add AI Tools](/docs/tools)
+    - [Switch Providers](/docs/providers)
+  </Tab>
+
+  <Tab value="New Project">
+    ## Create New Project
+
+    The fastest way to start - one command creates everything:
+
+    <Tabs items={['pnpm', 'npm', 'yarn', 'bun']}>
+      <Tab value="pnpm">
+        ```bash
+        pnpm create ai-copilot
+        ```
+      </Tab>
+      <Tab value="npm">
+        ```bash
+        npx create-ai-copilot
+        ```
+      </Tab>
+      <Tab value="yarn">
+        ```bash
+        yarn create ai-copilot
+        ```
+      </Tab>
+      <Tab value="bun">
+        ```bash
+        bunx create-ai-copilot
+        ```
+      </Tab>
+    </Tabs>
+
+    The CLI will guide you through:
+
+    1. **Project name** - Name your app
+    2. **Framework** - Next.js (full-stack) or Vite + React
+    3. **Provider** - OpenAI, Anthropic, Google, or xAI
+    4. **API Key** - Optional, can add to `.env` later
+
+    <Callout type="info">
+    The CLI creates a complete project with frontend, backend, and styling ready to go.
+    </Callout>
+
+    ### Run Your App
+
+    ```bash
+    cd my-app
+    pnpm dev
+    ```
+
+    Open [http://localhost:3000](http://localhost:3000) - your AI copilot is ready!
+
+    ---
+
+    ### What's Included
+
+    The generated project includes:
+
+    - **Frontend** - React chat UI with `@yourgpt/copilot-sdk`
+    - **Backend** - API route with `@yourgpt/llm-sdk`
+    - **Styling** - Tailwind CSS with shadcn/ui theming
+    - **TypeScript** - Full type safety
+    - **Environment** - `.env` file for API keys
 
     ---
 
