@@ -115,16 +115,36 @@ export function createHonoApp(runtime: Runtime): Hono {
 /**
  * Next.js App Router handler
  *
+ * For simple Next.js routes, prefer using `streamText()` directly:
+ * @example
+ * ```ts
+ * // app/api/chat/route.ts (RECOMMENDED)
+ * import { streamText } from '@yourgpt/llm-sdk';
+ * import { openai } from '@yourgpt/llm-sdk/openai';
+ *
+ * export async function POST(req: Request) {
+ *   const { messages } = await req.json();
+ *   const result = await streamText({
+ *     model: openai('gpt-4o'),
+ *     system: 'You are a helpful assistant.',
+ *     messages,
+ *   });
+ *   return result.toTextStreamResponse();
+ * }
+ * ```
+ *
+ * Use createNextHandler when you need runtime features like tools:
  * @example
  * ```ts
  * // app/api/chat/route.ts
  * import { createNextHandler } from '@yourgpt/llm-sdk';
+ * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
  *
- * const handler = createNextHandler({
- *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
+ * export const POST = createNextHandler({
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY! }),
+ *   model: 'gpt-4o',
+ *   systemPrompt: 'You are a helpful assistant.',
  * });
- *
- * export const POST = handler;
  * ```
  */
 export function createNextHandler(config: RuntimeConfig) {
@@ -259,9 +279,12 @@ export function createExpressHandler(
  * ```ts
  * import http from 'http';
  * import { createNodeHandler } from '@yourgpt/llm-sdk';
+ * import { createOpenAI } from '@yourgpt/llm-sdk/openai';
  *
  * const handler = createNodeHandler({
- *   llm: { provider: 'openai', apiKey: process.env.OPENAI_API_KEY! },
+ *   provider: createOpenAI({ apiKey: process.env.OPENAI_API_KEY! }),
+ *   model: 'gpt-4o',
+ *   systemPrompt: 'You are a helpful assistant.',
  * });
  *
  * const server = http.createServer(handler);

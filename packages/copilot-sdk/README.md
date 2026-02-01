@@ -39,9 +39,17 @@ function App() {
 ```css
 /* app/globals.css */
 @import "tailwindcss";
-@source "node_modules/@yourgpt/copilot-sdk/src/**/*.{ts,tsx}";
+
+/* IMPORTANT: Path is relative to your CSS file location */
+/* If globals.css is in app/ folder, use ../ prefix */
+@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+
 @custom-variant dark (&:is(.dark *));
 ```
+
+> **Note:** The `@source` path must point to `dist/` (not `src/`) and include all file extensions `{js,ts,jsx,tsx}`.
+
+> **Important:** For Tailwind v4, you also need the `@theme inline` block to map CSS variables like `--background` to Tailwind utilities like `bg-background`. If you have shadcn/ui, this is already configured. Otherwise, see the [Quick Start guide](https://copilot-sdk.yourgpt.ai/docs/quickstart) for complete setup.
 
 ## Theming
 

@@ -1,6 +1,6 @@
 {
   "name": "@yourgpt/copilot-sdk",
-  "version": "1.4.32",
+  "version": "1.4.33",
   "description": "Build AI copilots with app context awareness",
   "type": "module",
   "exports": {

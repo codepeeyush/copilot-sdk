@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
-import { useCopilotContext } from "../context/CopilotContext";
+import { useCopilot } from "../provider/CopilotProvider";
 import {
   searchKnowledgeBase,
   formatKnowledgeResultsForAI,
@@ -45,7 +45,7 @@ export interface UseKnowledgeBaseConfig {
  * ```
  */
 export function useKnowledgeBase(config: UseKnowledgeBaseConfig): void {
-  const { registerTool, unregisterTool } = useCopilotContext();
+  const { registerTool, unregisterTool } = useCopilot();
   const configRef = useRef(config);
 
   // Update config ref
