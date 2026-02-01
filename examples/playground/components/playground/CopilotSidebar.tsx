@@ -26,6 +26,7 @@ interface CopilotSidebarProps {
   toolsEnabled: ToolsEnabledConfig;
   generativeUI: GenerativeUIConfig;
   selectedProvider: ProviderId;
+  selectedOpenRouterModel: string;
   apiKeys: ApiKeys;
 }
 
@@ -39,17 +40,27 @@ export function CopilotSidebar({
   toolsEnabled,
   generativeUI,
   selectedProvider,
+  selectedOpenRouterModel,
   apiKeys,
 }: CopilotSidebarProps) {
   // Build runtime URL with provider and optional API key
   const runtimeUrl = useMemo(() => {
     const baseUrl = `/playground/api/${selectedProvider}`;
+    const params = new URLSearchParams();
+
     const apiKey = apiKeys[selectedProvider];
     if (apiKey) {
-      return `${baseUrl}?key=${encodeURIComponent(apiKey)}`;
+      params.set("key", apiKey);
     }
-    return baseUrl;
-  }, [selectedProvider, apiKeys]);
+
+    // Add model param for OpenRouter
+    if (selectedProvider === "openrouter" && selectedOpenRouterModel) {
+      params.set("model", selectedOpenRouterModel);
+    }
+
+    const queryString = params.toString();
+    return queryString ? `${baseUrl}?${queryString}` : baseUrl;
+  }, [selectedProvider, selectedOpenRouterModel, apiKeys]);
 
   // Error handler - shows toast and logs to console
   const handleError = useCallback((error: Error) => {
@@ -73,7 +84,7 @@ export function CopilotSidebar({
     <div className="w-[420px] p-2">
       <div className="flex-1 min-h-0 h-full rounded-2xl overflow-hidden shadow-[0_0_10px_0_rgba(0,0,0,0.05)] border">
         <CopilotProvider
-          key={selectedProvider} // Force re-mount when provider changes
+          key={`${selectedProvider}-${selectedOpenRouterModel}`} // Force re-mount when provider or model changes
           runtimeUrl={runtimeUrl}
           systemPrompt={systemPrompt}
           maxIterations={5}

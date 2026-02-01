@@ -13,6 +13,9 @@ export const docs = defineDocs({
       hideToc: z.boolean().default(false),
       hideHeader: z.boolean().default(false),
     }),
+    postprocess: {
+      includeProcessedMarkdown: true,
+    },
   },
 });
 

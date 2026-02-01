@@ -41,6 +41,11 @@
       "import": "./dist/providers/azure/index.mjs",
       "require": "./dist/providers/azure/index.js"
     },
+    "./openrouter": {
+      "types": "./dist/providers/openrouter/index.d.mts",
+      "import": "./dist/providers/openrouter/index.mjs",
+      "require": "./dist/providers/openrouter/index.js"
+    },
     "./adapters": {
       "types": "./dist/adapters/index.d.ts",
       "import": "./dist/adapters/index.mjs",
@@ -103,6 +108,7 @@
     "xai",
     "grok",
     "ollama",
+    "openrouter",
     "multi-provider",
     "streaming"
   ],

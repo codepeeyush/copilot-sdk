@@ -1,6 +1,6 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useState, useMemo } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -34,7 +34,24 @@ import {
   Cpu,
   Camera,
   ScrollText,
+  X,
+  ExternalLink,
+  Check,
+  ChevronsUpDown,
 } from "lucide-react";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type {
   CopilotTheme,
   DashboardState,
@@ -51,6 +68,7 @@ import {
   samplePersons,
   layoutTemplates,
   providers,
+  OPENROUTER_MODELS,
 } from "@/lib/constants";
 import { WeatherModule } from "./modules/WeatherModule";
 import { StockModule } from "./modules/StockModule";
@@ -116,6 +134,122 @@ function ToggleSwitch({
   );
 }
 
+// OpenRouter Model Selector Component with shadcn Combobox
+function OpenRouterModelSelector({
+  selectedModel,
+  onModelChange,
+}: {
+  selectedModel: string;
+  onModelChange: (model: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [customModel, setCustomModel] = useState("");
+
+  const isPresetModel = OPENROUTER_MODELS.some((m) => m.id === selectedModel);
+  const useCustom =
+    customModel !== "" || (!isPresetModel && selectedModel !== "");
+
+  const groupedModels = useMemo(() => {
+    const groups: Record<string, typeof OPENROUTER_MODELS> = {};
+    for (const model of OPENROUTER_MODELS) {
+      if (!groups[model.provider]) groups[model.provider] = [];
+      groups[model.provider].push(model);
+    }
+    return groups;
+  }, []);
+
+  // Custom Input
+  if (useCustom) {
+    return (
+      <div className="flex gap-1.5">
+        <input
+          type="text"
+          value={customModel || selectedModel}
+          onChange={(e) => {
+            setCustomModel(e.target.value);
+            if (e.target.value.trim()) onModelChange(e.target.value.trim());
+          }}
+          placeholder="model-id"
+          className="flex-1 h-9 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg px-3 text-xs font-mono text-zinc-700 dark:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 placeholder:text-zinc-400"
+        />
+        <button
+          onClick={() => {
+            setCustomModel("");
+            onModelChange(OPENROUTER_MODELS[0].id);
+          }}
+          className="px-2 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-800 hover:bg-zinc-200 dark:hover:bg-zinc-700 text-zinc-500 transition-colors"
+        >
+          <X className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    );
+  }
+
+  // Combobox
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          role="combobox"
+          aria-expanded={open}
+          className="w-full flex items-center justify-between h-9 px-3 bg-zinc-50 dark:bg-zinc-800/50 border border-zinc-200 dark:border-zinc-700 rounded-lg hover:border-zinc-300 dark:hover:border-zinc-600 transition-all text-left"
+        >
+          <span className="text-xs font-mono text-zinc-700 dark:text-zinc-300 truncate">
+            {selectedModel}
+          </span>
+          <ChevronsUpDown className="h-3.5 w-3.5 shrink-0 opacity-50" />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent
+        className="w-[--radix-popover-trigger-width] p-0"
+        align="start"
+      >
+        <Command>
+          <CommandInput
+            placeholder="Search models..."
+            className="h-8 text-xs"
+          />
+          <CommandList className="max-h-[200px]">
+            <CommandEmpty>No model found.</CommandEmpty>
+            {Object.entries(groupedModels).map(([provider, models]) => (
+              <CommandGroup key={provider} heading={provider}>
+                {models.map((model) => (
+                  <CommandItem
+                    key={model.id}
+                    value={`${model.name} ${model.id} ${model.provider}`}
+                    onSelect={() => {
+                      onModelChange(model.id);
+                      setOpen(false);
+                    }}
+                    className="text-xs py-1.5 justify-between font-mono"
+                  >
+                    {model.id}
+                    <Check
+                      className={`h-3 w-3 ${selectedModel === model.id ? "opacity-100" : "opacity-0"}`}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
+            <CommandGroup>
+              <CommandItem
+                onSelect={() => {
+                  setCustomModel(" ");
+                  setOpen(false);
+                }}
+                className="text-xs py-1.5 text-indigo-500"
+              >
+                <Plus className="mr-2 h-3 w-3" />
+                Custom model ID...
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 interface ControlPanelProps {
   copilotTheme: CopilotTheme;
   onThemeChange: (theme: CopilotTheme) => void;
@@ -123,6 +257,8 @@ interface ControlPanelProps {
   onLayoutChange: (layout: LayoutTemplate) => void;
   selectedProvider: ProviderId;
   onProviderChange: (provider: ProviderId) => void;
+  selectedOpenRouterModel: string;
+  onOpenRouterModelChange: (model: string) => void;
   systemPrompt: string;
   onSystemPromptChange: (prompt: string) => void;
   generativeUI: GenerativeUIConfig;
@@ -146,6 +282,8 @@ function ControlPanelComponent({
   onLayoutChange,
   selectedProvider,
   onProviderChange,
+  selectedOpenRouterModel,
+  onOpenRouterModelChange,
   systemPrompt,
   onSystemPromptChange,
   generativeUI,
@@ -212,8 +350,8 @@ function ControlPanelComponent({
 
         <div className="space-y-5">
           {/* Row 1: Theme + Layout Select */}
-          <div className="flex items-end gap-4">
-            <div className="w-40">
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="w-36">
               <div className="flex items-center gap-1 mb-3">
                 <Palette className="h-3.5 w-3.5 text-zinc-400" />
                 <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
@@ -261,7 +399,7 @@ function ControlPanelComponent({
               <div className="flex items-center gap-1 mb-3">
                 <Layout className="h-3.5 w-3.5 text-zinc-400" />
                 <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
-                  Custom Layouts
+                  Layout
                 </span>
                 <ConfigInfoHoverCard
                   description={configMetadata.layout.description}
@@ -294,11 +432,11 @@ function ControlPanelComponent({
               </Select>
             </div>
 
-            <div className="w-48">
+            <div className="w-44">
               <div className="flex items-center gap-1 mb-3">
                 <Cpu className="h-3.5 w-3.5 text-zinc-400" />
                 <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
-                  Model
+                  Provider
                 </span>
                 <ConfigInfoHoverCard
                   description={configMetadata.model.description}
@@ -319,7 +457,10 @@ function ControlPanelComponent({
                         style={{ backgroundColor: currentProvider?.color }}
                       />
                       <span className="text-xs truncate">
-                        {currentProvider?.name} · {currentProvider?.model}
+                        {currentProvider?.name} ·{" "}
+                        {selectedProvider === "openrouter"
+                          ? "500+"
+                          : currentProvider?.model}
                       </span>
                     </span>
                   </SelectValue>
@@ -334,7 +475,7 @@ function ControlPanelComponent({
                         />
                         <span>{p.name}</span>
                         <span className="text-zinc-400 text-[10px]">
-                          · {p.model}
+                          · {p.id === "openrouter" ? "500+ models" : p.model}
                         </span>
                       </span>
                     </SelectItem>
@@ -342,6 +483,22 @@ function ControlPanelComponent({
                 </SelectContent>
               </Select>
             </div>
+
+            {/* OpenRouter Model - Only shows when OpenRouter is selected */}
+            {selectedProvider === "openrouter" && (
+              <div className="w-56">
+                <div className="flex items-center gap-1 mb-3">
+                  <Sparkles className="h-3.5 w-3.5 text-indigo-400" />
+                  <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                    Model
+                  </span>
+                </div>
+                <OpenRouterModelSelector
+                  selectedModel={selectedOpenRouterModel}
+                  onModelChange={onOpenRouterModelChange}
+                />
+              </div>
+            )}
           </div>
 
           {/* Row 2: System Prompt - Full width */}
