@@ -46,6 +46,8 @@ export function PlaygroundShowcase({
             <div className="flex items-center justify-center gap-3">
               <a
                 href="/playground"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-4 py-2 text-sm font-medium text-fd-primary-foreground hover:bg-fd-primary/90 transition-colors"
               >
                 <svg
