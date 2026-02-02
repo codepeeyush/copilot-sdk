@@ -88,13 +88,25 @@ function CustomSuggestions() {
   );
 }
 
-export function SaasLayout({ theme }: LayoutProps) {
+export function SaasLayout({ theme, loaderVariant }: LayoutProps) {
   // Use supabase theme by default for this layout, unless a different theme is selected
   const effectiveTheme = theme === "default" ? "supabase" : theme;
 
   return (
     <div className="h-full" data-csdk-theme={effectiveTheme}>
-      <CopilotChat.Root persistence className="h-full" showPoweredBy={false}>
+      <CopilotChat.Root
+        persistence
+        className="h-full"
+        showPoweredBy={false}
+        loaderVariant={loaderVariant}
+        assistantAvatar={{
+          src: "https://api.dicebear.com/7.x/bottts/svg?seed=assistant",
+        }}
+        showUserAvatar
+        userAvatar={{
+          src: "https://api.dicebear.com/7.x/avataaars/svg?seed=user",
+        }}
+      >
         {/* Home View - Custom welcome screen */}
         <CopilotChat.HomeView className="gap-4 p-6 bg-gradient-to-b from-primary/30 via-background to-background items-stretch w-full">
           {/* Logo */}

@@ -62,6 +62,8 @@ import type {
   PersonData,
   LayoutTemplate,
   ProviderId,
+  SDKConfig,
+  LoaderVariant,
 } from "@/lib/types";
 import {
   themes,
@@ -69,6 +71,7 @@ import {
   layoutTemplates,
   providers,
   OPENROUTER_MODELS,
+  LOADER_VARIANTS,
 } from "@/lib/constants";
 import { WeatherModule } from "./modules/WeatherModule";
 import { StockModule } from "./modules/StockModule";
@@ -273,6 +276,11 @@ interface ControlPanelProps {
   onReset: () => void;
   selectedPerson: PersonData;
   onSelectPerson: (person: PersonData) => void;
+  sdkConfig: SDKConfig;
+  onUpdateSDKConfig: <K extends keyof SDKConfig>(
+    key: K,
+    value: SDKConfig[K],
+  ) => void;
 }
 
 function ControlPanelComponent({
@@ -298,6 +306,8 @@ function ControlPanelComponent({
   onReset,
   selectedPerson,
   onSelectPerson,
+  sdkConfig,
+  onUpdateSDKConfig,
 }: ControlPanelProps) {
   const activeToolCount = Object.values(toolsEnabled).filter(Boolean).length;
   const selectedTheme = themes.find((t) => t.id === copilotTheme);
@@ -522,6 +532,60 @@ function ControlPanelComponent({
               placeholder="// Define AI behavior..."
             />
           </div>
+
+          {/* Row 3: More Settings - Bare collapsible */}
+          <Accordion type="single" collapsible className="w-full">
+            <AccordionItem value="more" className="border-none">
+              <AccordionTrigger className="py-0 hover:no-underline">
+                <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-300">
+                  More Settings
+                </span>
+              </AccordionTrigger>
+              <AccordionContent className="pt-4 pb-0">
+                <div className="flex flex-wrap items-end gap-4">
+                  {/* Loader Variant */}
+                  <div className="w-40">
+                    <div className="flex items-center gap-1 mb-3">
+                      <CircleDot className="h-3.5 w-3.5 text-zinc-400" />
+                      <span className="text-[10px] font-medium uppercase tracking-[0.12em] text-zinc-500">
+                        Loader
+                      </span>
+                    </div>
+                    <Select
+                      value={sdkConfig.loaderVariant}
+                      onValueChange={(v) =>
+                        onUpdateSDKConfig("loaderVariant", v as LoaderVariant)
+                      }
+                    >
+                      <SelectTrigger className="h-9 bg-zinc-50 dark:bg-zinc-800/50 border-zinc-200 dark:border-zinc-700">
+                        <SelectValue>
+                          <span className="text-xs">
+                            {
+                              LOADER_VARIANTS.find(
+                                (l) => l.id === sdkConfig.loaderVariant,
+                              )?.label
+                            }
+                          </span>
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        {LOADER_VARIANTS.map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            <div className="flex flex-col">
+                              <span>{variant.label}</span>
+                              <span className="text-[10px] text-zinc-400">
+                                {variant.description}
+                              </span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
         </div>
       </section>
 

@@ -97,11 +97,13 @@ export type ToolKey = keyof ToolsEnabledConfig;
 
 // SDK Configuration
 export type LoaderVariant =
-  | "circular"
-  | "classic"
   | "dots"
-  | "pulse"
-  | "typing";
+  | "typing"
+  | "wave"
+  | "terminal"
+  | "text-blink"
+  | "text-shimmer"
+  | "loading-dots";
 export type FontSize = "sm" | "base" | "lg";
 
 // Layout templates

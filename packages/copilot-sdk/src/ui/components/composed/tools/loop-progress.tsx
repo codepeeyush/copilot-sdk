@@ -2,7 +2,7 @@
 
 import React from "react";
 import { cn } from "../../../lib/utils";
-import { CircularLoader } from "../../ui/loader";
+import { TypingLoader } from "../../ui/loader";
 
 /**
  * Props for LoopProgress
@@ -95,7 +95,7 @@ export function LoopProgress({
         {showLabel && (
           <div className="flex items-center gap-2">
             {isRunning && (
-              <CircularLoader size={classes.loader} className="text-blue-500" />
+              <TypingLoader size={classes.loader} className="text-blue-500" />
             )}
             <span
               className={cn(
@@ -180,7 +180,7 @@ export function LoopProgressBadge({
         className,
       )}
     >
-      {isRunning && <CircularLoader size="sm" className="size-3" />}
+      {isRunning && <TypingLoader size="sm" className="size-3" />}
       <span>
         {iteration}/{maxIterations}
       </span>

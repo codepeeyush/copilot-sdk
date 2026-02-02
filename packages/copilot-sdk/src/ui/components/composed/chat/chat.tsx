@@ -15,7 +15,6 @@ import {
   ChatContainerScrollAnchor,
 } from "../../ui/chat-container";
 import { ScrollButton } from "../../ui/scroll-button";
-import { Message, MessageAvatar } from "../../ui/message";
 import {
   PromptInput,
   PromptInputTextarea,
@@ -31,7 +30,6 @@ import {
   XIcon,
   ChevronLeftIcon,
 } from "../../icons";
-import CopilotSDKLogo from "../../icons/copilot-sdk-logo";
 import { ChatHeader } from "./chat-header";
 import { Suggestions } from "./suggestions";
 import { DefaultMessage } from "./default-message";
@@ -501,8 +499,8 @@ function ChatComponent({
   // Appearance
   showPoweredBy = true,
   showUserAvatar = false,
-  userAvatar = { fallback: "U" },
-  assistantAvatar = { fallback: "AI" },
+  userAvatar: userAvatarProp,
+  assistantAvatar: assistantAvatarProp,
   loaderVariant = "typing",
   fontSize = "sm",
   // Attachments
@@ -544,6 +542,10 @@ function ChatComponent({
   onSwitchThread,
   isThreadBusy,
 }: ChatProps) {
+  // Merge avatar props with defaults (so user can pass partial config)
+  const userAvatar = { fallback: "U", ...userAvatarProp };
+  const assistantAvatar = { fallback: "AI", ...assistantAvatarProp };
+
   const [input, setInput] = useState("");
   const [pendingAttachments, setPendingAttachments] = useState<
     PendingAttachment[]
@@ -886,177 +888,135 @@ function ChatComponent({
         {/* Renders when: view is chat AND (no explicit ChatView OR ChatView needs default content) */}
         {view === "chat" && (!hasCustomChatView || chatViewNeedsDefault) && (
           <>
-            {/* Messages */}
-            <ChatContainerRoot
-              className={cn("relative flex-1", classNames.container)}
-            >
-              <ChatContainerContent
-                className={cn("gap-4 p-4", classNames.messageList)}
+            {/* Messages wrapper - relative for scroll button positioning */}
+            <div className="flex-1 min-h-0 flex flex-col">
+              <ChatContainerRoot
+                className={cn("flex-1 relative", classNames.container)}
               >
-                {/* Welcome message */}
-                {messages.length === 0 && (
-                  <div className="py-8 text-center text-muted-foreground">
-                    {welcomeMessage ||
-                      "Send a message to start the conversation"}
-                  </div>
-                )}
-
-                {/* Messages */}
-                {messages.map((message, index) => {
-                  const isLastMessage = index === messages.length - 1;
-                  const isEmptyAssistant =
-                    message.role === "assistant" && !message.content?.trim();
-
-                  // Check if message has tool_calls or toolExecutions
-                  const hasToolCalls =
-                    message.tool_calls && message.tool_calls.length > 0;
-                  const hasToolExecutions =
-                    message.toolExecutions && message.toolExecutions.length > 0;
-
-                  // Check if this message has pending tool approvals
-                  const hasPendingApprovals = message.toolExecutions?.some(
-                    (exec) => exec.approvalStatus === "required",
-                  );
-
-                  if (isEmptyAssistant) {
-                    if (hasToolCalls || hasToolExecutions) {
-                      // Has tools - continue to render
-                    } else if (isLastMessage && hasPendingApprovals) {
-                      // Has pending approvals - continue to render
-                    } else if (isLastMessage && isLoading && !isProcessing) {
-                      // Show streaming loader
-                      return (
-                        <Message key={message.id} className="flex gap-2">
-                          <MessageAvatar
-                            src={assistantAvatar.src || ""}
-                            alt="Assistant"
-                            fallback={assistantAvatar.fallback}
-                            fallbackIcon={
-                              !assistantAvatar.src ? (
-                                <CopilotSDKLogo className="size-5" />
-                              ) : undefined
-                            }
-                            className="bg-background"
-                          />
-                          <div className="rounded-lg bg-muted px-4 py-2">
-                            <Loader variant={loaderVariant} size="sm" />
-                          </div>
-                        </Message>
-                      );
-                    } else {
-                      // Hide empty assistant messages
-                      return null;
-                    }
-                  }
-
-                  // Check for saved executions in metadata (historical)
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  const savedExecutions = (message as any).metadata
-                    ?.toolExecutions as ToolExecutionData[] | undefined;
-                  const messageToolExecutions =
-                    message.toolExecutions || savedExecutions;
-
-                  const messageWithExecutions = messageToolExecutions
-                    ? { ...message, toolExecutions: messageToolExecutions }
-                    : message;
-
-                  // Handle follow-up click - use onSendMessage if available
-                  const handleFollowUpClick = (question: string) => {
-                    if (onSuggestionClick) {
-                      onSuggestionClick(question);
-                    } else {
-                      onSendMessage?.(question);
-                    }
-                  };
-
-                  return renderMessage ? (
-                    <React.Fragment key={message.id}>
-                      {renderMessage(messageWithExecutions, index)}
-                    </React.Fragment>
-                  ) : (
-                    <DefaultMessage
-                      key={message.id}
-                      message={messageWithExecutions}
-                      userAvatar={userAvatar}
-                      assistantAvatar={assistantAvatar}
-                      showUserAvatar={showUserAvatar}
-                      userMessageClassName={classNames.userMessage}
-                      assistantMessageClassName={classNames.assistantMessage}
-                      size={fontSize}
-                      isLastMessage={isLastMessage}
-                      isLoading={isLoading}
-                      registeredTools={registeredTools}
-                      toolRenderers={toolRenderers}
-                      onApproveToolExecution={onApproveToolExecution}
-                      onRejectToolExecution={onRejectToolExecution}
-                      showFollowUps={showFollowUps}
-                      onFollowUpClick={handleFollowUpClick}
-                      followUpClassName={followUpClassName}
-                      followUpButtonClassName={followUpButtonClassName}
-                    />
-                  );
-                })}
-
-                {/* "Continuing..." loader - shown after tool completion while waiting for server */}
-                {isProcessing && (
-                  <Message className="flex gap-2">
-                    <MessageAvatar
-                      src={assistantAvatar?.src || ""}
-                      alt="Assistant"
-                      fallback={assistantAvatar?.fallback || "AI"}
-                      fallbackIcon={
-                        !assistantAvatar?.src ? (
-                          <CopilotSDKLogo className="size-5" />
-                        ) : undefined
-                      }
-                      className="bg-background"
-                    />
-                    <div className="rounded-lg bg-muted px-4 py-2 flex items-center gap-2">
-                      <Loader variant="dots" size="sm" />
-                      <span className="text-sm text-muted-foreground">
-                        Continuing...
-                      </span>
+                <ChatContainerContent
+                  className={cn("gap-4 p-4", classNames.messageList)}
+                >
+                  {/* Welcome message */}
+                  {messages.length === 0 && (
+                    <div className="py-8 text-center text-muted-foreground">
+                      {welcomeMessage ||
+                        "Send a message to start the conversation"}
                     </div>
-                  </Message>
-                )}
+                  )}
 
-                {/* Loading indicator for non-streaming - when last message is user and waiting for response */}
-                {isLoading &&
-                  !isProcessing &&
-                  (() => {
-                    const lastMessage = messages[messages.length - 1];
-                    // Show loader if last message is from user (non-streaming doesn't create empty assistant message)
-                    if (lastMessage?.role === "user") {
-                      return (
-                        <Message className="flex gap-2">
-                          <MessageAvatar
-                            src={assistantAvatar?.src || ""}
-                            alt="Assistant"
-                            fallback={assistantAvatar?.fallback || "AI"}
-                            fallbackIcon={
-                              !assistantAvatar?.src ? (
-                                <CopilotSDKLogo className="size-5" />
-                              ) : undefined
-                            }
-                            className="bg-background"
-                          />
-                          <div className="rounded-lg bg-muted px-4 py-2">
-                            <Loader variant={loaderVariant} size="sm" />
-                          </div>
-                        </Message>
-                      );
+                  {/* Messages */}
+                  {messages.map((message, index) => {
+                    const isLastMessage = index === messages.length - 1;
+                    const isEmptyAssistant =
+                      message.role === "assistant" && !message.content?.trim();
+
+                    // Check if message has tool_calls or toolExecutions
+                    const hasToolCalls =
+                      message.tool_calls && message.tool_calls.length > 0;
+                    const hasToolExecutions =
+                      message.toolExecutions &&
+                      message.toolExecutions.length > 0;
+
+                    // Check if this message has pending tool approvals
+                    const hasPendingApprovals = message.toolExecutions?.some(
+                      (exec) => exec.approvalStatus === "required",
+                    );
+
+                    // Hide empty assistant messages that aren't loading and have no content to show
+                    if (isEmptyAssistant) {
+                      const shouldShowMessage =
+                        hasToolCalls ||
+                        hasToolExecutions ||
+                        hasPendingApprovals ||
+                        (isLastMessage && (isLoading || isProcessing));
+
+                      if (!shouldShowMessage) {
+                        return null;
+                      }
+                      // Otherwise, continue to render via DefaultMessage
                     }
-                    return null;
-                  })()}
 
-                <ChatContainerScrollAnchor />
-              </ChatContainerContent>
+                    // Check for saved executions in metadata (historical)
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const savedExecutions = (message as any).metadata
+                      ?.toolExecutions as ToolExecutionData[] | undefined;
+                    const messageToolExecutions =
+                      message.toolExecutions || savedExecutions;
 
-              {/* Scroll to bottom button */}
-              <div className="absolute right-4 bottom-4">
-                <ScrollButton className="shadow-sm" />
-              </div>
-            </ChatContainerRoot>
+                    const messageWithExecutions = messageToolExecutions
+                      ? { ...message, toolExecutions: messageToolExecutions }
+                      : message;
+
+                    // Handle follow-up click - use onSendMessage if available
+                    const handleFollowUpClick = (question: string) => {
+                      if (onSuggestionClick) {
+                        onSuggestionClick(question);
+                      } else {
+                        onSendMessage?.(question);
+                      }
+                    };
+
+                    return renderMessage ? (
+                      <React.Fragment key={message.id}>
+                        {renderMessage(messageWithExecutions, index)}
+                      </React.Fragment>
+                    ) : (
+                      <DefaultMessage
+                        key={message.id}
+                        message={messageWithExecutions}
+                        userAvatar={userAvatar}
+                        assistantAvatar={assistantAvatar}
+                        showUserAvatar={showUserAvatar}
+                        userMessageClassName={classNames.userMessage}
+                        assistantMessageClassName={classNames.assistantMessage}
+                        size={fontSize}
+                        isLastMessage={isLastMessage}
+                        isLoading={isLoading}
+                        isProcessing={isProcessing}
+                        loaderVariant={loaderVariant}
+                        registeredTools={registeredTools}
+                        toolRenderers={toolRenderers}
+                        onApproveToolExecution={onApproveToolExecution}
+                        onRejectToolExecution={onRejectToolExecution}
+                        showFollowUps={showFollowUps}
+                        onFollowUpClick={handleFollowUpClick}
+                        followUpClassName={followUpClassName}
+                        followUpButtonClassName={followUpButtonClassName}
+                      />
+                    );
+                  })}
+
+                  {/* Loading indicator for non-streaming - when last message is user and no assistant message yet */}
+                  {isLoading &&
+                    !isProcessing &&
+                    messages.length > 0 &&
+                    messages[messages.length - 1]?.role === "user" && (
+                      <DefaultMessage
+                        message={{
+                          id: "loading-placeholder",
+                          role: "assistant",
+                          content: "",
+                        }}
+                        userAvatar={userAvatar}
+                        assistantAvatar={assistantAvatar}
+                        showUserAvatar={false}
+                        size={fontSize}
+                        isLastMessage={true}
+                        isLoading={true}
+                        isProcessing={false}
+                        loaderVariant={loaderVariant}
+                      />
+                    )}
+
+                  <ChatContainerScrollAnchor />
+                </ChatContainerContent>
+
+                {/* Scroll to bottom button - inside ChatContainerRoot for context, outside ChatContainerContent so it doesn't scroll */}
+                <div className="absolute inset-0 pointer-events-none z-10 flex items-end justify-end p-4">
+                  <ScrollButton className="shadow-md pointer-events-auto" />
+                </div>
+              </ChatContainerRoot>
+            </div>
 
             {/* Suggestions */}
             {suggestions.length > 0 && !isLoading && (

@@ -1,13 +1,14 @@
 "use client";
 
 import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
-import type { CopilotTheme } from "@/lib/types";
+import type { CopilotTheme, LoaderVariant } from "@/lib/types";
 
 export interface LayoutProps {
   theme: CopilotTheme;
+  loaderVariant: LoaderVariant;
 }
 
-export function DefaultLayout({ theme }: LayoutProps) {
+export function DefaultLayout({ theme, loaderVariant }: LayoutProps) {
   return (
     <div
       className="h-full"
@@ -20,6 +21,14 @@ export function DefaultLayout({ theme }: LayoutProps) {
         header={{ name: "AI Copilot" }}
         showThreadPicker
         persistence
+        loaderVariant={loaderVariant}
+        assistantAvatar={{
+          src: "https://api.dicebear.com/7.x/bottts/svg?seed=assistant",
+        }}
+        showUserAvatar
+        userAvatar={{
+          src: "https://api.dicebear.com/7.x/avataaars/svg?seed=user",
+        }}
       />
     </div>
   );

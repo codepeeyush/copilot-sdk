@@ -184,13 +184,25 @@ function SupportHome({ input }: { input?: React.ReactNode }) {
   );
 }
 
-export function SupportLayout({ theme }: LayoutProps) {
+export function SupportLayout({ theme, loaderVariant }: LayoutProps) {
   return (
     <div
       className="h-full"
       data-csdk-theme={theme === "default" ? undefined : theme}
     >
-      <CopilotChat.Root persistence className="h-full" showPoweredBy={false}>
+      <CopilotChat.Root
+        persistence
+        className="h-full"
+        showPoweredBy={false}
+        loaderVariant={loaderVariant}
+        assistantAvatar={{
+          src: "https://api.dicebear.com/7.x/bottts/svg?seed=assistant",
+        }}
+        showUserAvatar
+        userAvatar={{
+          src: "https://api.dicebear.com/7.x/avataaars/svg?seed=user",
+        }}
+      >
         {/* Custom Home View */}
         <CopilotChat.HomeView className="!gap-0 !p-0">
           <SupportHome

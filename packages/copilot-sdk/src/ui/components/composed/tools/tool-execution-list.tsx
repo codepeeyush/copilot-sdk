@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import { cn } from "../../../lib/utils";
-import { CircularLoader } from "../../ui/loader";
+import { TypingLoader } from "../../ui/loader";
 
 /**
  * Tool execution status
@@ -79,7 +79,7 @@ function StatusIcon({ status }: { status: ToolExecutionStatus }) {
         </div>
       );
     case "executing":
-      return <CircularLoader size="sm" className="text-blue-500" />;
+      return <TypingLoader size="sm" className="text-blue-500" />;
     case "completed":
       return (
         <div className="size-4 rounded-full bg-green-500/20 flex items-center justify-center">
