@@ -4,7 +4,7 @@
     "---Getting Started---",
     "index",
     "why-copilot-sdk",
-    "quickstart",
+    "getting-started",
     "examples",
     "playground",
     "---Copilot---",
@@ -20,8 +20,6 @@
     "multimodal",
     "---AI---",
     "llm-sdk",
-    "providers",
-    "---API Reference---",
-    "api-reference"
+    "providers"
   ]
 }

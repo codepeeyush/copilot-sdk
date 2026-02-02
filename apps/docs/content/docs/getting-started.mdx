@@ -1,0 +1,320 @@
+---
+title: Getting Started
+description: Get up and running in 2 minutes
+icon: RocketCustom
+---
+
+import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
+import { Callout } from 'fumadocs-ui/components/callout';
+import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
+
+<Callout type="info">
+**Prerequisites:** Node 18+, an LLM API key (OpenAI, Anthropic, etc.)
+</Callout>
+
+<Callout title="Starting fresh?" type="info">
+Use the CLI to scaffold a complete project: `npx create-ai-copilot`
+</Callout>
+
+---
+
+## 1. Install Dependencies
+
+<Tabs items={['Anthropic', 'OpenAI / Google / xAI']}>
+  <Tab value="Anthropic">
+    ```bash
+    pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk @anthropic-ai/sdk zod
+    ```
+  </Tab>
+  <Tab value="OpenAI / Google / xAI">
+    ```bash
+    pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk openai zod
+    ```
+
+    <Callout type="info">
+    The `openai` package works with OpenAI, Google Gemini, and xAI (all OpenAI-compatible APIs).
+    </Callout>
+  </Tab>
+</Tabs>
+
+---
+
+## 2. Create API Route
+
+<Tabs items={['Anthropic', 'OpenAI', 'Google']}>
+  <Tab value="Anthropic">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { anthropic } from '@yourgpt/llm-sdk/anthropic';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: anthropic('claude-sonnet-4-20250514'),
+        system: 'You are a helpful assistant.',
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+
+    ```bash title=".env.local"
+    ANTHROPIC_API_KEY=sk-ant-...
+    ```
+  </Tab>
+  <Tab value="OpenAI">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { openai } from '@yourgpt/llm-sdk/openai';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: openai('gpt-4o'),
+        system: 'You are a helpful assistant.',
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+
+    ```bash title=".env.local"
+    OPENAI_API_KEY=sk-...
+    ```
+  </Tab>
+  <Tab value="Google">
+    ```ts title="app/api/chat/route.ts"
+    import { streamText } from '@yourgpt/llm-sdk';
+    import { google } from '@yourgpt/llm-sdk/google';
+
+    export async function POST(req: Request) {
+      const { messages } = await req.json();
+
+      const result = await streamText({
+        model: google('gemini-2.0-flash'),
+        system: 'You are a helpful assistant.',
+        messages,
+      });
+
+      return result.toTextStreamResponse();
+    }
+    ```
+
+    ```bash title=".env.local"
+    GOOGLE_API_KEY=...
+    ```
+  </Tab>
+</Tabs>
+
+<Callout type="info">
+See [Providers](/docs/providers) for more providers and configuration options.
+</Callout>
+
+---
+
+## 3. Add Provider
+
+```tsx title="app/providers.tsx"
+'use client';
+
+import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <CopilotProvider runtimeUrl="/api/chat">
+      {children}
+    </CopilotProvider>
+  );
+}
+```
+
+Wrap your app with the provider:
+
+```tsx title="app/layout.tsx"
+import { Providers } from './providers';
+
+export default function RootLayout({ children }) {
+  return (
+    <html>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
+    </html>
+  );
+}
+```
+
+---
+
+## 4. Add Chat Component
+
+```tsx title="app/page.tsx"
+import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
+
+export default function Home() {
+  return (
+    <div className="h-screen p-4">
+      <CopilotChat className="h-full rounded-xl border" />
+    </div>
+  );
+}
+```
+
+---
+
+## 5. Configure Tailwind
+
+The SDK uses Tailwind CSS utility classes. Add the SDK source path based on your CSS file location:
+
+| CSS file location | @source path |
+|-------------------|--------------|
+| `app/globals.css` | `@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";` |
+| `src/app/globals.css` | `@source "../../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";` |
+| `globals.css` (root) | `@source "node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";` |
+
+```css title="app/globals.css"
+@import "tailwindcss";
+
+/* Include SDK package for Tailwind class detection */
+@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+
+@custom-variant dark (&:is(.dark *));
+
+/* Your existing shadcn/ui @theme and variables... */
+```
+
+The SDK works automatically with your existing shadcn/ui CSS variables.
+
+<Accordions type="single">
+  <Accordion title="Without shadcn/ui (Manual Setup)" id="without-shadcn">
+    If you don't have shadcn/ui, you need to add both the `@theme inline` block and CSS variables:
+
+    ```css title="app/globals.css"
+    @import "tailwindcss";
+
+    @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+
+    @custom-variant dark (&:is(.dark *));
+
+    /* Map CSS variables to Tailwind theme (required for Tailwind v4) */
+    @theme inline {
+      --color-background: var(--background);
+      --color-foreground: var(--foreground);
+      --color-card: var(--card);
+      --color-card-foreground: var(--card-foreground);
+      --color-popover: var(--popover);
+      --color-popover-foreground: var(--popover-foreground);
+      --color-primary: var(--primary);
+      --color-primary-foreground: var(--primary-foreground);
+      --color-secondary: var(--secondary);
+      --color-secondary-foreground: var(--secondary-foreground);
+      --color-muted: var(--muted);
+      --color-muted-foreground: var(--muted-foreground);
+      --color-accent: var(--accent);
+      --color-accent-foreground: var(--accent-foreground);
+      --color-destructive: var(--destructive);
+      --color-border: var(--border);
+      --color-input: var(--input);
+      --color-ring: var(--ring);
+      --radius-sm: calc(var(--radius) - 4px);
+      --radius-md: calc(var(--radius) - 2px);
+      --radius-lg: var(--radius);
+      --radius-xl: calc(var(--radius) + 4px);
+    }
+
+    /* Define CSS variables */
+    :root {
+      --background: hsl(0 0% 100%);
+      --foreground: hsl(240 10% 3.9%);
+      --card: hsl(0 0% 100%);
+      --card-foreground: hsl(240 10% 3.9%);
+      --popover: hsl(0 0% 100%);
+      --popover-foreground: hsl(240 10% 3.9%);
+      --primary: hsl(240 5.9% 10%);
+      --primary-foreground: hsl(0 0% 98%);
+      --secondary: hsl(240 4.8% 95.9%);
+      --secondary-foreground: hsl(240 5.9% 10%);
+      --muted: hsl(240 4.8% 95.9%);
+      --muted-foreground: hsl(240 3.8% 46.1%);
+      --accent: hsl(240 4.8% 95.9%);
+      --accent-foreground: hsl(240 5.9% 10%);
+      --destructive: hsl(0 84.2% 60.2%);
+      --border: hsl(240 5.9% 90%);
+      --input: hsl(240 5.9% 90%);
+      --ring: hsl(240 5.9% 10%);
+      --radius: 0.5rem;
+    }
+
+    .dark {
+      --background: hsl(240 10% 3.9%);
+      --foreground: hsl(0 0% 98%);
+      --card: hsl(240 10% 3.9%);
+      --card-foreground: hsl(0 0% 98%);
+      --popover: hsl(240 10% 3.9%);
+      --popover-foreground: hsl(0 0% 98%);
+      --primary: hsl(0 0% 98%);
+      --primary-foreground: hsl(240 5.9% 10%);
+      --secondary: hsl(240 3.7% 15.9%);
+      --secondary-foreground: hsl(0 0% 98%);
+      --muted: hsl(240 3.7% 15.9%);
+      --muted-foreground: hsl(240 5% 64.9%);
+      --accent: hsl(240 3.7% 15.9%);
+      --accent-foreground: hsl(0 0% 98%);
+      --destructive: hsl(0 62.8% 30.6%);
+      --border: hsl(240 3.7% 15.9%);
+      --input: hsl(240 3.7% 15.9%);
+      --ring: hsl(240 4.9% 83.9%);
+    }
+
+    @layer base {
+      * {
+        @apply border-border;
+      }
+      body {
+        @apply bg-background text-foreground;
+      }
+    }
+    ```
+
+    <Callout type="info">
+    The `@theme inline` block is **required** for Tailwind v4 to map CSS variables to utility classes like `bg-background`.
+    </Callout>
+  </Accordion>
+
+  <Accordion title="Using Tailwind CSS v3?" id="tailwind-v3">
+    Add the SDK package to your Tailwind config content paths:
+
+    ```js title="tailwind.config.js"
+    /** @type {import('tailwindcss').Config} */
+    module.exports = {
+      content: [
+        './app/**/*.{js,ts,jsx,tsx,mdx}',
+        './components/**/*.{js,ts,jsx,tsx,mdx}',
+        './node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}',
+      ],
+      theme: {
+        extend: {},
+      },
+      plugins: [],
+    };
+    ```
+  </Accordion>
+</Accordions>
+
+---
+
+## Done!
+
+Run `pnpm dev` and you have a working AI chat.
+
+---
+
+## Next Steps
+
+- [Copilot UI](/docs/ui) - Themes and styling
+- [Add AI Tools](/docs/tools) - Give AI capabilities
+- [Switch Providers](/docs/providers) - Use different LLMs

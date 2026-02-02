@@ -6,6 +6,15 @@ const PLAYGROUND_URL = process.env.PLAYGROUND_URL || "https://copilot-playground
 /** @type {import('next').NextConfig} */
 const config = {
   reactStrictMode: true,
+  async redirects() {
+    return [
+      {
+        source: "/docs/quickstart",
+        destination: "/docs/getting-started",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       // Playground proxy
