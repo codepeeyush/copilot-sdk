@@ -7,9 +7,8 @@ icon: Notebook
 import { Cards, Card } from 'fumadocs-ui/components/card';
 import { Callout } from 'fumadocs-ui/components/callout';
 import { Tab, Tabs } from 'fumadocs-ui/components/tabs';
-import { Zap, Brain, Wrench, Bot, Plug, Code, MessageCircleMore } from 'lucide-react';
+import { Zap, Brain, Wrench, Bot, Plug, Code, MessageCircleMore, Play, BookOpen, Rocket } from 'lucide-react';
 import { MessageQuestionIcon } from '@/components/icons/message-question';
-import { AiChat } from '@/components/icons/ai-chat';
 
 <DocsHero
   title="Build AI Copilots for Your Product"
@@ -37,36 +36,6 @@ import { AiChat } from '@/components/icons/ai-chat';
 
 ---
 
-## The Gist
-
-```tsx
-import { CopilotProvider } from '@yourgpt/copilot-sdk/react';
-import { CopilotChat } from '@yourgpt/copilot-sdk/ui';
-
-function App() {
-  return (
-    <CopilotProvider runtimeUrl="/api/chat">
-      <CopilotChat />
-    </CopilotProvider>
-  );
-}
-```
-
-That's a working AI chat. Want the AI to see your screen when users say "I have an error"?
-
-```tsx
-<CopilotProvider
-  runtimeUrl="/api/chat"
-  tools={{ screenshot: true, console: true, requireConsent: true }}
->
-  <CopilotChat />
-</CopilotProvider>
-```
-
-Done. The SDK handles consent UI, captures context, sends it to the AI.
-
----
-
 ## Packages
 
 | Package | What it does |
@@ -74,110 +43,80 @@ Done. The SDK handles consent UI, captures context, sends it to the AI.
 | `@yourgpt/copilot-sdk` | React hooks, provider, UI components, and core utilities |
 | `@yourgpt/llm-sdk` | Multi-provider LLM integration + streaming |
 
-### SDK Requirements
-
-| Provider | SDK Required |
-|----------|--------------|
-| OpenAI, Google, xAI | `openai` |
-| Anthropic | `@anthropic-ai/sdk` |
-
-Most providers use OpenAI-compatible APIs, so you only need one of 2 SDKs. [Learn more →](/docs/providers#why-only-2-sdks)
-
 ---
 
 ## Quick Install
 
-<Tabs items={['npm', 'pnpm', 'bun']}>
-  <Tab value="npm">
-    ```bash
-    npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk openai
-    ```
-  </Tab>
+<Tabs items={['pnpm', 'npm', 'bun']}>
   <Tab value="pnpm">
     ```bash
-    pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk openai
+    pnpm add @yourgpt/copilot-sdk @yourgpt/llm-sdk @anthropic-ai/sdk
+    ```
+  </Tab>
+  <Tab value="npm">
+    ```bash
+    npm install @yourgpt/copilot-sdk @yourgpt/llm-sdk @anthropic-ai/sdk
     ```
   </Tab>
   <Tab value="bun">
     ```bash
-    bun add @yourgpt/copilot-sdk @yourgpt/llm-sdk openai
+    bun add @yourgpt/copilot-sdk @yourgpt/llm-sdk @anthropic-ai/sdk
     ```
   </Tab>
 </Tabs>
 
 <Callout type="info">
-The `openai` SDK works with OpenAI, Google Gemini, and xAI. For Anthropic, use `@anthropic-ai/sdk` instead. [See all providers →](/docs/providers)
+For OpenAI, Google, or xAI, use `openai` package instead of `@anthropic-ai/sdk`. [See all providers →](/docs/providers)
 </Callout>
 
 ---
 
-## The Flow
+## How It Works
 
 ```
-User types message
-       ↓
-CopilotProvider sends to your /api/chat
-       ↓
-Runtime talks to OpenAI/Anthropic/etc
-       ↓
-AI decides: respond OR call a tool
-       ↓
-Tool executes client-side → result sent back
-       ↓
-AI continues until done (agentic loop)
-       ↓
-Response streams to UI
+User sends message → Your API route → LLM Provider
+                                           ↓
+              UI ← Stream response ← AI responds or calls tools
+                                           ↓
+                         Tool executes → Result sent back → AI continues
 ```
 
-All of this is handled. You just define tools and build UI.
+You define tools, we handle the rest.
 
 ---
 
-## Real Example: Navigation Tool
-
-```tsx
-import { useToolWithSchema } from '@yourgpt/copilot-sdk/react';
-import { z } from 'zod';
-
-function NavigationTool() {
-  const navigate = useNavigate();
-
-  useToolWithSchema({
-    name: 'navigate_to_page',
-    description: 'Navigate user to a specific page',
-    schema: z.object({
-      path: z.string().describe('The URL path to navigate to'),
-    }),
-    handler: async ({ path }) => {
-      navigate(path);
-      return { success: true, navigatedTo: path };
-    },
-  });
-
-  return null;
-}
-```
-
-Now when user says "take me to settings", AI calls `navigate_to_page({ path: '/settings' })`.
-
----
-
-## What's Next?
+## Quick Links
 
 <Cards>
-  <Card title="Why Copilot SDK" href="/docs/why-copilot-sdk" icon={<MessageQuestionIcon className="size-full" />}>
-    See what makes Copilot SDK different
+  <Card title="Getting Started" href="/docs/getting-started" icon={<Rocket className="size-full" />}>
+    Set up your first AI copilot in minutes
   </Card>
-  <Card title="Copilot Overview" href="/docs/overview" icon={<Bot className="size-full" />}>
-    The main product - plug & play AI chat
+  <Card title="Playground" href="/playground" icon={<Play className="size-full" />}>
+    Try the SDK live in your browser
+  </Card>
+  <Card title="Examples" href="/docs/examples" icon={<Code className="size-full" />}>
+    Real-world demo applications
+  </Card>
+  <Card title="Why Copilot SDK?" href="/docs/why-copilot-sdk" icon={<MessageQuestionIcon className="size-full" />}>
+    See what makes this SDK different
+  </Card>
+</Cards>
+
+---
+
+## Explore
+
+<Cards>
+  <Card title="Copilot UI" href="/docs/ui" icon={<MessageCircleMore className="size-full" />}>
+    Pre-built components and themes
+  </Card>
+  <Card title="Tools" href="/docs/tools" icon={<Wrench className="size-full" />}>
+    Frontend & backend tool execution
   </Card>
   <Card title="Providers" href="/docs/providers" icon={<Plug className="size-full" />}>
-    OpenAI, Anthropic, Google, and more
+    OpenAI, Anthropic, Google, xAI, and more
   </Card>
-  <Card title="React Setup" href="/docs/quickstart" icon={<Code className="size-full" />}>
-    Quick start with React hooks
-  </Card>
-  <Card title="Smart Tools" href="/docs/tools" icon={<Wrench className="size-full" />}>
-    Generative UI and tool execution
+  <Card title="Smart Context" href="/docs/smart-ai-context" icon={<Brain className="size-full" />}>
+    Share app state with AI
   </Card>
 </Cards>
