@@ -1,194 +1,59 @@
 ---
 title: Customizations
-description: Customize the look and behavior of your copilot
+description: Create custom themes, extend components, and brand your copilot
 icon: Paintbrush
 ---
 
 import { Callout } from 'fumadocs-ui/components/callout';
-import { Accordion, Accordions } from 'fumadocs-ui/components/accordion';
 
-Customize the appearance, behavior, and branding of your AI copilot.
-
----
-
-## Styling (Tailwind CSS v4)
-
-The SDK uses Tailwind CSS utility classes with CSS variables for theming. Add the SDK source to your Tailwind config:
-
-```css title="app/globals.css"
-@import "tailwindcss";
-
-/* Include SDK package for Tailwind class detection */
-@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
-
-@custom-variant dark (&:is(.dark *));
-```
-
-<Callout type="warn">
-The `@source` path is relative to your CSS file location. If your `globals.css` is in the `app/` folder, use `../node_modules/...`. If it's at the project root, use `node_modules/...` (without `../`).
-</Callout>
-
-<Callout type="error">
-**Important for Tailwind v4:** You also need the `@theme inline` block to map CSS variables to Tailwind's theme system. Without it, utility classes like `bg-background` won't work. See the [Quick Start](/docs/quickstart) for the complete setup.
-</Callout>
-
-<Accordions type="single">
-  <Accordion title="Using Tailwind CSS v3?" id="tailwind-v3">
-    Add the SDK package to your Tailwind config content paths:
-
-    ```js title="tailwind.config.js"
-    /** @type {import('tailwindcss').Config} */
-    module.exports = {
-      content: [
-        './app/**/*.{js,ts,jsx,tsx,mdx}',
-        './components/**/*.{js,ts,jsx,tsx,mdx}',
-        './node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}',
-      ],
-      theme: {
-        extend: {},
-      },
-      plugins: [],
-    };
-    ```
-
-    <Callout type="warn">
-    The content path should be relative to where your `tailwind.config.js` is located (usually the project root). Adjust the path if your config is in a different location.
-    </Callout>
-  </Accordion>
-</Accordions>
-
----
-
-## Theming
-
-The SDK supports flexible theming with CSS variables. Choose the approach that fits your setup:
-
-### Option 1: Use Your Existing shadcn/ui Setup
-
-If you already have shadcn/ui configured with CSS variables, the SDK works automatically - no additional imports needed.
-
-```tsx
-import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
-
-// Uses your existing --background, --primary, etc. variables
-<CopilotChat />
-```
-
-### Option 2: Use SDK Base Styles (No shadcn)
-
-If you don't have shadcn/ui, you need two things:
-
-1. **Import the SDK's CSS variables:**
-
-```tsx
-import "@yourgpt/copilot-sdk/ui/styles.css";
-import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
-
-<CopilotChat />
-```
-
-2. **Add the `@theme inline` block in your globals.css** (Tailwind v4 only):
-
-```css title="app/globals.css"
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
-  }
-}
-```
+Extend the SDK's UI with custom themes, CSS overrides, and branding options.
 
 <Callout type="info">
-The `@theme inline` block maps CSS variables to Tailwind utility classes. Without it, classes like `bg-background` won't resolve to your CSS variables.
+For base setup and pre-built themes, see [UI Components](/docs/ui).
 </Callout>
-
-### Option 3: Use a Theme Preset
-
-Apply one of 8 built-in theme presets:
-
-```tsx
-import "@yourgpt/copilot-sdk/ui/styles.css";
-import "@yourgpt/copilot-sdk/ui/themes/claude.css";
-import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
-
-<div className="csdk-theme-claude">
-  <CopilotChat />
-</div>
-```
-
----
-
-## Available Theme Presets
-
-| Theme | Import | Class | Style |
-|-------|--------|-------|-------|
-| **Claude** | `themes/claude.css` | `csdk-theme-claude` | Warm terra cotta, earthy |
-| **Vercel** | `themes/vercel.css` | `csdk-theme-vercel` | Monochrome, minimal |
-| **Supabase** | `themes/supabase.css` | `csdk-theme-supabase` | Green, developer-focused |
-| **Twitter** | `themes/twitter.css` | `csdk-theme-twitter` | Bold blue, rounded |
-| **Linear** | `themes/linear.css` | `csdk-theme-linear` | Purple, sophisticated |
-| **PostHog** | `themes/posthog.css` | `csdk-theme-posthog` | Yellow NeoBrutalism |
-| **Catppuccin** | `themes/catppuccin.css` | `csdk-theme-catppuccin` | Pastel community theme |
-| **Modern** | `themes/modern-minimal.css` | `csdk-theme-modern` | Clean tech blue |
 
 ---
 
 ## CSS Variables Reference
 
-The SDK uses standard shadcn/ui CSS variables:
+The SDK uses standard shadcn/ui CSS variables. Override these to customize the look:
 
 ```css
 :root {
+  /* Background colors */
   --background: hsl(0 0% 100%);
   --foreground: hsl(0 0% 0%);
 
+  /* Card/panel colors */
   --card: hsl(0 0% 100%);
   --card-foreground: hsl(0 0% 0%);
 
+  /* Primary action color */
   --primary: hsl(220 90% 50%);
   --primary-foreground: hsl(0 0% 100%);
 
+  /* Secondary elements */
   --secondary: hsl(220 10% 95%);
   --secondary-foreground: hsl(0 0% 0%);
 
+  /* Muted/subtle elements */
   --muted: hsl(220 10% 95%);
   --muted-foreground: hsl(0 0% 45%);
 
+  /* Accent highlights */
   --accent: hsl(220 10% 95%);
   --accent-foreground: hsl(0 0% 0%);
 
+  /* Destructive actions */
   --destructive: hsl(0 84% 60%);
   --destructive-foreground: hsl(0 0% 100%);
 
+  /* Borders and inputs */
   --border: hsl(220 10% 90%);
   --input: hsl(220 10% 90%);
   --ring: hsl(220 90% 50%);
 
+  /* Border radius */
   --radius: 0.5rem;
 }
 
@@ -203,7 +68,9 @@ The SDK uses standard shadcn/ui CSS variables:
 
 ## Semantic CSS Classes
 
-The SDK exposes semantic CSS classes for advanced theme customization:
+Target specific components with these CSS classes:
+
+### Message Components
 
 | Class | Element |
 |-------|---------|
@@ -212,73 +79,100 @@ The SDK exposes semantic CSS classes for advanced theme customization:
 | `csdk-message-assistant` | Assistant message bubble |
 | `csdk-message-content` | Message text content |
 | `csdk-avatar` | Avatar container |
+
+### Input Components
+
+| Class | Element |
+|-------|---------|
 | `csdk-input` | Input container |
-| `csdk-input-textarea` | Text input |
+| `csdk-input-textarea` | Text input field |
 | `csdk-button` | All buttons |
 | `csdk-button-send` | Send button |
-| `csdk-button-stop` | Stop button |
+| `csdk-button-stop` | Stop generation button |
 | `csdk-button-attach` | Attachment button |
-| `csdk-followup` | Follow-up container |
-| `csdk-followup-button` | Follow-up buttons |
-| `csdk-chat-header` | Compound Header slot |
-| `csdk-chat-footer` | Compound Footer slot |
+
+### Layout Components
+
+| Class | Element |
+|-------|---------|
+| `csdk-chat-header` | Header slot |
+| `csdk-chat-footer` | Footer slot |
 | `csdk-chat-home-view` | Home view container |
 | `csdk-chat-view` | Chat view container |
 | `csdk-back-button` | Back/New chat button |
-| `csdk-compound-input` | Compound Input wrapper |
-| `csdk-compound-suggestions` | Compound Suggestions wrapper |
 
-### Example: Custom Theme with Component Styles
+### Other Components
 
-```css
-/* my-theme.css */
-.my-theme {
-  --primary: hsl(280 80% 50%);
-  --radius: 1rem;
-}
-
-/* Target specific components */
-.my-theme .csdk-message-user {
-  border: 2px solid var(--primary);
-  box-shadow: 4px 4px 0 0 var(--primary);
-}
-
-.my-theme .csdk-button-send {
-  border-radius: 50%;
-}
-```
+| Class | Element |
+|-------|---------|
+| `csdk-followup` | Follow-up suggestions container |
+| `csdk-followup-button` | Follow-up suggestion buttons |
+| `csdk-compound-input` | Compound input wrapper |
+| `csdk-compound-suggestions` | Compound suggestions wrapper |
 
 ---
 
 ## Creating Custom Themes
 
-1. **Create a CSS file** with your theme class:
+### 1. Create Theme File
 
-```css
-/* themes/my-brand.css */
+```css title="themes/my-brand.css"
 .csdk-theme-mybrand,
 [data-csdk-theme="mybrand"] {
+  /* Colors */
   --background: hsl(210 20% 98%);
   --foreground: hsl(210 40% 10%);
   --primary: hsl(210 100% 50%);
   --primary-foreground: hsl(0 0% 100%);
-  /* ... other variables */
+  --secondary: hsl(210 20% 94%);
+  --secondary-foreground: hsl(210 40% 10%);
+  --muted: hsl(210 20% 94%);
+  --muted-foreground: hsl(210 20% 40%);
+  --accent: hsl(210 100% 95%);
+  --accent-foreground: hsl(210 100% 40%);
+  --border: hsl(210 20% 88%);
+  --input: hsl(210 20% 88%);
+  --ring: hsl(210 100% 50%);
+
+  /* Border radius */
   --radius: 0.75rem;
 }
 
-/* Dark mode */
+/* Dark mode variant */
 .dark.csdk-theme-mybrand,
 .dark .csdk-theme-mybrand {
   --background: hsl(210 30% 8%);
   --foreground: hsl(210 20% 95%);
-  /* ... dark overrides */
+  --primary: hsl(210 100% 60%);
+  /* ... */
 }
 ```
 
-2. **Import and apply**:
+### 2. Add Component Overrides
+
+```css title="themes/my-brand.css"
+/* Custom message styling */
+.csdk-theme-mybrand .csdk-message-user {
+  border: 2px solid var(--primary);
+  box-shadow: 4px 4px 0 0 var(--primary);
+}
+
+/* Rounded send button */
+.csdk-theme-mybrand .csdk-button-send {
+  border-radius: 50%;
+}
+
+/* Custom input styling */
+.csdk-theme-mybrand .csdk-input-textarea {
+  border-width: 2px;
+}
+```
+
+### 3. Apply Theme
 
 ```tsx
 import "./themes/my-brand.css";
+import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
 
 <div className="csdk-theme-mybrand">
   <CopilotChat />
@@ -287,26 +181,9 @@ import "./themes/my-brand.css";
 
 ---
 
-## Dark Mode
-
-Themes automatically support dark mode when the `dark` class is on an ancestor element:
-
-```tsx
-// Works with next-themes, etc.
-<html className="dark">
-  <body>
-    <div className="csdk-theme-claude">
-      <CopilotChat />
-    </div>
-  </body>
-</html>
-```
-
----
-
 ## Branding
 
-### Custom Header
+### Header
 
 ```tsx
 <CopilotChat
@@ -334,9 +211,18 @@ Themes automatically support dark mode when the `dark` class is on an ancestor e
 />
 ```
 
+### Avatars
+
+```tsx
+<CopilotChat
+  userAvatar="/user-avatar.png"
+  assistantAvatar="/ai-avatar.png"
+/>
+```
+
 ---
 
-## Layout
+## Layout Options
 
 ### Position
 
@@ -385,31 +271,6 @@ Themes automatically support dark mode when the `dark` class is on an ancestor e
 
 ---
 
-## Messages
-
-### User/AI Avatars
-
-```tsx
-<CopilotChat
-  userAvatar="/user-avatar.png"
-  assistantAvatar="/ai-avatar.png"
-/>
-```
-
-### Message Formatting
-
-```tsx
-<CopilotChat
-  renderMessage={(message) => (
-    <div className="custom-message">
-      <Markdown>{message.content}</Markdown>
-    </div>
-  )}
-/>
-```
-
----
-
 ## Behavior
 
 ### Auto-focus
@@ -439,14 +300,27 @@ Themes automatically support dark mode when the `dark` class is on an ancestor e
 
 ---
 
+## Custom Message Rendering
+
+```tsx
+<CopilotChat
+  renderMessage={(message) => (
+    <div className="custom-message">
+      <Markdown>{message.content}</Markdown>
+    </div>
+  )}
+/>
+```
+
+---
+
 ## Full Example
 
 ```tsx
-import "@yourgpt/copilot-sdk/ui/styles.css";
-import "@yourgpt/copilot-sdk/ui/themes/claude.css";
+import "./themes/my-brand.css";
 import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
 
-<div className="csdk-theme-claude">
+<div className="csdk-theme-mybrand">
   <CopilotChat
     // Branding
     header={{
@@ -476,6 +350,6 @@ import { CopilotChat } from "@yourgpt/copilot-sdk/ui";
 
 ## Next Steps
 
-- [Tools](/docs/tools) - Add AI capabilities
-- [Generative UI](/docs/generative-ui) - Custom tool renderers
-- [Smart AI Context](/docs/smart-ai-context) - Context awareness
+- [UI Components](/docs/ui) - Pre-built components and themes
+- [Generative UI](/docs/generative-ui) - Render custom components from AI
+- [Chat](/docs/chat) - Full chat component API

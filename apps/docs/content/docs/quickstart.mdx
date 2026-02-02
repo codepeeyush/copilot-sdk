@@ -198,26 +198,28 @@ import { Steps, Step } from 'fumadocs-ui/components/steps';
 
     ### 6. Configure Styling (Tailwind CSS v4)
 
-    The SDK uses Tailwind CSS utility classes with CSS variables for theming. You need to configure both the source path and theme mapping.
+    The SDK uses Tailwind CSS utility classes with CSS variables for theming. If you have shadcn/ui configured, just add the SDK source path based on your CSS file location:
 
-    <Accordions type="single" defaultValue="with-shadcn">
-      <Accordion title="With shadcn/ui (Recommended)" id="with-shadcn">
-        If you have shadcn/ui configured, just add the SDK source path:
+    | CSS file location | @source path |
+    |-------------------|--------------|
+    | `app/globals.css` | `@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";` |
+    | `src/app/globals.css` | `@source "../../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";` |
+    | `globals.css` (root) | `@source "node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";` |
 
-        ```css title="app/globals.css"
-        @import "tailwindcss";
+    ```css title="app/globals.css"
+    @import "tailwindcss";
 
-        /* Include SDK package for Tailwind class detection */
-        @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+    /* Include SDK package for Tailwind class detection */
+    @source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
 
-        @custom-variant dark (&:is(.dark *));
+    @custom-variant dark (&:is(.dark *));
 
-        /* Your existing shadcn/ui @theme and variables... */
-        ```
+    /* Your existing shadcn/ui @theme and variables... */
+    ```
 
-        The SDK works automatically with your existing shadcn/ui CSS variables.
-      </Accordion>
+    The SDK works automatically with your existing shadcn/ui CSS variables.
 
+    <Accordions type="single">
       <Accordion title="Without shadcn/ui (Manual Setup)" id="without-shadcn">
         If you don't have shadcn/ui, you need to add both the `@theme inline` block and CSS variables:
 
