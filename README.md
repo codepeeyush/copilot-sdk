@@ -1,6 +1,8 @@
 <div align="center">
 
-# Copilot SDK
+<a href="https://copilot-sdk.yourgpt.ai">
+  <img src="./assets/logo.png" alt="Copilot SDK" height="80">
+</a>
 
 ### Build AI Copilots for Your Product
 
@@ -14,7 +16,7 @@ Production-ready AI Copilots for any product. Connect any LLM, deploy on your in
 
 <br />
 
-<img src="./apps/docs/public/images/copilot-sdk-demo-1-sm.gif" alt="Copilot SDK Demo" width="700" />
+<img src="./apps/docs/public/images/copilot-sdk-demo-1-sm.gif" alt="Copilot SDK Demo" width="700"  />
 
 </div>
 
