@@ -1,7 +1,7 @@
 {
   "name": "@yourgpt/llm-sdk",
-  "version": "1.5.43",
-  "description": "LLM SDK for YourGPT - Multi-provider LLM integration",
+  "version": "1.5.44",
+  "description": "AI SDK for building AI Agents with any LLM",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
