@@ -16,7 +16,7 @@ Production-ready AI Copilots for any product. Connect any LLM, deploy on your in
 
 <br />
 
-<img src="./apps/docs/public/images/copilot-sdk-saas-ai-2.gif" alt="Copilot SDK Demo" width="100%"  />
+<img src="./apps/docs/public/images/copilot-sdk-saas-ai-2.gif" alt="Copilot SDK Demo" width="100%" style="border-radius: 12px;" />
 
 </div>
 
