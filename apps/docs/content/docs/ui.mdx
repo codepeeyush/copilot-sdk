@@ -201,6 +201,98 @@ Themes automatically support dark mode when the `dark` class is on an ancestor e
 
 ---
 
+## Loader Variants
+
+Customize the loading indicator shown when AI is generating a response:
+
+```tsx
+<CopilotChat loaderVariant="typing" />
+```
+
+### Available Variants
+
+| Variant | Description |
+|---------|-------------|
+| `typing` | Typing indicator dots (default) |
+| `dots` | Bouncing dots |
+| `wave` | Wave animation |
+| `terminal` | Terminal cursor blink |
+| `text-blink` | Blinking "Thinking" text |
+| `text-shimmer` | Shimmer effect "Thinking" text |
+| `loading-dots` | "Thinking..." with animated dots |
+
+### Text-based Loaders
+
+The text-based variants (`text-blink`, `text-shimmer`, `loading-dots`) display "Thinking" text with animations:
+
+```tsx
+// Blinking text
+<CopilotChat loaderVariant="text-blink" />
+
+// Shimmer effect
+<CopilotChat loaderVariant="text-shimmer" />
+
+// "Thinking..." with animated dots
+<CopilotChat loaderVariant="loading-dots" />
+```
+
+---
+
+## Avatars
+
+Customize the avatars shown next to messages:
+
+### Basic Usage
+
+```tsx
+<CopilotChat
+  assistantAvatar={{
+    src: "/bot-avatar.png",
+    fallback: "AI"
+  }}
+  userAvatar={{
+    src: "/user-avatar.png",
+    fallback: "U"
+  }}
+  showUserAvatar  // Enable user avatar display
+/>
+```
+
+### Custom Avatar Component
+
+Pass a custom React component for full control:
+
+```tsx
+<CopilotChat
+  assistantAvatar={{
+    component: (
+      <img
+        src="/custom-bot.svg"
+        className="size-full rounded-full"
+      />
+    )
+  }}
+  userAvatar={{
+    component: <MyUserAvatar />
+  }}
+  showUserAvatar
+/>
+```
+
+### Avatar Props
+
+| Prop | Type | Description |
+|------|------|-------------|
+| `src` | `string` | Image URL |
+| `fallback` | `string` | Text shown while image loads or if it fails |
+| `component` | `ReactNode` | Custom component (overrides src/fallback) |
+
+<Callout type="info">
+User avatars are hidden by default. Set `showUserAvatar` to display them.
+</Callout>
+
+---
+
 ## Pre-built Components
 
 The SDK exports these ready-to-use components:

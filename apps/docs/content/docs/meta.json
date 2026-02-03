@@ -20,6 +20,8 @@
     "multimodal",
     "---AI---",
     "llm-sdk",
-    "providers"
+    "providers",
+    "---API Reference---",
+    "api-reference"
   ]
 }

@@ -267,14 +267,25 @@ export type ChatProps = {
   userAvatar?: {
     src?: string;
     fallback?: string;
+    /** Custom avatar component - when provided, replaces the default avatar */
+    component?: React.ReactNode;
   };
   /** Assistant avatar config */
   assistantAvatar?: {
     src?: string;
     fallback?: string;
+    /** Custom avatar component - when provided, replaces the default avatar */
+    component?: React.ReactNode;
   };
   /** Loader variant for typing indicator */
-  loaderVariant?: "circular" | "classic" | "dots" | "pulse" | "typing";
+  loaderVariant?:
+    | "dots"
+    | "typing"
+    | "wave"
+    | "terminal"
+    | "text-blink"
+    | "text-shimmer"
+    | "loading-dots";
   /** Font size for messages: 'sm' (14px), 'base' (16px), 'lg' (18px) */
   fontSize?: "sm" | "base" | "lg";
 

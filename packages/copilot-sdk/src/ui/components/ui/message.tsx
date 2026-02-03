@@ -20,24 +20,38 @@ const Message = ({ children, className, ...props }: MessageProps) => (
 );
 
 export type MessageAvatarProps = {
-  src: string;
-  alt: string;
+  /** Image source URL */
+  src?: string;
+  /** Alt text for the image */
+  alt?: string;
   /** Text fallback (e.g. "AI") */
   fallback?: string;
   /** Icon/component fallback (takes precedence over text fallback when src is empty) */
   fallbackIcon?: React.ReactNode;
+  /** Custom avatar component - when provided, replaces the default avatar */
+  children?: React.ReactNode;
   delayMs?: number;
   className?: string;
 };
 
 const MessageAvatar = ({
   src,
-  alt,
+  alt = "Avatar",
   fallback,
   fallbackIcon,
+  children,
   delayMs,
   className,
 }: MessageAvatarProps) => {
+  // If custom children provided, render them in a wrapper with proper sizing
+  if (children) {
+    return (
+      <span className={cn("csdk-avatar flex shrink-0 size-7", className)}>
+        {children}
+      </span>
+    );
+  }
+
   return (
     <Avatar className={cn("csdk-avatar size-7 shrink-0", className)}>
       <AvatarImage src={src} alt={alt} />

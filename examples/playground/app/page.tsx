@@ -17,6 +17,7 @@ import { ApiKeyModal } from "@/components/modals/ApiKeyModal";
 import { WelcomeModal } from "@/components/modals/WelcomeModal";
 
 // Theme CSS imports
+import "@yourgpt/copilot-sdk/ui/styles.css";
 import "@yourgpt/copilot-sdk/ui/themes/claude.css";
 import "@yourgpt/copilot-sdk/ui/themes/linear.css";
 import "@yourgpt/copilot-sdk/ui/themes/vercel.css";
@@ -36,6 +37,7 @@ export default function PlaygroundPage() {
     systemPrompt,
     generativeUI,
     toolsEnabled,
+    sdkConfig,
     selectedProvider,
     selectedOpenRouterModel,
     updateTheme,
@@ -43,6 +45,7 @@ export default function PlaygroundPage() {
     updateSystemPrompt,
     toggleGenerativeUI,
     toggleTool,
+    updateSDKConfig,
     updateProvider,
     updateOpenRouterModel,
   } = usePlaygroundConfig();
@@ -154,6 +157,8 @@ export default function PlaygroundPage() {
               onReset={actions.reset}
               selectedPerson={selectedPerson}
               onSelectPerson={handleSelectPerson}
+              sdkConfig={sdkConfig}
+              onUpdateSDKConfig={updateSDKConfig}
             />
           </div>
         </div>
@@ -171,6 +176,7 @@ export default function PlaygroundPage() {
           selectedProvider={selectedProvider}
           selectedOpenRouterModel={selectedOpenRouterModel}
           apiKeys={apiKeys}
+          loaderVariant={sdkConfig.loaderVariant}
         />
       </div>
 

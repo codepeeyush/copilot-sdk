@@ -273,6 +273,17 @@ export const INITIAL_SDK_CONFIG: SDKConfig = {
   debug: false,
 };
 
+// Loader variant options for the UI selector
+export const LOADER_VARIANTS = [
+  { id: "typing", label: "Typing", description: "Typing indicator" },
+  { id: "dots", label: "Dots", description: "Bouncing dots" },
+  { id: "wave", label: "Wave", description: "Wave animation" },
+  { id: "terminal", label: "Terminal", description: "Terminal cursor" },
+  { id: "text-blink", label: "Text Blink", description: "Blinking text" },
+  { id: "text-shimmer", label: "Text Shimmer", description: "Shimmer text" },
+  { id: "loading-dots", label: "Loading Dots", description: "Thinking..." },
+] as const;
+
 // System prompt shared between routes and playground
 export const SYSTEM_PROMPT = `You are a helpful SDK demo assistant. You have access to tools that can interact with the dashboard.
 

@@ -7,6 +7,7 @@ import type {
   LayoutTemplate,
   ToolsEnabledConfig,
   GenerativeUIConfig,
+  LoaderVariant,
 } from "@/lib/types";
 import type { DashboardActions } from "@/hooks/useDashboardState";
 import { useDashboardContext } from "@/hooks/useDashboardContext";
@@ -23,6 +24,7 @@ interface CopilotPanelProps {
   currentPerson: PersonData;
   toolsEnabled: ToolsEnabledConfig;
   generativeUI: GenerativeUIConfig;
+  loaderVariant: LoaderVariant;
 }
 
 export function CopilotPanel({
@@ -33,6 +35,7 @@ export function CopilotPanel({
   currentPerson,
   toolsEnabled,
   generativeUI,
+  loaderVariant,
 }: CopilotPanelProps) {
   // Provide dashboard and user context to the AI
   useDashboardContext({ dashboardState, currentPerson });
@@ -41,12 +44,12 @@ export function CopilotPanel({
   const renderLayout = () => {
     switch (layoutTemplate) {
       case "saas":
-        return <SaasLayout theme={theme} />;
+        return <SaasLayout theme={theme} loaderVariant={loaderVariant} />;
       case "support":
-        return <SupportLayout theme={theme} />;
+        return <SupportLayout theme={theme} loaderVariant={loaderVariant} />;
       case "default":
       default:
-        return <DefaultLayout theme={theme} />;
+        return <DefaultLayout theme={theme} loaderVariant={loaderVariant} />;
     }
   };
 
