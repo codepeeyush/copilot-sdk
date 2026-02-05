@@ -2,7 +2,7 @@
 name: Feature Request
 about: Suggest an idea or new feature for the Copilot SDK
 title: "[Feature] "
-labels: enhancement, needs-triage
+labels: enhancement
 assignees: ""
 ---
 
