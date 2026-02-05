@@ -44,13 +44,25 @@ function App() {
 
 Explore real-world implementations and demo projects.
 
+### Debug Assistant
+
+AI-powered debugging companion that captures console logs, takes screenshots, and provides intelligent analysis.
+
 <a href="https://copilot-sdk.yourgpt.ai/docs/examples">
   <img src="https://copilot-sdk.yourgpt.ai/images/debug-assistant-demo.webp" alt="Debug Assistant" width="100%" style="border-radius: 12px;" />
 </a>
 
+### Support Ticket System
+
+AI-powered customer support with intelligent ticket routing, automatic escalation, and context-aware responses.
+
 <a href="https://copilot-sdk.yourgpt.ai/docs/examples">
   <img src="https://copilot-sdk.yourgpt.ai/images/copilot-sdk-support-demo.png" alt="Support Ticket System" width="100%" style="border-radius: 12px;" />
 </a>
+
+### SaaS Application
+
+SaaS template with AI copilot integration. Includes subscription handling, billing management, and intelligent assistance.
 
 <a href="https://copilot-sdk.yourgpt.ai/docs/examples">
   <img src="https://copilot-sdk.yourgpt.ai/images/saas-demo.webp" alt="SaaS Application" width="100%" style="border-radius: 12px;" />
