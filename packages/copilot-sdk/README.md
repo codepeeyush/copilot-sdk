@@ -1,8 +1,14 @@
-# @yourgpt/copilot-sdk
+<a href="https://copilot-sdk.yourgpt.ai">
+  <img src="https://copilot-sdk.yourgpt.ai/images/yourgpt-copilot-sdk-npm.png" alt="YourGPT Copilot SDK" width="100%" />
+</a>
+
+# Copilot SDK
 
 Build AI Copilots for Your Product.
 
 Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data.
+
+**Documentation:** [copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)
 
 ## Installation
 
@@ -34,46 +40,23 @@ function App() {
 | `/ui`    | Pre-built UI components        |
 | `/core`  | Types, utilities, tool helpers |
 
-## Styling (Tailwind CSS v4)
+## Examples
 
-```css
-/* app/globals.css */
-@import "tailwindcss";
+Explore real-world implementations and demo projects.
 
-/* IMPORTANT: Path is relative to your CSS file location */
-/* If globals.css is in app/ folder, use ../ prefix */
-@source "../node_modules/@yourgpt/copilot-sdk/dist/**/*.{js,ts,jsx,tsx}";
+<a href="https://copilot-sdk.yourgpt.ai/docs/examples">
+  <img src="https://copilot-sdk.yourgpt.ai/images/debug-assistant-demo.webp" alt="Debug Assistant" width="100%" style="border-radius: 12px;" />
+</a>
 
-@custom-variant dark (&:is(.dark *));
-```
+<a href="https://copilot-sdk.yourgpt.ai/docs/examples">
+  <img src="https://copilot-sdk.yourgpt.ai/images/copilot-sdk-support-demo.png" alt="Support Ticket System" width="100%" style="border-radius: 12px;" />
+</a>
 
-> **Note:** The `@source` path must point to `dist/` (not `src/`) and include all file extensions `{js,ts,jsx,tsx}`.
+<a href="https://copilot-sdk.yourgpt.ai/docs/examples">
+  <img src="https://copilot-sdk.yourgpt.ai/images/saas-demo.webp" alt="SaaS Application" width="100%" style="border-radius: 12px;" />
+</a>
 
-> **Important:** For Tailwind v4, you also need the `@theme inline` block to map CSS variables like `--background` to Tailwind utilities like `bg-background`. If you have shadcn/ui, this is already configured. Otherwise, see the [Quick Start guide](https://copilot-sdk.yourgpt.ai/docs/quickstart) for complete setup.
-
-## Theming
-
-Works automatically with existing shadcn/ui setup. For projects without shadcn:
-
-```tsx
-import "@yourgpt/copilot-sdk/ui/styles.css";
-import "@yourgpt/copilot-sdk/ui/themes/claude.css"; // Optional preset
-
-<div className="csdk-theme-claude">
-  <CopilotChat />
-</div>;
-```
-
-**8 theme presets available:** Claude, Vercel, Supabase, Twitter, Linear, PostHog, Catppuccin, Modern
-
-## Documentation
-
-Visit [copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai) for full documentation including:
-
-- Theme customization & CSS variables
-- Semantic CSS classes (`csdk-*`)
-- Creating custom themes
-- Dark mode support
+**[View all examples →](https://copilot-sdk.yourgpt.ai/docs/examples)**
 
 ## License
 
