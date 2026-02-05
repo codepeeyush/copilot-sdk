@@ -11,6 +11,8 @@ Production-ready AI Copilots for any product. Connect any LLM, deploy on your in
 [![npm version](https://img.shields.io/npm/v/@yourgpt/copilot-sdk.svg?style=flat-square)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
 [![npm downloads](https://img.shields.io/npm/dm/@yourgpt/copilot-sdk.svg?style=flat-square)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
 [![MIT License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](LICENSE)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](CONTRIBUTING.md)
+[![GitHub Stars](https://img.shields.io/github/stars/yourgpt/copilot-sdk?style=flat-square)](https://github.com/yourgpt/copilot-sdk/stargazers)
 
 [Documentation](https://copilot-sdk.yourgpt.ai)
 
@@ -157,9 +159,13 @@ Visit **[copilot-sdk.yourgpt.ai](https://copilot-sdk.yourgpt.ai)** for full docu
 
 ## Contributing
 
-Have any feedback? Share it with us.
+We welcome contributions! Whether it's bug reports, feature requests, or code contributions.
 
-[@0fficialRohit](https://x.com/0fficialRohit) · [@rege_dev](https://x.com/rege_dev)
+- Read our [Contributing Guide](CONTRIBUTING.md) to get started
+- Check out [good first issues](../../labels/good%20first%20issue) for beginner-friendly tasks
+- Join the discussion in [GitHub Discussions](../../discussions)
+
+**Maintainers:** [@0fficialRohit](https://x.com/0fficialRohit) · [@rege_dev](https://x.com/rege_dev)
 
 <br />
 

@@ -157,9 +157,14 @@ pnpm release
 
 ## Getting Help
 
-- Open an issue for bugs
-- Start a discussion for questions
+- **Bug reports**: Use our [bug report template](.github/ISSUE_TEMPLATE/bug_report.md)
+- **Feature requests**: Use our [feature request template](.github/ISSUE_TEMPLATE/feature_request.md)
+- **Questions**: Open a [Discussion](../../discussions)
 - Check existing issues before creating new ones
+
+## Good First Issues
+
+Looking for something to work on? Check out issues labeled [`good first issue`](../../labels/good%20first%20issue) - these are great for newcomers!
 
 ## Code of Conduct
 
