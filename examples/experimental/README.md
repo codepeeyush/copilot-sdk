@@ -29,8 +29,8 @@ This directory contains experimental and raw examples for testing various SDK fe
 
 ```bash
 # Clone the repository
-git clone https://github.com/YourGPT/yourgpt-copilot.git
-cd yourgpt-copilot
+https://github.com/YourGPT/copilot-sdk.git
+cd copilot-sdk
 
 # Install all dependencies from root (required for workspace)
 pnpm install
@@ -41,6 +41,10 @@ cp examples/experimental/.env.example examples/experimental/.env.local
 
 # Run development server
 cd examples/experimental
+
+# Install dependencies
+pnpm install
+
 pnpm dev
 ```
 

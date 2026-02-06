@@ -43,8 +43,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/YourGPT/yourgpt-copilot.git
-cd yourgpt-copilot
+https://github.com/YourGPT/copilot-sdk.git
+cd copilot-sdk
 
 # Install all dependencies from root (required for workspace)
 pnpm install
@@ -55,6 +55,10 @@ cp examples/editor-demo/.env.example examples/editor-demo/.env.local
 
 # Run development server
 cd examples/editor-demo
+
+# Install dependencies
+pnpm install
+
 pnpm dev
 ```
 
