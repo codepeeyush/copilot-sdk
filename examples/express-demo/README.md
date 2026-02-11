@@ -32,8 +32,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/YourGPT/yourgpt-copilot.git
-cd yourgpt-copilot
+https://github.com/YourGPT/copilot-sdk.git
+cd copilot-sdk
 
 # Install all dependencies from root (required for workspace)
 pnpm install
@@ -43,6 +43,10 @@ export OPENAI_API_KEY=your-api-key-here
 
 # Run development server
 cd examples/express-demo
+
+# Install dependencies
+pnpm install
+
 pnpm dev
 ```
 

@@ -24,8 +24,15 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/YourGPT/yourgpt-copilot.git
-cd yourgpt-copilot/examples/playground
+https://github.com/YourGPT/copilot-sdk.git
+
+cd copilot-sdk
+
+# Install all dependencies from root (required for workspace)
+pnpm install
+
+
+cd copilot-sdk/examples/playground
 
 # Install dependencies
 pnpm install
