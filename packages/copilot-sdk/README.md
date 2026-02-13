@@ -4,6 +4,10 @@
 
 # Copilot SDK
 
+[![npm version](https://img.shields.io/npm/v/@yourgpt/copilot-sdk)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
+[![npm downloads](https://img.shields.io/npm/dm/@yourgpt/copilot-sdk)](https://www.npmjs.com/package/@yourgpt/copilot-sdk)
+[![License](https://img.shields.io/npm/l/@yourgpt/copilot-sdk)](https://github.com/YourGPT/copilot-sdk/blob/main/LICENSE)
+
 Build AI Copilots for Your Product.
 
 Production-ready AI Copilots for any product. Connect any LLM, deploy on your infrastructure, own your data.
