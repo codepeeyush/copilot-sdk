@@ -50,16 +50,16 @@ Open `http://localhost:5173` to use the chat interface.
 
 ## Available Scripts
 
-| Script            | Description                        |
-| ----------------- | ---------------------------------- |
-| `pnpm dev`        | Start server + client together     |
-| `pnpm dev:server` | Start server only                  |
-| `pnpm dev:client` | Start client only                  |
-| `pnpm chat`       | CLI: basic chat demo               |
-| `pnpm tools`      | CLI: tool calling demo             |
-| `pnpm vision`     | CLI: vision demo (requires LLaVA)  |
-| `pnpm options`    | CLI: Ollama-specific options demo  |
-| `pnpm server`     | Start server without file watching |
+| Script            | Description                             |
+| ----------------- | --------------------------------------- |
+| `pnpm dev`        | Start server + client together          |
+| `pnpm dev:server` | Start server only                       |
+| `pnpm dev:client` | Start client only                       |
+| `pnpm chat`       | CLI: basic chat demo                    |
+| `pnpm tools`      | CLI: tool calling demo                  |
+| `pnpm vision`     | CLI: vision demo (requires qwen3-vl:2b) |
+| `pnpm options`    | CLI: Ollama-specific options demo       |
+| `pnpm server`     | Start server without file watching      |
 
 ## Project Structure
 
@@ -101,7 +101,7 @@ ollama-demo/
 | --------------------- | ------------------------ | ----------------- |
 | `OLLAMA_BASE_URL`     | `http://localhost:11434` | Ollama server URL |
 | `OLLAMA_MODEL`        | `llama3.1`               | Default model     |
-| `OLLAMA_VISION_MODEL` | `llava`                  | Vision model      |
+| `OLLAMA_VISION_MODEL` | `qwen3-vl:2b`            | Vision model      |
 | `PORT`                | `3002`                   | Server port       |
 
 ## Tech Stack

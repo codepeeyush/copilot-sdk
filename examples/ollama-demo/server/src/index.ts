@@ -4,12 +4,12 @@
  * This example demonstrates:
  * 1. Basic chat completion with streaming
  * 2. Tool/function calling
- * 3. Vision support (with LLaVA)
+ * 3. Vision support (with qwen3-vl:2b)
  * 4. Ollama-specific options
  *
  * Prerequisites:
  * - Ollama installed and running (ollama serve)
- * - Models pulled: ollama pull llama3.1, ollama pull llava
+ * - Models pulled: ollama pull llama3.1, ollama pull qwen3-vl:2b
  */
 
 import "dotenv/config";
@@ -22,7 +22,7 @@ import type { OllamaModelOptions } from "@yourgpt/llm-sdk/ollama";
 
 const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
 const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.1";
-const OLLAMA_VISION_MODEL = process.env.OLLAMA_VISION_MODEL || "llava";
+const OLLAMA_VISION_MODEL = process.env.OLLAMA_VISION_MODEL || "qwen3-vl:2b";
 
 // Create Ollama provider
 const ollama = createOllama({
@@ -159,10 +159,10 @@ async function demoToolCalling() {
 
 async function demoVision() {
   console.log("=".repeat(50));
-  console.log("3. VISION SUPPORT (requires llava model)");
+  console.log("3. VISION SUPPORT (requires qwen3-vl:2b model)");
   console.log("=".repeat(50));
 
-  // Use LLaVA for vision
+  // Use a vision-capable Ollama model
   const model = ollama(OLLAMA_VISION_MODEL);
 
   // Simple test image - 1x1 red pixel PNG (base64)
@@ -266,7 +266,7 @@ async function demoCapabilities() {
   console.log("5. MODEL CAPABILITIES");
   console.log("=".repeat(50));
 
-  const models = ["llama3.1", "llava", "codellama", "mistral"];
+  const models = ["llama3.1", "qwen3-vl:2b", "codellama", "mistral"];
 
   console.log("\nModel capabilities:\n");
 
